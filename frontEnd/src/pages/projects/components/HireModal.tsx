@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Loader2, CheckCircle2, CalendarDays, Armchair, Music, ShoppingBag, AlertTriangle, CheckCircle, XCircle, Smartphone, DollarSign, ExternalLink } from "lucide-react";
+import { X, Loader2, CheckCircle2, CalendarDays, Armchair, Music, ShoppingBag, AlertTriangle, CheckCircle, XCircle, Smartphone, DollarSign, ExternalLink, Clock } from "lucide-react";
 import { apiClient } from "../../../api/axiosInstance";
 import { useApp } from "../../../context/AppContext";
 import { toast } from "react-hot-toast";
+import CalendarPicker from "../../../components/CalendarPicker";
 
 interface HireModalProps {
   onClose: () => void;
@@ -26,25 +27,20 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
   const navigate = useNavigate();
   const today = new Date().toISOString().split("T")[0];
 
-  const returnOptions = (() => {
-    const opts: { value: string; label: string }[] = [];
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    for (let i = 1; i <= 14; i++) {
-      const d = new Date();
-      d.setDate(d.getDate() + i);
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      opts.push({
-        value: `${y}-${m}-${day}`,
-        label: `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${y}`,
-      });
-    }
-    return opts;
-  })();
+  // Determine if any item was added in hourly mode
+  const initialMode = hireItems.some(i => i.hireMode === 'hourly') ? 'hourly' : 'daily';
+  const [hireMode, setHireMode] = useState<'daily' | 'hourly'>(initialMode);
 
-  const defaultReturn = returnOptions[0]?.value || '';
+  // Default return date = tomorrow
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const defaultReturn = tomorrow.toISOString().split("T")[0];
+
+  // Hourly duration options (1-24 hours)
+  const hourlyOptions = Array.from({ length: 24 }, (_, i) => ({
+    value: i + 1,
+    label: `${i + 1} hour${i + 1 > 1 ? 's' : ''}`,
+  }));
 
   const [form, setForm] = useState({
     customer_name: "",
@@ -52,7 +48,9 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
     email: "",
     event_date: today,
     pickup_date: today,
+    pickup_time: "09:00",
     return_date: defaultReturn,
+    hours: 1,
     notes: "",
     agree: false,
   });
@@ -66,8 +64,6 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
   const [payPhone, setPayPhone] = useState("");
   const [paying, setPaying] = useState(false);
   const [payResult, setPayResult] = useState<{ success: boolean; message: string; receipt?: string } | null>(null);
-  const [receiptInput, setReceiptInput] = useState("");
-  const [confirming, setConfirming] = useState(false);
   const paidRef = useRef(false);
 
   // Availability checking
@@ -76,23 +72,43 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
   const [availError, setAvailError] = useState("");
 
   const checkAvailability = useCallback(async () => {
-    if (!form.pickup_date || !form.return_date || hireItems.length === 0) {
-      setAvailability(null);
-      return;
+    if (hireMode === 'hourly') {
+      // For hourly, check availability for the pickup date only
+      if (!form.pickup_date || hireItems.length === 0) {
+        setAvailability(null);
+        return;
+      }
+      setCheckingAvail(true);
+      setAvailError("");
+      try {
+        const items = hireItems.map(item => ({ item_name: item.name, quantity: item.quantity }));
+        const res = await apiClient.post("/hire/availability/check", { items, start_date: form.pickup_date, end_date: form.pickup_date });
+        setAvailability(res.data.items || []);
+      } catch {
+        setAvailError("Could not check availability. You can still submit.");
+        setAvailability(null);
+      } finally {
+        setCheckingAvail(false);
+      }
+    } else {
+      if (!form.pickup_date || !form.return_date || hireItems.length === 0) {
+        setAvailability(null);
+        return;
+      }
+      setCheckingAvail(true);
+      setAvailError("");
+      try {
+        const items = hireItems.map(item => ({ item_name: item.name, quantity: item.quantity }));
+        const res = await apiClient.post("/hire/availability/check", { items, start_date: form.pickup_date, end_date: form.return_date });
+        setAvailability(res.data.items || []);
+      } catch {
+        setAvailError("Could not check availability. You can still submit.");
+        setAvailability(null);
+      } finally {
+        setCheckingAvail(false);
+      }
     }
-    setCheckingAvail(true);
-    setAvailError("");
-    try {
-      const items = hireItems.map(item => ({ item_name: item.name, quantity: item.quantity }));
-      const res = await apiClient.post("/hire/availability/check", { items, start_date: form.pickup_date, end_date: form.return_date });
-      setAvailability(res.data.items || []);
-    } catch (err: any) {
-      setAvailError("Could not check availability. You can still submit.");
-      setAvailability(null);
-    } finally {
-      setCheckingAvail(false);
-    }
-  }, [form.pickup_date, form.return_date, hireItems]);
+  }, [form.pickup_date, form.return_date, hireMode, hireItems]);
 
   useEffect(() => {
     const timer = setTimeout(() => checkAvailability(), 500);
@@ -102,13 +118,19 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
   const allAvailable = availability ? availability.every(a => a.can_fulfill) : true;
   const anyChecked = availability !== null;
 
+  // Cost calculation
   const pickupDate = new Date(form.pickup_date);
   const returnDate = new Date(form.return_date);
-  const rentalDays = form.pickup_date && form.return_date
+  const rentalDays = hireMode === 'daily' && form.pickup_date && form.return_date
     ? Math.max(1, Math.ceil((returnDate.getTime() - pickupDate.getTime()) / (1000 * 60 * 60 * 24)))
     : 1;
 
-  const totalCost = hireItems.reduce((sum, item) => sum + item.price * item.quantity * rentalDays, 0);
+  const totalCost = hireItems.reduce((sum, item) => {
+    if (hireMode === 'hourly') {
+      return sum + (item.price / 8) * item.quantity * form.hours;
+    }
+    return sum + item.price * item.quantity * rentalDays;
+  }, 0);
 
   const getIcon = (category?: string) => {
     switch ((category || "").toLowerCase()) {
@@ -118,7 +140,6 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
     }
   };
 
-  // Step 1: Submit hire request
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -126,8 +147,9 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
     if (!form.phone_number.trim()) { setError("Phone number is required."); return; }
     if (!form.event_date) { setError("Event date is required."); return; }
     if (!form.pickup_date) { setError("Pickup date is required."); return; }
-    if (!form.return_date) { setError("Return date is required."); return; }
-    if (form.return_date < form.pickup_date) { setError("Return date must be after pickup date."); return; }
+    if (hireMode === 'daily' && !form.return_date) { setError("Return date is required."); return; }
+    if (hireMode === 'daily' && form.return_date < form.pickup_date) { setError("Return date must be after pickup date."); return; }
+    if (hireMode === 'hourly' && (!form.hours || form.hours < 1)) { setError("Duration must be at least 1 hour."); return; }
     if (!form.agree) { setError("Please agree to the terms."); return; }
     if (!allAvailable && anyChecked) { setError("Some items are not available for the selected dates. Adjust quantities or dates."); return; }
 
@@ -147,7 +169,10 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
         email: form.email.trim() || null,
         event_date: form.event_date,
         pickup_date: form.pickup_date,
-        return_date: form.return_date,
+        return_date: hireMode === 'daily' ? form.return_date : form.pickup_date,
+        hire_mode: hireMode,
+        hours: hireMode === 'hourly' ? form.hours : 0,
+        pickup_time: hireMode === 'hourly' ? form.pickup_time : null,
         notes: form.notes.trim() || null,
       });
 
@@ -162,7 +187,6 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
     }
   };
 
-  // Step 2: Pay with M-Pesa
   const payWithMpesa = async () => {
     if (!result) return;
     if (!payPhone.trim()) { toast.error("Phone number is required"); return; }
@@ -171,10 +195,9 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
     setPaymentStep("processing");
     paidRef.current = false;
     try {
-      const res = await apiClient.post(`/hire/pay/${result.reference}`, { phone_number: payPhone.trim() });
+      await apiClient.post(`/hire/pay/${result.reference}`, { phone_number: payPhone.trim() });
       toast.success("STK Push sent! Check your phone to enter M-Pesa PIN.");
 
-      // Poll for status
       const interval = setInterval(async () => {
         try {
           const statusRes = await apiClient.get(`/hire/payment-status/${result.reference}`);
@@ -191,7 +214,7 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
             setPaymentStep("choose");
           }
         } catch {
-          // ignore polling errors — will retry
+          // ignore polling errors
         }
       }, 3000);
       setTimeout(() => {
@@ -209,7 +232,6 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
     }
   };
 
-  // Step 2: Pay with Cash
   const payWithCash = async () => {
     if (!result) return;
     setPaying(true);
@@ -219,25 +241,10 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
       setPayResult({ success: true, message: "Cash payment selected. We'll contact you for pickup arrangements." });
       setPaymentStep("done");
     } catch (err: any) {
-      setPayResult({ success: false, message: err?.response?.data?.error || "Something went wrong." });
+      setPayResult({ success: false, message: err?.response?.data?.error || "Payment processing failed" });
       setPaymentStep("choose");
     } finally {
       setPaying(false);
-    }
-  };
-
-  // Manual M-Pesa receipt confirmation (fallback when callback fails)
-  const confirmPayment = async () => {
-    if (!result || !receiptInput.trim()) return;
-    setConfirming(true);
-    try {
-      await apiClient.post(`/hire/confirm-payment/${result.reference}`, { mpesa_receipt: receiptInput.trim() });
-      setPayResult({ success: true, message: `Payment confirmed! Receipt: ${receiptInput.trim()}`, receipt: receiptInput.trim() });
-      setPaymentStep("done");
-    } catch (err: any) {
-      toast.error(err?.response?.data?.error || "Failed to confirm payment");
-    } finally {
-      setConfirming(false);
     }
   };
 
@@ -249,13 +256,13 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
     }));
   };
 
-  const resetAll = () => {
-    setSubmitted(false);
-    setPaymentStep("choose");
-    setPayResult(null);
-    setResult(null);
-    setError("");
+  const handleHourlyItem = (item: typeof hireItems[0]) => {
+    return { ...item, hireMode: 'hourly' as const, hours: form.hours };
   };
+
+  const displayItems = hireMode === 'hourly'
+    ? hireItems.map(handleHourlyItem)
+    : hireItems;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4 pb-16">
@@ -275,28 +282,63 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
         </div>
 
         {!submitted && (
-          /* ── FORM VIEW ── */
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             {error && <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm font-medium">{error}</div>}
+
+            {/* Hire Mode Toggle */}
+            <div>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Rental Type</p>
+              <div className="flex bg-slate-100 rounded-xl p-1">
+                <button
+                  type="button"
+                  onClick={() => setHireMode('daily')}
+                  className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
+                    hireMode === 'daily' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-800'
+                  }`}
+                >
+                  <CalendarDays size={16} /> Daily
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHireMode('hourly')}
+                  className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
+                    hireMode === 'hourly' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-800'
+                  }`}
+                >
+                  <Clock size={16} /> Hourly
+                </button>
+              </div>
+            </div>
 
             {/* Items Summary */}
             <div className="bg-slate-50 rounded-2xl p-4 space-y-2">
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Items to Hire</p>
-              {hireItems.map((item, i) => (
-                <div key={i} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-400">{getIcon(item.category)}</span>
-                    <span className="font-semibold text-slate-700">{item.name}</span>
+              {displayItems.map((item, i) => (
+                <div key={i} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-slate-400 shrink-0">{getIcon(item.category)}</span>
+                    <span className="font-semibold text-slate-700 truncate">{item.name}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-slate-500">x{item.quantity}</span>
-                    <span className="text-slate-400 text-xs">KES {Number(item.price).toLocaleString()}/day</span>
-                    <span className="font-bold text-slate-800">KES {(item.price * item.quantity * rentalDays).toLocaleString()}</span>
+                    {hireMode === 'daily' ? (
+                      <span className="text-slate-400 text-xs">KES {Number(item.price).toLocaleString()}/day</span>
+                    ) : (
+                      <span className="text-slate-400 text-xs">KES {Math.round(Number(item.price) / 8).toLocaleString()}/hr</span>
+                    )}
+                    <span className="font-bold text-slate-800">
+                      KES {hireMode === 'hourly'
+                        ? Math.round((item.price / 8) * item.quantity * form.hours).toLocaleString()
+                        : (item.price * item.quantity * rentalDays).toLocaleString()
+                      }
+                    </span>
                   </div>
                 </div>
               ))}
               <div className="border-t border-slate-200 pt-2 mt-2 flex justify-between text-sm">
-                <span className="font-black text-slate-700">Total for {rentalDays} day{rentalDays > 1 ? 's' : ''}</span>
+                <span className="font-black text-slate-700">
+                  Total for {hireMode === 'hourly' ? `${form.hours} hour${form.hours > 1 ? 's' : ''}` : `${rentalDays} day${rentalDays > 1 ? 's' : ''}`}
+                </span>
                 <span className="font-black text-blue-600">KES {totalCost.toLocaleString()}</span>
               </div>
             </div>
@@ -304,7 +346,7 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
             {/* Personal Information */}
             <div>
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Personal Information</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-slate-600 mb-1.5">Full Name *</label>
                   <input name="customer_name" value={form.customer_name} onChange={handleChange} placeholder="John Doe" required className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
@@ -323,40 +365,63 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
             {/* Hire Dates */}
             <div>
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Hire Details</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {showEventDate && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5"><CalendarDays size={12} className="inline mr-1" />Event Date *</label>
-                    <input name="event_date" type="date" value={form.event_date} onChange={handleChange} min={today} required className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
-                  </div>
+                  <CalendarPicker
+                    value={form.event_date}
+                    onChange={(val) => setForm(prev => ({ ...prev, event_date: val }))}
+                    min={today}
+                    label="Event Date"
+                    required
+                  />
                 )}
-                <div className={showEventDate ? '' : 'col-span-2'}>
-                  <label className="block text-xs font-bold text-slate-600 mb-1.5"><CalendarDays size={12} className="inline mr-1" />Pickup Date *</label>
-                  <input name="pickup_date" type="date" value={form.pickup_date} onChange={handleChange} min={today} required className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-xs font-bold text-slate-600 mb-1.5"><CalendarDays size={12} className="inline mr-1" />Return Date *</label>
-                  <select name="return_date" value={form.return_date} onChange={handleChange} required className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition bg-white">
-                    {returnOptions.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
+                <CalendarPicker
+                  value={form.pickup_date}
+                  onChange={(val) => setForm(prev => ({ ...prev, pickup_date: val }))}
+                  min={today}
+                  label="Pickup Date"
+                  required
+                />
+
+                {hireMode === 'hourly' ? (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 mb-1.5"><Clock size={12} className="inline mr-1" />Pickup Time *</label>
+                      <input name="pickup_time" type="time" value={form.pickup_time} onChange={handleChange} required className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 mb-1.5"><Clock size={12} className="inline mr-1" />Duration *</label>
+                      <select name="hours" value={form.hours} onChange={handleChange} required className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition bg-white">
+                        {hourlyOptions.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                ) : (
+                  <CalendarPicker
+                    value={form.return_date}
+                    onChange={(val) => setForm(prev => ({ ...prev, return_date: val }))}
+                    min={form.pickup_date || today}
+                    label="Return Date"
+                    required
+                  />
+                )}
               </div>
             </div>
 
             {/* Availability */}
-            {(checkingAvail || availability || availError) && form.pickup_date && form.return_date && (
+            {(checkingAvail || availability || availError) && form.pickup_date && (
               <div className={`rounded-2xl p-4 border ${allAvailable ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
                   Availability {checkingAvail && <Loader2 size={12} className="inline ml-2 animate-spin" />}
                 </p>
                 {availError && <p className="text-xs text-amber-600">{availError}</p>}
                 {availability && availability.map((a, i) => (
-                  <div key={i} className="flex items-center justify-between py-1.5 text-sm">
-                    <div className="flex items-center gap-2">
-                      {a.can_fulfill ? <CheckCircle size={14} className="text-emerald-500" /> : <XCircle size={14} className="text-red-500" />}
-                      <span className="font-semibold text-slate-700">{a.item_name}</span>
+                  <div key={i} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 py-1.5 text-sm">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {a.can_fulfill ? <CheckCircle size={14} className="text-emerald-500 shrink-0" /> : <XCircle size={14} className="text-red-500 shrink-0" />}
+                      <span className="font-semibold text-slate-700 truncate">{a.item_name}</span>
                     </div>
                     <span className={`text-xs font-bold ${a.can_fulfill ? 'text-emerald-600' : 'text-red-600'}`}>
                       {a.can_fulfill ? `${a.available_quantity} available` : `Only ${a.available_quantity} available (need ${a.requested_quantity})`}
@@ -404,7 +469,6 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
         )}
 
         {submitted && paymentStep === "choose" && (
-          /* ── PAYMENT CHOICE ── */
           <div className="p-6 space-y-4">
             <div className="text-center">
               <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -414,7 +478,7 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
               <p className="text-sm text-slate-500 mt-1">Ref: <strong className="text-blue-600">{result?.reference}</strong></p>
               {allAvailable && (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mt-3">
-                  <p className="text-xs font-bold text-emerald-700">✓ All items are available for your dates</p>
+                  <p className="text-xs font-bold text-emerald-700">All items are available for your dates</p>
                 </div>
               )}
             </div>
@@ -437,22 +501,17 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
 
             {payResult && !payResult.success && (
               <div className="border-t border-slate-200 pt-4 mt-2">
-                <p className="text-xs font-bold text-slate-700 text-center mb-3">Already paid via M-Pesa? Enter receipt</p>
-                <div className="flex gap-2">
-                  <input type="text" value={receiptInput} onChange={e => setReceiptInput(e.target.value)} placeholder="e.g. QLS1234567"
-                    className="flex-1 border border-slate-200 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 transition" />
-                  <button onClick={confirmPayment} disabled={confirming || !receiptInput.trim()}
-                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-black rounded-xl text-xs transition-all flex items-center gap-1.5 disabled:cursor-not-allowed">
-                    {confirming ? <Loader2 size={14} className="animate-spin" /> : "Confirm"}
-                  </button>
-                </div>
+                <p className="text-xs text-slate-500 text-center leading-relaxed">
+                  Paid via M-Pesa but the payment timed out? Track your request at{" "}
+                  <span className="font-bold text-slate-700">/hire-status</span> — the office verifies
+                  payments and will confirm your receipt shortly.
+                </p>
               </div>
             )}
           </div>
         )}
 
         {submitted && paymentStep === "processing" && (
-          /* ── PROCESSING ── */
           <div className="p-8 text-center">
             <Loader2 size={40} className="animate-spin text-blue-600 mx-auto mb-4" />
             <h3 className="text-lg font-black text-slate-800">Processing Payment</h3>
@@ -461,7 +520,6 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
         )}
 
         {submitted && paymentStep === "done" && payResult && (
-          /* ── PAYMENT CONFIRMATION ── */
           <div className="p-8 text-center">
             <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${payResult.success ? 'bg-emerald-100' : 'bg-red-100'}`}>
               {payResult.success ? <CheckCircle2 size={32} className="text-emerald-600" /> : <XCircle size={32} className="text-red-600" />}
@@ -494,7 +552,6 @@ export const HireModal = ({ onClose, showEventDate = true }: HireModalProps) => 
         )}
 
         {submitted && paymentStep === "mpesa" && !payResult && (
-          /* ── M-PESA FORM ── */
           <div className="p-6 space-y-4">
             <h3 className="font-bold text-slate-800 text-center">M-Pesa Payment</h3>
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-center">

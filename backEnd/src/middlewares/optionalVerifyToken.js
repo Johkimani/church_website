@@ -1,5 +1,5 @@
 
-import jwt from "jsonwebtoken";
+import { verifyAccessToken } from "../utils/jwtConfig.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -18,7 +18,7 @@ const optionalVerifyToken = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = verifyAccessToken(token);
     req.user = {
       id: decoded.id,
       member_id: decoded.id,

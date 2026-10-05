@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import {
   ShoppingBag, Package, Tag, UserCircle, BarChart3, Image, LayoutGrid, MessageCircle, ShoppingCart, CalendarDays,
   Cross, Shirt, Armchair, Music, ChevronRight, ChevronLeft, Clock, Activity, LogOut, LayoutDashboard,
-  HelpCircle, X, Menu
+  HelpCircle, Menu
 } from "lucide-react";
 import { toast } from 'react-hot-toast';
 import { apiClient } from "../../../api/axiosInstance";
+import { useAuth } from "../../../context/AuthContext";
 import ProductsPanel from "./ProductsPanel";
 import OrdersPanel from "./ordersmanager";
 import HireRequestsPanel from "./hirerequestsmanager";
@@ -53,9 +54,8 @@ const purchaseNav: SidebarItem[] = [
 
 const hireNav: SidebarItem[] = [
   { id: "dashboard",       label: "Dashboard",      icon: LayoutDashboard },
-  { id: "hire-orders",     label: "Orders",         icon: Package },
-  { id: "hire-products",   label: "Products",       icon: ShoppingBag },
   { id: "hire-requests",   label: "Hire Requests",  icon: CalendarDays },
+  { id: "hire-products",   label: "Products",       icon: ShoppingBag },
   { id: "hire-categories", label: "Categories",     icon: Tag },
   { id: "hire-cards",      label: "Home Cards",     icon: LayoutGrid },
   { id: "hire-sliders",    label: "Slider",         icon: Image },
@@ -68,6 +68,10 @@ const hireNav: SidebarItem[] = [
 type SectionId = typeof sections[number]["id"];
 
 export default function ProjectsManager() {
+  const { user } = useAuth();
+  const userRoles = Array.isArray(user?.role) ? user.role : [user?.role].filter(Boolean);
+  const readOnly = userRoles.some((r: any) => r === 'csa_vice_chair');
+
   const [activeSection, setActiveSection] = useState<SectionId | null>(null);
   const [activeNav, setActiveNav] = useState("dashboard");
   const [pendingCount, setPendingCount] = useState(0);
@@ -202,7 +206,7 @@ export default function ProjectsManager() {
       { label: 'Pending', value: pendingCount, icon: Clock, color: 'bg-amber-500' },
       { label: 'Customers', value: stats.customers, icon: UserCircle, color: 'bg-purple-500' },
       { label: 'Categories', value: stats.categories, icon: Tag, color: 'bg-sky-500' },
-      { label: 'Avg Rating', value: testimonialStats.avgRating > 0 ? `${testimonialStats.avgRating}★` : '—', icon: MessageCircle, color: 'bg-rose-500' },
+      { label: 'Avg Rating', value: testimonialStats.avgRating > 0 ? `${testimonialStats.avgRating}` : '—', icon: MessageCircle, color: 'bg-rose-500' },
     ];
 
     return (
@@ -225,7 +229,7 @@ export default function ProjectsManager() {
               <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
                 <Package size={14} className="text-blue-600" /> Recent Orders
               </h3>
-              <button onClick={() => handleNavChange(s === 'purchase' ? 'orders' : 'hire-orders')} className="text-[11px] font-bold text-blue-600 hover:text-blue-700">View All →</button>
+              <button onClick={() => handleNavChange(s === 'purchase' ? 'orders' : 'hire-requests')} className="text-[11px] font-bold text-blue-600 hover:text-blue-700">View All →</button>
             </div>
             <div className="divide-y divide-slate-100">
               {recentOrders.length === 0 ? (
@@ -272,19 +276,17 @@ export default function ProjectsManager() {
 
   // === Section Panel Routing ===
   const renderPanel = () => {
-    const s = activeSection;
     switch (activeNav) {
       case "dashboard": return renderDashboard();
-      case "products": return <ProductsPanel categoryFilter={['sacramentals', 'tshirts']} />;
-      case "orders": return <OrdersPanel />;
+      case "products": return <ProductsPanel categoryFilter={['sacramentals', 'tshirts']} readOnly={readOnly} />;
+      case "orders": return <OrdersPanel typeFilter="sale" readOnly={readOnly} />;
       case "categories": return <CategoriesPanel typeFilter="sale" />;
       case "customers": return <CustomersPanel />;
       case "cards": return <CategoryCardManager sectionFilter={['sacramentals', 'tshirts']} />;
       case "sliders": return <SliderManager sectionFilter={['sacramentals', 'tshirts']} />;
       case "testimonials": return <TestimonialManager />;
       case "reports": return <ReportsPanel typeFilter="sale" />;
-      case "hire-products": return <ProductsPanel categoryFilter={['chairs', 'instruments']} />;
-      case "hire-orders": return <OrdersPanel />;
+      case "hire-products": return <ProductsPanel categoryFilter={['chairs', 'instruments']} readOnly={readOnly} />;
       case "hire-requests": return <HireRequestsPanel />;
       case "hire-settings": return <HireSettingsSection />;
       case "hire-categories": return <CategoriesPanel typeFilter="hire" />;
@@ -326,7 +328,7 @@ export default function ProjectsManager() {
         <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">
           {currentNav.map(item => {
             const isActive = activeNav === item.id;
-            const isOrders = item.id === 'orders' || item.id === 'hire-orders';
+            const isOrders = item.id === 'orders';
             const isTestimonials = item.id === 'testimonials' || item.id === 'hire-testimonials';
             return (
               <button

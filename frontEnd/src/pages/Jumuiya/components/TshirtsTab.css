@@ -591,4 +591,76 @@
     height: 48px;
     color: #475569;
 }
+
+/* Responsive layout fixes */
+.tshirt-order-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 40px;
+    align-items: start;
+}
+
+.tshirt-showcase-media {
+    height: 500px;
+}
+
+.tshirt-showcase-card {
+    position: sticky;
+    top: 20px;
+}
+
+.tshirt-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 16px;
+}
+
+.tshirt-form-row-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.tshirt-subtabs {
+    display: flex;
+    gap: 8px;
+}
+
+.tshirt-subtabs button {
+    padding: 10px 20px;
+}
+
+@media (max-width: 900px) {
+    .tshirt-order-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .tshirt-showcase-card {
+        position: static;
+    }
+
+    .tshirt-showcase-media {
+        height: 320px;
+    }
+
+    .tshirt-form-row-2col {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .tshirt-showcase-media {
+        height: 240px;
+    }
+
+    .tshirt-subtabs {
+        flex-direction: column;
+    }
+
+    .tshirt-subtabs button {
+        width: 100%;
+    }
+}
 

@@ -114,11 +114,15 @@ else
   git commit -m "$MSG"
 fi
 
-# Push to upstream
-info "Pushing to upstream ($UPSTREAM)..."
-# Use --set-upstream only if needed; we already validated upstream.
-# Prefer normal push.
-git push
+# Push to origin and johkimani
+info "Pushing to origin ($BRANCH)..."
+git push origin "$BRANCH"
+
+if git remote get-url johkimani >/dev/null 2>&1; then
+  info "Pushing to johkimani ($BRANCH)..."
+  git push johkimani "$BRANCH" || warn "Failed to push to johkimani"
+fi
 
 info "Done."
+
 

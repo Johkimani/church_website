@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AlertTriangle, Calendar, Info, CheckCircle2, Check } from 'lucide-react';
 import type { ElectionTerm } from '../../../hooks/useTerms';
-import { JUMUIYA_OPTIONS } from '../constants/adminConstants';
+import { JUMUIYA_OPTIONS, GROUP_OPTIONS } from '../constants/adminConstants';
 
 interface ArchiveModalProps {
  isOpen: boolean;
@@ -11,8 +11,9 @@ interface ArchiveModalProps {
  officialsCount: number;
  electionTerms: ElectionTerm[];
  currentTerm: ElectionTerm | null;
- mode?: 'csa' | 'jumuiya';
+ mode?: 'csa' | 'jumuiya' | 'groups';
  jumuiyaCountMap?: Record<string, number>;
+ groupCountMap?: Record<string, number>;
  activeTerm?: string;
 }
 
@@ -25,6 +26,7 @@ export function ArchiveModal({
   currentTerm,
   mode = 'csa',
   jumuiyaCountMap = {},
+  groupCountMap = {},
   activeTerm
 }: ArchiveModalProps) {
  const [useExistingTerm, setUseExistingTerm] = useState(true);
@@ -35,6 +37,10 @@ export function ArchiveModal({
  const [termDescription] = useState('');
  const [confirmed, setConfirmed] = useState(false);
  const [selectedJumuiya, setSelectedJumuiya] = useState('all');
+ const targetOptions = mode === 'groups' ? GROUP_OPTIONS : JUMUIYA_OPTIONS;
+ const targetCountMap = mode === 'groups' ? groupCountMap : jumuiyaCountMap;
+ const targetLabel = mode === 'groups' ? 'Group' : 'Jumuiya';
+ const targetAllLabel = mode === 'groups' ? 'All Groups' : 'All Jumuiyas';
 
  React.useEffect(() => {
  if (isOpen) {
@@ -68,11 +74,12 @@ export function ArchiveModal({
  if (termDescription) payload.description = termDescription;
  }
 
- if (mode === 'jumuiya') {
- payload.isJumuiya = true;
- if (selectedJumuiya !== 'all') {
- payload.category = selectedJumuiya;
- }
+ if (mode === 'jumuiya' || mode === 'groups') {
+  payload.isJumuiya = mode === 'jumuiya';
+  payload.isGroup = mode === 'groups';
+  if (selectedJumuiya !== 'all') {
+  payload.category = selectedJumuiya;
+  }
  }
 
  await onConfirm(payload);
@@ -81,8 +88,8 @@ export function ArchiveModal({
 
  const isInvalid = (!useExistingTerm && (!termName || !termYear || !termStartDate)) || !confirmed || isArchiving;
  
- const displayCount = mode === 'jumuiya' && selectedJumuiya !== 'all' 
- ? (jumuiyaCountMap[selectedJumuiya] || 0) 
+ const displayCount = (mode === 'jumuiya' || mode === 'groups') && selectedJumuiya !== 'all' 
+ ? (targetCountMap[selectedJumuiya] || 0) 
  : officialsCount;
 
  return (
@@ -101,21 +108,21 @@ export function ArchiveModal({
  </div>
 
  <div className="p-6 overflow-y-auto space-y-6 text-left">
- {mode === 'jumuiya' && (
- <section className="space-y-3">
- <h4 className="font-bold text-gray-900 ">Target Jumuiya</h4>
- <select
- value={selectedJumuiya}
- onChange={(e) => setSelectedJumuiya(e.target.value)}
- className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 "
- >
- <option value="all">All Jumuiyas ({officialsCount} officials)</option>
- {JUMUIYA_OPTIONS.map(j => (
- <option key={j} value={j}>{j} ({jumuiyaCountMap[j] || 0} officials)</option>
- ))}
- </select>
- </section>
- )}
+  {mode === 'jumuiya' || mode === 'groups' ? (
+  <section className="space-y-3">
+  <h4 className="font-bold text-gray-900 ">Target {targetLabel}</h4>
+  <select
+  value={selectedJumuiya}
+  onChange={(e) => setSelectedJumuiya(e.target.value)}
+  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 "
+  >
+  <option value="all">{targetAllLabel} ({officialsCount} officials)</option>
+  {targetOptions.map(j => (
+  <option key={j} value={j}>{j} ({targetCountMap[j] || 0} officials)</option>
+  ))}
+  </select>
+  </section>
+  ) : null}
 
  <section className="space-y-4">
  <h4 className="flex items-center gap-2 font-bold text-gray-900 ">

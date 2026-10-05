@@ -1,20 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { FaPhoneAlt, FaWhatsapp, FaEnvelope, FaArrowLeft, FaCheckCircle, FaStar, FaQuoteLeft } from 'react-icons/fa';
+import { FaPhoneAlt, FaWhatsapp, FaEnvelope, FaArrowLeft, FaCheckCircle, FaStar } from 'react-icons/fa';
 import { POSITION_INFO, DEFAULT_POSITION_INFO, getAvatarForCategory } from './constants/positionInfo';
 import { getSafeImageUrl } from '../../api/config';
 
-import apiService from '../Landing/services/api'
+import apiService from '../../services/api'
 import { useSocket } from '../../context/SocketContext'
+import PageLoader from '../../assets/Layouts/PageLoader'
 
-const CATEGORY_COLORS: Record<string, string> = {
-    'Executive': 'from-purple-600 to-purple-800',
+const CATEGORY_COLORS: Record<string, string> = {    'Executive': 'from-purple-600 to-purple-800',
     'Jumuiya Coordinators': 'from-blue-600 to-blue-800',
     'Bible Coordinators': 'from-green-600 to-green-800',
     'Rosary': 'from-pink-600 to-pink-800',
+    'Rosary Coordinators': 'from-pink-600 to-pink-800',
     'Pamphlet Managers': 'from-orange-600 to-orange-800',
     'Project Managers': 'from-indigo-600 to-indigo-800',
     'Liturgist': 'from-cyan-600 to-cyan-800',
+    'Liturgists': 'from-cyan-600 to-cyan-800',
     'Choir Officials': 'from-red-600 to-red-800',
     'Instrument Managers': 'from-blue-600 to-blue-800',
     'Liturgical Dancers': 'from-violet-600 to-violet-800',
@@ -26,9 +28,11 @@ const CATEGORY_HEX: Record<string, string> = {
     'Jumuiya Coordinators': '#2563eb',
     'Bible Coordinators': '#16a34a',
     'Rosary': '#db2777',
+    'Rosary Coordinators': '#db2777',
     'Pamphlet Managers': '#ea580c',
     'Project Managers': '#4f46e5',
     'Liturgist': '#0891b2',
+    'Liturgists': '#0891b2',
     'Choir Officials': '#dc2626',
     'Instrument Managers': '#2563eb',
     'Liturgical Dancers': '#7c3aed',
@@ -45,6 +49,7 @@ const OfficialProfile: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [relatedOfficials, setRelatedOfficials] = useState<any[]>([]);
+    const [photoOpen, setPhotoOpen] = useState(false);
 
     const fetchOfficialDetails = async () => {
         if (!id) return;
@@ -150,15 +155,11 @@ const OfficialProfile: React.FC = () => {
         };
     }, [socket, id]);
 
-    if (loading) return (
-        <div className="h-full flex items-center justify-center bg-gray-50">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-        </div>
-    );
+    if (loading) return <PageLoader message="Loading official profile" fullScreen />;
 
     if (error || !official) return (
         <div className="h-full flex flex-col items-center justify-center bg-gray-50 p-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">{error || 'Something went wrong'}</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">{error || 'Official profile could not be loaded'}</h2>
             <button onClick={() => navigate(-1)} className="px-6 py-2 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition-colors">Go Back</button>
         </div>
     );
@@ -188,14 +189,23 @@ const OfficialProfile: React.FC = () => {
                     </Link>
                     
                     <div className="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-12 mt-auto pb-10 sm:pb-16">
-                        <div className="relative group shrink-0">
+                        <div
+                            className={`relative group shrink-0 ${official.photo ? 'cursor-pointer' : ''}`}
+                            onClick={official.photo ? () => setPhotoOpen(true) : undefined}
+                            title={official.photo ? 'View full photo' : undefined}
+                        >
                             <div className="absolute -inset-1 bg-white/30 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
-                            <img 
+                            <img
                                 src={official.photo ? getSafeImageUrl(official.photo) : getAvatarForCategory(official.category)}
                                 alt={official.name}
                                 loading="lazy"
-                                className="relative w-36 h-36 sm:w-52 sm:h-52 rounded-full object-cover border-4 border-white shadow-2xl"
+                                className={`relative w-36 h-36 sm:w-52 sm:h-52 rounded-full object-cover border-4 border-white shadow-2xl transition-transform duration-300 ${official.photo ? 'group-hover:scale-[1.03]' : ''}`}
                             />
+                            {official.photo && (
+                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                                    <span className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm text-white flex items-center justify-center text-sm font-bold border-2 border-white/40">⤢</span>
+                                </div>
+                            )}
                         </div>
                         
                         <div className="text-center md:text-left text-white flex-1 pb-2">
@@ -227,7 +237,7 @@ const OfficialProfile: React.FC = () => {
                                 </div>
                                 <h3 className="text-2xl font-bold text-gray-900 border-b-4 border-current pb-1" style={{ borderColor: `${color}40`, color: '#1e293b'}}>About the Role</h3>
                             </div>
-                            <div class="p-8 rounded-3xl bg-gray-50 border border-gray-100 italic text-gray-600 text-lg leading-relaxed shadow-inner">
+                            <div className="p-8 rounded-3xl bg-gray-50 border border-gray-100 italic text-gray-600 text-lg leading-relaxed shadow-inner">
     <p className="relative z-10">{posInfo.description}</p>
 </div>
                         </section>
@@ -253,8 +263,6 @@ const OfficialProfile: React.FC = () => {
                     <div className="lg:col-span-4 space-y-10">
                         {/* Contact Card */}
                         <div className="bg-white rounded-[32px] border border-gray-100 shadow-xl p-8 overflow-hidden relative">
-                             <div className="absolute top-0 right-0 w-32 h-32 opacity-5 translate-x-1/2 -translate-y-1/2 rounded-full" style={{ backgroundColor: color }}></div>
-                            
                             <h4 className="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider">Connect with Official</h4>
                             <div className="space-y-4">
                                 {official.contact && (
@@ -295,11 +303,6 @@ const OfficialProfile: React.FC = () => {
 
                         {/* Core Qualities */}
                         <div className="bg-gray-900 rounded-[32px] p-8 text-white shadow-2xl relative overflow-hidden">
-                             <div className="absolute top-0 right-0 w-full h-full opacity-10 pointer-events-none">
-                                <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                                    <path d="M0 100 C 20 0 50 0 100 100" stroke="white" strokeWidth="0.1" fill="none" />
-                                </svg>
-                             </div>
                             <h4 className="text-lg font-bold mb-6 flex items-center gap-2">
                                 <FaStar className="text-yellow-400" /> Key Qualities
                             </h4>
@@ -359,6 +362,37 @@ const OfficialProfile: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {/* Full photo viewer — rectangular, generous size */}
+            {photoOpen && official.photo && (
+                <div
+                    className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8"
+                    style={{ animation: 'opFadeIn 0.2s ease-out' }}
+                    onClick={() => setPhotoOpen(false)}
+                    onKeyDown={(e) => { if (e.key === 'Escape') setPhotoOpen(false); }}
+                    tabIndex={0}
+                    ref={(el) => { if (el) el.focus({ preventScroll: true }); }}
+                >
+                    <button
+                        onClick={() => setPhotoOpen(false)}
+                        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 hover:scale-110 active:scale-95 transition-all duration-150 text-xl font-bold backdrop-blur-md"
+                    >
+                        ×
+                    </button>
+                    <div
+                        className="relative max-w-3xl"
+                        style={{ animation: 'opZoomIn 0.25s cubic-bezier(0.16,1,0.3,1)' }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <img
+                            src={getSafeImageUrl(official.photo)}
+                            alt={official.name}
+                            className="max-h-[82vh] max-w-full w-auto rounded-lg shadow-2xl object-contain"
+                        />
+                        <p className="text-center text-white/80 text-sm font-semibold mt-4">{official.name} — {official.position}</p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

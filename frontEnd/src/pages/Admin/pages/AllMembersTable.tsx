@@ -1,7 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
-import { Users, Search, X, Edit2, Save, Trash2, ChevronLeft, ChevronRight, RefreshCw, Church, ArrowUpDown, ArrowUp, ArrowDown, Download, GraduationCap, AlertTriangle } from "lucide-react";
+import { Search, X, Edit2, Save, Trash2, ChevronLeft, ChevronRight, RefreshCw, Church, ArrowUpDown, ArrowUp, ArrowDown, Download, GraduationCap, AlertTriangle, Eye } from "lucide-react";
 import * as XLSX from "xlsx";
+import { SkeletonTable, SkeletonSummaryBar } from "../../../components/Skeleton";
+
+
 
 const JUMUIYAS = [
   { id: "st-anthony", name: "St. Anthony" },
@@ -20,28 +23,7 @@ function formatJumuiyaName(slugOrUuid: string): string {
   return slugOrUuid.length > 20 ? slugOrUuid.slice(0, 8) + "…" : slugOrUuid;
 }
 
-function getYearOfStudy(reg: string): number {
-  const match = (reg || "").match(/(\d{2})\s*$/);
-  if (!match) return 0;
-  const admissionYear = 2000 + parseInt(match[1]);
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const cy = now.getFullYear();
-  const acaStart = month >= 9 ? cy : cy - 1;
-  const year = acaStart - admissionYear + 1;
-  return year > 4 ? 4 : year;
-}
-
-function isGraduated(reg: string): boolean {
-  const match = (reg || "").match(/(\d{2})\s*$/);
-  if (!match) return false;
-  const admissionYear = 2000 + parseInt(match[1]);
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const cy = now.getFullYear();
-  const acaStart = month >= 9 ? cy : cy - 1;
-  return acaStart - admissionYear + 1 > 4;
-}
+import { getYearOfStudy, isGraduated, getIntakeYearLabel, genderCode, isMale, isFemale } from "../../../utils/memberYear";
 
 const styles = `
   .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -61,15 +43,41 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
   const [sortBy, setSortBy] = useState<"jumuiya" | "gender">("jumuiya");
   const [sortAsc, setSortAsc] = useState(true);
   const [showExportModal, setShowExportModal] = useState(false);
-  const [exportColumns, setExportColumns] = useState({
+  const [exportColumns, setExportColumns] = useState<Record<string, boolean>>({
     RegNo: true, Name: true, Gender: true, Course: true,
     Phone: true, Year: true, Jumuiya: true, Source: true,
   });
-  const [genderFilter, setGenderFilter] = useState({ Male: true, Female: true });
-  const [yearFilter, setYearFilter] = useState({ "1st": true, "2nd": true, "3rd": true, "4th+": true });
+  const [genderFilter, setGenderFilter] = useState<Record<string, boolean>>({ Gent: true, Lady: true });
+  const [yearFilter, setYearFilter] = useState<Record<string, boolean>>({});
+  const [sourceFilter, setSourceFilter] = useState("");
+  const [genderSel, setGenderSel] = useState("");
+  const [yearSel, setYearSel] = useState("");
   const [pendingGraduates, setPendingGraduates] = useState<string[]>([]);
   const [migrating, setMigrating] = useState(false);
+  const [showPendingGraduates, setShowPendingGraduates] = useState(false);
   const itemsPerPage = 25;
+
+  const pendingGraduateMembers = useMemo(
+    () => members.filter((m: any) => pendingGraduates.includes(m.member_id || m.id)),
+    [members, pendingGraduates]
+  );
+
+  const intakeYears = useMemo(() => {
+    const set = new Set<string>();
+    members.forEach((m: any) => {
+      const label = getIntakeYearLabel(m.member_id || m.id || "");
+      if (label) set.add(label);
+    });
+    return Array.from(set).sort().reverse();
+  }, [members]);
+
+  useEffect(() => {
+    setYearFilter(prev => {
+      const next: Record<string, boolean> = {};
+      intakeYears.forEach(y => { next[y] = prev[y] ?? true; });
+      return next;
+    });
+  }, [intakeYears]);
 
   const jumuiyaOrder: Record<string, number> = {
     "St. Anthony": 0,
@@ -87,11 +95,12 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
       const activeYears = Object.entries(yearFilter).filter(([, v]) => v).map(([k]) => k);
       const filteredByGender = members.filter((row: any) => {
         const g = (row.gender || "").toLowerCase();
-        if (!((g === "male" && activeGenders.includes("Male")) ||
-              (g === "female" && activeGenders.includes("Female")) ||
+        const isGent = g === "male" || g === "gent";
+        const isLady = g === "female" || g === "lady";
+        if (!((isGent && activeGenders.includes("Gent")) ||
+              (isLady && activeGenders.includes("Lady")) ||
               (!g && activeGenders.length > 0))) return false;
-        const yr = getYearOfStudy(row.member_id || row.id || "");
-        const label = yr >= 4 ? "4th+" : yr === 3 ? "3rd" : yr === 2 ? "2nd" : yr === 1 ? "1st" : null;
+        const label = getIntakeYearLabel(row.member_id || row.id || "");
         return label ? activeYears.includes(label) : activeYears.length > 0;
       });
       const selected = Object.entries(exportColumns).filter(([, v]) => v).map(([k]) => k);
@@ -100,10 +109,10 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
         selected.forEach(k => {
           if (k === "RegNo") out.RegNo = row.member_id || row.id || "";
           else if (k === "Name") out.Name = row.name || "";
-          else if (k === "Gender") out.Gender = row.gender === "male" || row.gender === "Male" ? "Male" : row.gender === "female" || row.gender === "Female" ? "Female" : row.gender || "";
+          else if (k === "Gender") out.Gender = isMale(row.gender) ? "Gent" : isFemale(row.gender) ? "Lady" : (row.gender || "").trim() || "";
           else if (k === "Course") out.Course = row.course || "";
           else if (k === "Phone") out.Phone = row.phone || "";
-          else if (k === "Year") out.Year = row.year || row.year_of_study || "";
+          else if (k === "Year") out.Year = getYearOfStudy(row.member_id || row.id || "") || "";
           else if (k === "Jumuiya") out.Jumuiya = row.jumuiya_name || formatJumuiyaName(row.jumuiya_id);
           else if (k === "Source") out.Source = row.source === "csa" ? "CSA" : row.source === "jum" ? "Jum" : row.source || "";
         });
@@ -164,7 +173,12 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
     }
   }, []);
 
-  useEffect(() => { fetchMembers(); }, [refreshKey]);
+  useEffect(() => {
+    fetchMembers();
+    const handleUpdated = () => fetchMembers();
+    window.addEventListener("csa_members_updated", handleUpdated);
+    return () => window.removeEventListener("csa_members_updated", handleUpdated);
+  }, [refreshKey, fetchMembers]);
 
   const handleEdit = (m: any) => {
     const nameStr = m.name || "";
@@ -177,7 +191,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
       course: m.course || "",
       phone: m.phone || "",
       gender: m.gender || "",
-      year_of_study: m.year || "",
+      year_of_study: String(getYearOfStudy(m.member_id || m.id || "")) || "",
       jumuiya_id: m.jumuiya_id || "",
     });
   };
@@ -186,7 +200,36 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
     setSaving(true);
     try {
       const payload = { ...editForm };
-      if (payload.member_id === memberId) delete payload.member_id;
+      const newReg = (payload.member_id || "").trim();
+      const regChanged = newReg !== (memberId || "").trim();
+
+      // If the registration number (the PK + login username) is being changed,
+      // that is a system-wide re-key across every table. Route it through the
+      // dedicated endpoint (the generic updateMember can't re-key a member with
+      // child rows), and confirm the side-effects with the user first.
+      if (regChanged) {
+        const warn =
+          "Changing the registration number re-keys this member across the ENTIRE system " +
+          "(membership, roles, contributions, attendance, officials, payment records).\n\n" +
+          "The member will log in with the NEW number from now on; the old number stops working. " +
+          "If their password is still the default, it is reset to the new number and they will be prompted to change it.\n\n" +
+          "Continue?";
+        if (!confirm(warn)) {
+          setSaving(false);
+          return;
+        }
+        const regRes = await memberService.changeMemberReg(memberId, newReg);
+        setMembers(prev => prev.map(m =>
+          (m.member_id === memberId || m.id === memberId)
+            ? { ...m, ...regRes.data, member_id: newReg, id: newReg }
+            : m
+        ));
+        setEditingId(null);
+        setSaving(false);
+        return;
+      }
+
+      delete payload.member_id;
       const res = await memberService.updateMember(memberId, payload);
       setMembers(prev => prev.map(m =>
         (m.member_id === memberId || m.id === memberId)
@@ -195,7 +238,14 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
       ));
       setEditingId(null);
     } catch (err: any) {
-      alert(err?.response?.data?.message || "Failed to update member");
+      const msg = err?.response?.data?.message || err?.response?.data?.error || "Failed to update member";
+      // "Member not found" usually means the row's reg went stale because the
+      // member's identity changed elsewhere — refresh the list so the table
+      // reflects current keys instead of leaving the user stuck.
+      if (/not found/i.test(msg)) {
+        await fetchMembers();
+      }
+      alert(msg);
     } finally {
       setSaving(false);
     }
@@ -236,13 +286,24 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
           (m.member_id || "").toLowerCase().includes(debouncedSearch.toLowerCase())
         )
       : [...members];
+
+    if (sourceFilter) {
+      result = result.filter(m => m.source === sourceFilter);
+    }
+    if (genderSel) {
+      result = result.filter(m => (genderSel === "gent" ? isMale(m.gender) : isFemale(m.gender)));
+    }
+    if (yearSel) {
+      result = result.filter(m => getIntakeYearLabel(m.member_id || m.id || "") === yearSel);
+    }
+
     result.sort((a, b) => {
       const aJ = jumuiyaOrder[a.jumuiya_name || a.jumuiya_id] ?? 99;
       const bJ = jumuiyaOrder[b.jumuiya_name || b.jumuiya_id] ?? 99;
       const aGen = (a.gender || "").toLowerCase();
       const bGen = (b.gender || "").toLowerCase();
-      const aG = aGen === "female" ? 0 : aGen === "male" ? 1 : 2;
-      const bG = bGen === "female" ? 0 : bGen === "male" ? 1 : 2;
+      const aG = (aGen === "female" || aGen === "lady") ? 0 : (aGen === "male" || aGen === "gent") ? 1 : 2;
+      const bG = (bGen === "female" || bGen === "lady") ? 0 : (bGen === "male" || bGen === "gent") ? 1 : 2;
 
       if (sortBy === "gender") {
         if (aG !== bG) return sortAsc ? aG - bG : bG - aG;
@@ -255,7 +316,9 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
       return 0;
     });
     return result;
-  }, [members, debouncedSearch, sortBy, sortAsc]);
+  }, [members, debouncedSearch, sourceFilter, genderSel, yearSel, sortBy, sortAsc]);
+
+  const filtersActive = !!(sourceFilter || genderSel || yearSel);
 
   const { paginatedMembers, totalPages } = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -266,14 +329,16 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
     };
   }, [filtered, currentPage]);
 
+  const displayMembers = filtersActive ? filtered : paginatedMembers;
+
   const totalJum = members.filter(m => m.source === "jum").length;
   const totalCSA = members.filter(m => m.source === "csa").length;
 
   if (loading) {
     return (
-      <div className="space-y-3 animate-pulse">
-        <div className="h-8 bg-slate-200 rounded-lg w-1/4" />
-        <div className="h-48 bg-slate-100 rounded-xl" />
+      <div className="space-y-6">
+        <SkeletonSummaryBar count={3} />
+        <SkeletonTable rows={8} cols={7} />
       </div>
     );
   }
@@ -303,9 +368,29 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
           <p className="text-xs text-slate-500">
             {members.length} total member(s)
             {debouncedSearch && <span> • {filtered.length} matching</span>}
+            {filtersActive && <span> • <span className="font-semibold text-indigo-600">{filtered.length}</span> in view</span>}
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <select value={sourceFilter} onChange={e => { setSourceFilter(e.target.value); setCurrentPage(1); }}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
+            <option value="">All Sources</option>
+            <option value="csa">CSA</option>
+            <option value="jum">Jumuiya</option>
+          </select>
+          <select value={genderSel} onChange={e => { setGenderSel(e.target.value); setCurrentPage(1); }}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
+            <option value="">All Genders</option>
+            <option value="gent">Gents</option>
+            <option value="lady">Ladies</option>
+          </select>
+          <select value={yearSel} onChange={e => { setYearSel(e.target.value); setCurrentPage(1); }}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
+            <option value="">All Years</option>
+            {intakeYears.map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input value={search} onChange={(e) => setSearch(e.target.value)}
@@ -331,25 +416,73 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
       )}
 
       {pendingGraduates.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <AlertTriangle size={18} className="text-amber-600 shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-amber-800">
-                {pendingGraduates.length} graduated member(s) pending migration
-              </p>
-              <p className="text-xs text-amber-600">
-                These members have completed their 4th year. Migrate them to the Associates table to keep active records clean.
-              </p>
+        <div className="bg-amber-50 border border-amber-200 rounded-xl overflow-hidden">
+          <div className="px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <AlertTriangle size={18} className="text-amber-600 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-amber-800">
+                  {pendingGraduates.length} graduated member(s) pending migration
+                </p>
+                <p className="text-xs text-amber-600">
+                  These members have completed their 4th year. Migrate them to the Associates table to keep active records clean.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowPendingGraduates(v => !v)}
+                className="flex items-center gap-2 bg-white hover:bg-amber-100 border border-amber-300 text-amber-800 text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
+              >
+                <Eye size={14} /> {showPendingGraduates ? "Hide" : "View"}
+              </button>
+              <button
+                onClick={handleMigrateGraduates}
+                disabled={migrating}
+                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-300 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
+              >
+                <GraduationCap size={14} /> {migrating ? "Migrating..." : `Migrate ${pendingGraduates.length} to Associates`}
+              </button>
             </div>
           </div>
-          <button
-            onClick={handleMigrateGraduates}
-            disabled={migrating}
-            className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-300 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
-          >
-            <GraduationCap size={14} /> {migrating ? "Migrating..." : `Migrate ${pendingGraduates.length} to Associates`}
-          </button>
+
+          {showPendingGraduates && pendingGraduateMembers.length > 0 && (
+            <div className="border-t border-amber-200 bg-white px-5 py-4">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider w-10">No.</th>
+                    <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Reg #</th>
+                    <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Name</th>
+                    <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Jumuiya</th>
+                    <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Course</th>
+                    <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Gender</th>
+                    <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Source</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingGraduateMembers.map((m, idx) => (
+                    <tr key={m.member_id || m.id} className="border-b border-slate-100">
+                      <td className="py-2 px-3 text-slate-400 text-xs">{idx + 1}</td>
+                      <td className="py-2 px-3 font-medium text-slate-800 text-xs">{m.member_id || m.id}</td>
+                      <td className="py-2 px-3 text-slate-700 text-xs">{m.name}</td>
+                      <td className="py-2 px-3 text-slate-600 text-xs">{m.jumuiya_name || formatJumuiyaName(m.jumuiya_id)}</td>
+                      <td className="py-2 px-3 text-slate-500 text-xs">{m.course || "—"}</td>
+                      <td className="py-2 px-3 text-slate-600 text-xs">{genderCode(m.gender)}</td>
+                      <td className="py-2 px-3">
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold ${
+                          m.source === "jum" ? "bg-indigo-50 text-indigo-700" :
+                          m.source === "csa" ? "bg-cyan-50 text-cyan-700" : "bg-slate-50 text-slate-700"
+                        }`}>
+                          {m.source === "csa" ? "CSA" : "Jum"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
@@ -362,7 +495,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
       ) : (
         <>
           <style>{styles}</style>
-          <div className="rounded-xl border border-slate-200 max-h-[600px] overflow-y-auto hide-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <div className="rounded-xl border border-slate-200 max-h-[600px] overflow-x-auto overflow-y-auto hide-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             <table className="w-full text-sm">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-slate-50 border-b border-slate-200">
@@ -389,16 +522,16 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                 </tr>
               </thead>
               <tbody>
-                {paginatedMembers.map((m, idx) => {
+                {displayMembers.map((m, idx) => {
                   const memberId = m.member_id || m.id;
                   const isEditing = editingId === memberId;
-                  const rowNumber = (currentPage - 1) * itemsPerPage + idx + 1;
+                  const rowNumber = filtersActive ? idx + 1 : (currentPage - 1) * itemsPerPage + idx + 1;
                   return (
                     <tr key={memberId} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                       <td className="py-2.5 px-3 text-slate-400 text-xs">{rowNumber}</td>
                       <td className="py-2.5 px-3">
                         {isEditing ? (
-                          <input value={editForm.member_id} onChange={e => setEditForm(p => ({ ...p, member_id: e.target.value }))}
+                          <input value={editForm.member_id} onChange={e => setEditForm((p: any) => ({ ...p, member_id: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-28 font-mono" />
                         ) : (
                           <span className="font-medium text-slate-800 text-xs">{memberId}</span>
@@ -407,9 +540,9 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                       <td className="py-2.5 px-3">
                         {isEditing ? (
                           <div className="flex gap-1">
-                            <input value={editForm.first_name} onChange={e => setEditForm(p => ({ ...p, first_name: e.target.value }))}
+                            <input value={editForm.first_name} onChange={e => setEditForm((p: any) => ({ ...p, first_name: e.target.value }))}
                               placeholder="First" className="text-xs border border-slate-200 rounded px-1.5 py-1 w-20" />
-                            <input value={editForm.last_name} onChange={e => setEditForm(p => ({ ...p, last_name: e.target.value }))}
+                            <input value={editForm.last_name} onChange={e => setEditForm((p: any) => ({ ...p, last_name: e.target.value }))}
                               placeholder="Last" className="text-xs border border-slate-200 rounded px-1.5 py-1 w-20" />
                           </div>
                         ) : (
@@ -418,7 +551,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                       </td>
                       <td className="py-2.5 px-3">
                         {isEditing ? (
-                          <select value={editForm.jumuiya_id} onChange={e => setEditForm(p => ({ ...p, jumuiya_id: e.target.value }))}
+                          <select value={editForm.jumuiya_id} onChange={e => setEditForm((p: any) => ({ ...p, jumuiya_id: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-28">
                             <option value="">— None —</option>
                             {JUMUIYAS.map(j => (
@@ -440,21 +573,21 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                       </td>
                       <td className="py-2.5 px-3">
                         {isEditing ? (
-                          <select value={editForm.gender} onChange={e => setEditForm(p => ({ ...p, gender: e.target.value }))}
+                          <select value={editForm.gender} onChange={e => setEditForm((p: any) => ({ ...p, gender: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1">
                             <option value="">—</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
+                            <option value="gent">Gent</option>
+                            <option value="lady">Lady</option>
                           </select>
                         ) : (
-                          <span className={`text-xs font-semibold ${m.gender === "male" || m.gender === "Male" ? "text-blue-600" : m.gender === "female" || m.gender === "Female" ? "text-pink-600" : "text-slate-400"}`}>
-                            {m.gender === "male" || m.gender === "Male" ? "M" : m.gender === "female" || m.gender === "Female" ? "W" : "—"}
+                          <span className={`text-xs font-semibold ${genderCode(m.gender) === "M" ? "text-blue-600" : genderCode(m.gender) === "L" ? "text-pink-600" : "text-slate-400"}`}>
+                            {genderCode(m.gender)}
                           </span>
                         )}
                       </td>
                       <td className="py-2.5 px-3">
                         {isEditing ? (
-                          <input value={editForm.course} onChange={e => setEditForm(p => ({ ...p, course: e.target.value }))}
+                          <input value={editForm.course} onChange={e => setEditForm((p: any) => ({ ...p, course: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-24" />
                         ) : (
                           <span className="text-slate-500 text-xs">{m.course || "—"}</span>
@@ -462,7 +595,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                       </td>
                       <td className="py-2.5 px-3">
                         {isEditing ? (
-                          <input value={editForm.phone} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))}
+                          <input value={editForm.phone} onChange={e => setEditForm((p: any) => ({ ...p, phone: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-20" />
                         ) : (
                           <span className="text-slate-500 text-xs">{m.phone || "—"}</span>
@@ -470,10 +603,10 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                       </td>
                       <td className="py-2.5 px-3">
                         {isEditing ? (
-                          <input value={editForm.year_of_study} onChange={e => setEditForm(p => ({ ...p, year_of_study: e.target.value }))}
+                          <input value={editForm.year_of_study} onChange={e => setEditForm((p: any) => ({ ...p, year_of_study: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-16" />
                         ) : (
-                          <span className="text-slate-500 text-xs">{m.year || "—"}</span>
+                          <span className="text-slate-500 text-xs">{getYearOfStudy(memberId) || "—"}</span>
                         )}
                       </td>
                       <td className="py-2.5 px-3">
@@ -508,7 +641,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
             </table>
           </div>
 
-          {totalPages > 1 && (
+          {!filtersActive && totalPages > 1 && (
             <div className="flex items-center justify-between bg-white rounded-lg border border-slate-200 p-4">
               <p className="text-xs text-slate-500 font-medium">
                 Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filtered.length)} of {filtered.length}
@@ -574,7 +707,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                       onChange={() => setGenderFilter(prev => ({ ...prev, [g]: !prev[g] }))}
                       className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                     />
-                    <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium">{g === "Male" ? "Male" : "Female"}</span>
+                    <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium">{g === "Gent" ? "Gents" : "Ladies"}</span>
                   </label>
                 ))}
               </div>

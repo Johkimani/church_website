@@ -1,6 +1,9 @@
 import { db } from "../../Configs/dbConfig.js";
 import logger from "../../logger/winston.js";
-import { sendSms } from "../../services/smsService.js";
+import {
+  sendOrderPaymentConfirmation,
+  sendHirePaymentConfirmation,
+} from "../../services/notificationService.js";
 
 /**
  * SAFARICOM STK PUSH CALLBACK
@@ -10,6 +13,20 @@ import { sendSms } from "../../services/smsService.js";
  *   req.body.Body.stkCallback.CheckoutRequestID
  *   req.body.Body.stkCallback.CallbackMetadata.Item (array of {Name, Value})
  */
+/**
+ * Verify a callback references a payment this server actually initiated.
+ * Forged callbacks carrying a made-up CheckoutRequestID are rejected here,
+ * before any order/hire/booking is marked paid.
+ */
+const isKnownCheckout = async (checkoutId) => {
+  if (!checkoutId) return false;
+  const res = await db.query(
+    `SELECT 1 FROM mpesa_request WHERE checkout_id = $1 LIMIT 1`,
+    [checkoutId],
+  );
+  return res.rows.length > 0;
+};
+
 export const handleCallback = async (req, res) => {
   // Always respond immediately to Safaricom to prevent retries
   res.status(200).json({ ResultCode: 0, ResultDesc: "Accepted" });
@@ -25,12 +42,20 @@ export const handleCallback = async (req, res) => {
     const { ResultCode, ResultDesc, CheckoutRequestID, MerchantRequestID } =
       stkCallback;
 
+    // Reject callbacks for payments we never initiated (forged requests).
+    if (!(await isKnownCheckout(CheckoutRequestID))) {
+      logger.warn(
+        `STK callback ignored: unknown CheckoutRequestID ${CheckoutRequestID}`,
+      );
+      return;
+    }
+
     logger.info(
       `STK Callback received: CheckoutID=${CheckoutRequestID}, ResultCode=${ResultCode}`,
     );
 
     if (ResultCode === 0) {
-      // ✅ Payment succeeded — extract metadata items
+      // Payment succeeded — extract metadata items
       const items = stkCallback.CallbackMetadata?.Item || [];
       const getMeta = (name) =>
         items.find((i) => i.Name === name)?.Value ?? null;
@@ -38,6 +63,30 @@ export const handleCallback = async (req, res) => {
       const mpesaReceipt = getMeta("MpesaReceiptNumber");
       const amount = getMeta("Amount");
       const phoneNumber = getMeta("PhoneNumber");
+
+      // AMOUNT RECONCILIATION — Safaricom reports what was actually paid.
+      // Compare it against the amount this server demanded when initiating
+      // the push. Anything less is an underpayment: record it for audit but
+      // NEVER fulfil orders/hires/bookings for it.
+      const pendingRes = await db.query(
+        `SELECT amount FROM mpesa_request WHERE checkout_id = $1 LIMIT 1`,
+        [CheckoutRequestID],
+      );
+      const expected = Number(pendingRes.rows[0]?.amount ?? 0);
+      const paidAmount = Number(amount ?? 0);
+      if (expected > 0 && paidAmount + 0.99 < expected) {
+        logger.warn(
+          `STK callback UNDERPAID: CheckoutID=${CheckoutRequestID} expected=${expected} paid=${paidAmount} — fulfilment blocked`,
+        );
+        await db.query(
+          `UPDATE mpesa_request
+              SET status = 'underpaid', result_code = $1, result_desc = $2,
+                  amount = $3, mpesa_receipt = $4, updated_at = CURRENT_TIMESTAMP
+            WHERE checkout_id = $5`,
+          [ResultCode, `Underpaid: expected ${expected}, paid ${paidAmount}`, amount, mpesaReceipt, CheckoutRequestID],
+        );
+        return;
+      }
 
       // 1. Update or insert mpesa_request row
       await db.query(
@@ -64,10 +113,11 @@ export const handleCallback = async (req, res) => {
       );
 
       // 2. Update orders that were waiting on this checkout_id
-      await db.query(
+      const orderUpdate = await db.query(
         `UPDATE orders
             SET status = 'paid', mpesa_receipt = $1, updated_at = CURRENT_TIMESTAMP
-          WHERE checkout_id = $2 AND status = 'pending'`,
+          WHERE checkout_id = $2 AND status = 'pending'
+          RETURNING *`,
         [mpesaReceipt, CheckoutRequestID],
       );
 
@@ -77,7 +127,7 @@ export const handleCallback = async (req, res) => {
             SET status = 'paid', payment_status = 'paid', payment_method = 'mpesa',
                 mpesa_receipt = $1, paid_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
           WHERE mpesa_checkout_id = $2 AND payment_status = 'pending'
-          RETURNING hire_reference, customer_name, phone_number, item_name, quantity`,
+          RETURNING hire_reference, customer_name, phone_number, email, item_name, quantity, total_cost`,
         [mpesaReceipt, CheckoutRequestID],
       );
 
@@ -103,7 +153,7 @@ export const handleCallback = async (req, res) => {
         }
       }
 
-      // 5. Send SMS confirmation for hire requests
+      // 5. Send payment confirmation notifications (fire-and-forget, never throws)
       if (hireUpdate.rows.length > 0) {
         const hire = hireUpdate.rows[0];
         try {
@@ -117,20 +167,34 @@ export const handleCallback = async (req, res) => {
           const pickupLocation = settings.hire_pickup_location || 'the church premises';
           const pickupInstructions = settings.hire_pickup_instructions || 'We will contact you with the exact pickup time. Call the admin for any inquiries.';
 
-          const message = `Payment of KES confirmed for ${hire.item_name} × ${hire.quantity} (Ref: ${hire.hire_reference}). Pickup location: ${pickupLocation}. ${pickupInstructions} Admin contact: ${adminPhone}`;
-
-          await sendSms(message, hire.phone_number);
-          logger.info(`SMS confirmation sent to ${hire.phone_number} for hire ${hire.hire_reference}`);
+          await sendHirePaymentConfirmation({
+            hire,
+            mpesaReceipt,
+            pickupLocation,
+            pickupInstructions,
+            adminPhone,
+          });
+          logger.info(`Hire confirmation sent to ${hire.phone_number} for hire ${hire.hire_reference}`);
         } catch (smsErr) {
-          logger.error(`Failed to send hire confirmation SMS: ${smsErr.message}`);
+          logger.error(`Failed to send hire confirmation: ${smsErr.message}`);
+        }
+      }
+
+      if (orderUpdate.rows.length > 0) {
+        const order = orderUpdate.rows[0];
+        try {
+          await sendOrderPaymentConfirmation({ order, mpesaReceipt });
+          logger.info(`Order confirmation sent for order ${order.order_reference || order.id}`);
+        } catch (notifErr) {
+          logger.error(`Failed to send order confirmation: ${notifErr.message}`);
         }
       }
 
       logger.info(
-        `✅ Payment recorded: CheckoutID=${CheckoutRequestID}, Receipt=${mpesaReceipt}`,
+        `Payment recorded: CheckoutID=${CheckoutRequestID}, Receipt=${mpesaReceipt}`,
       );
     } else {
-      // ❌ Payment failed / cancelled
+      // Payment failed / cancelled
       await db.query(
         `INSERT INTO mpesa_request
           (checkout_id, merchant_request_id, status, result_code, result_desc)
@@ -159,7 +223,7 @@ export const handleCallback = async (req, res) => {
       );
 
       logger.warn(
-        `❌ Payment failed: CheckoutID=${CheckoutRequestID}, Reason=${ResultDesc}`,
+        `Payment failed: CheckoutID=${CheckoutRequestID}, Reason=${ResultDesc}`,
       );
     }
   } catch (error) {
@@ -219,8 +283,12 @@ export const waitForPaymentResult = async (
 export const initiateSTK = async (userId, phoneNumber, amount) => {
   const { MpesaService } = await import("../../services/mpesa.js");
 
-  const callbackUrl =
-    process.env.CALLBACK_URL || "https://example.com/api/v1/stkPush/callback";
+  const callbackUrl = process.env.CALLBACK_URL;
+  if (!callbackUrl) {
+    throw new Error(
+      "CALLBACK_URL is not configured. Set the production callback URL environment variable before initiating M-Pesa payments.",
+    );
+  }
   const response = await MpesaService.stkPush(phoneNumber, amount, callbackUrl);
 
   if (!response || !response.CheckoutRequestID) {

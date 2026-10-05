@@ -10,6 +10,7 @@ import {
   syncCurrentTerm,
   formatPhoneForExcel 
 } from '../utils/helpers.js';
+import { isOfficial } from '../middlewares/requireRole.js';
 import { autoAssignRoleForOfficial, removeRoleForOfficial } from '../utils/positionToRole.js';
 import logger from "../logger/winston.js";
 import { emitSocketEvent } from "../socket/index.js";
@@ -74,10 +75,14 @@ export const VALID_JUMUIYAS = [
 export const VALID_ROLES = [
   'Chairperson',
   'Ass Chairperson',
+  'Ass. Chairperson',
+  'Vice Chairperson',
+  'Vice Chair',
   'Organizing Secretary',
   'Treasurer',
   'Secretary',
   'Ass Secretary',
+  'Ass. Secretary',
   'Liturgist',
   'Ass Liturgist'
 ];
@@ -123,7 +128,7 @@ export const getAllJumuiyaOfficials = async (req, res) => {
     let params = [];
 
     const SELECT_COLS = `o.id, o.name, o.category, o.photo, o.position, o.contact, o.term_of_service, o.created_at, o.status,
-               o.reg_number,
+               ${isOfficial(req) ? "o.reg_number," : ""}
                et.name as term_name, et.year as term_year`;
 
     if (termId) {
@@ -201,7 +206,10 @@ export const getJumuiyaOfficialById = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Official not found' });
     }
 
-    res.json({ success: true, data: result.rows[0] });
+    const row = result.rows[0];
+    if (!isOfficial(req)) delete row.reg_number;
+
+    res.json({ success: true, data: row });
   } catch (error) {
     logger.error('Error fetching jumuiya official: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to fetch official' });
@@ -210,8 +218,9 @@ export const getJumuiyaOfficialById = async (req, res) => {
 
 export const createJumuiyaOfficial = async (req, res) => {
   try {
-    const { name, category, position, contact, term_of_service, reg_number } = req.body;
-    logger.info(`Creating Jumuiya official: ${name}, ${category}, ${position}`);
+    const { name, category, position, contact, term_of_service, reg_number, historical } = req.body;
+    const isHistorical = historical === 'true' || historical === true;
+    logger.info(`Creating Jumuiya official: ${name}, ${category}, ${position}${isHistorical ? ' (historical)' : ''}`);
 
     if (!name || !category || !position) {
         logger.warn('Missing required fields for Jumuiya official');
@@ -234,25 +243,74 @@ export const createJumuiyaOfficial = async (req, res) => {
       return res.status(400).json({ success: false, message: `Invalid Role. Must be one of: ${VALID_ROLES.join(', ')}` });
     }
 
-    // Validate reg_number if provided
     let validatedRegNumber = null;
-    if (reg_number && reg_number.trim()) {
-      const lookup = await resolveMemberForRegNumber(reg_number);
-      if (lookup?.error) {
-        return res.status(400).json({ success: false, message: lookup.error });
+
+    if (isHistorical) {
+      // Historical mode: reg_number optional, skip all active-official checks
+      if (reg_number && reg_number.trim()) {
+        const lookup = await resolveMemberForRegNumber(reg_number);
+        if (!lookup?.error) {
+          const memberJumuiyaSlug = toJumuiyaSlug(lookup.member.jumuiya_slug || lookup.member.jumuiya_name || lookup.member.jumuiya_id);
+          const targetJumuiyaSlug = toJumuiyaSlug(category);
+          if (memberJumuiyaSlug && targetJumuiyaSlug && memberJumuiyaSlug !== targetJumuiyaSlug) {
+            return res.status(409).json({
+              success: false,
+              message: `This member belongs to ${lookup.member.jumuiya_name || 'another Jumuiya'} and cannot be assigned to ${category}`
+            });
+          }
+          validatedRegNumber = lookup.member.member_id;
+        }
       }
 
-      const memberJumuiyaSlug = toJumuiyaSlug(lookup.member.jumuiya_slug || lookup.member.jumuiya_name || lookup.member.jumuiya_id);
-      const targetJumuiyaSlug = toJumuiyaSlug(category);
-      if (memberJumuiyaSlug && targetJumuiyaSlug && memberJumuiyaSlug !== targetJumuiyaSlug) {
-        return res.status(409).json({
-          success: false,
-          message: `This member belongs to ${lookup.member.jumuiya_name || 'another Jumuiya'} and cannot be assigned to ${category}`
-        });
+      // Resolve or create election_term for this historical term_of_service
+      let termId = null;
+      if (term_of_service && term_of_service.trim()) {
+        let termResult = await pool.query(
+          'SELECT id FROM election_terms WHERE name = $1 LIMIT 1',
+          [term_of_service.trim()]
+        );
+        if (termResult.rows.length === 0) {
+          termResult = await pool.query(
+            `INSERT INTO election_terms (name, year, start_date, is_current)
+             VALUES ($1, $1, CURRENT_DATE, FALSE) RETURNING id`,
+            [term_of_service.trim()]
+          );
+        }
+        termId = termResult.rows[0].id;
       }
 
-      validatedRegNumber = lookup.member.member_id;
+      let photoUrl = req.file ? formatPhotoUrl(req.file) : null;
+
+      const result = await pool.query(
+        `INSERT INTO jumuiya_officials (name, category, position, contact, photo, election_term_id, status, term_of_service, reg_number)
+         VALUES ($1, $2, $3, $4, $5, $6, 'archived', $7, $8) RETURNING *`,
+        [name, category, position, normalizedContact || null, photoUrl, termId, term_of_service || null, validatedRegNumber]
+      );
+
+      emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "create_jumuiya", data: result.rows[0] });
+      return res.status(201).json({ success: true, data: result.rows[0] });
     }
+
+    // ── Normal (non-historical) path ──
+
+    if (!reg_number || !reg_number.trim()) {
+      return res.status(400).json({ success: false, message: 'Registration number is required — the official must be a registered member' });
+    }
+
+    // Validate reg_number exists in members table
+    const lookup = await resolveMemberForRegNumber(reg_number);
+    if (lookup?.error) {
+      return res.status(400).json({ success: false, message: lookup.error });
+    }
+    const memberJumuiyaSlug = toJumuiyaSlug(lookup.member.jumuiya_slug || lookup.member.jumuiya_name || lookup.member.jumuiya_id);
+    const targetJumuiyaSlug = toJumuiyaSlug(category);
+    if (memberJumuiyaSlug && targetJumuiyaSlug && memberJumuiyaSlug !== targetJumuiyaSlug) {
+      return res.status(409).json({
+        success: false,
+        message: `This member belongs to ${lookup.member.jumuiya_name || 'another Jumuiya'} and cannot be assigned to ${category}`
+      });
+    }
+    const validatedRegNumberNormal = lookup.member.member_id;
 
     // Build checking promises to run in parallel
     const promises = [
@@ -294,14 +352,18 @@ export const createJumuiyaOfficial = async (req, res) => {
     const result = await pool.query(
       `INSERT INTO jumuiya_officials (name, category, position, contact, photo, election_term_id, status, term_of_service, reg_number) 
        VALUES ($1, $2, $3, $4, $5, $6, 'active', $7, $8) RETURNING *`,
-      [name, category, position, normalizedContact || null, photoUrl, termId, term_of_service || null, validatedRegNumber]
+      [name, category, position, normalizedContact || null, photoUrl, termId, term_of_service || null, validatedRegNumberNormal]
     );
 
-    if (validatedRegNumber && position) {
+    let roleWarning = null;
+    if (validatedRegNumberNormal && position) {
       const roleResult = await autoAssignRoleForOfficial(
-        validatedRegNumber, position, true, category, req.user?.member_id || null
+        validatedRegNumberNormal, position, true, category, req.user?.member_id || null
       );
-      if (roleResult) {
+      if (roleResult?.status === 'conflict') {
+        roleWarning = roleResult.message;
+        logger.warn(`Role not assigned for jumuiya official ${name}: ${roleResult.message}`);
+      } else if (roleResult) {
         logger.info(`Auto-assigned role for jumuiya official ${name}: ${JSON.stringify(roleResult)}`);
       }
     }
@@ -310,7 +372,7 @@ export const createJumuiyaOfficial = async (req, res) => {
 
     emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "create_jumuiya", data: result.rows[0] });
 
-    res.status(201).json({ success: true, data: result.rows[0] });
+    res.status(201).json({ success: true, data: result.rows[0], ...(roleWarning ? { warning: roleWarning } : {}) });
   } catch (error) {
     logger.error('Error creating jumuiya official: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to create official' });
@@ -371,26 +433,34 @@ export const updateJumuiyaOfficial = async (req, res) => {
       }
 
       validatedRegNumber = lookup.member.member_id;
-    } else if (validatedRegNumber) {
-      const lookup = await resolveMemberForRegNumber(validatedRegNumber);
-      if (lookup?.error) {
-        return res.status(400).json({ success: false, message: lookup.error });
-      }
-
-      const memberJumuiyaSlug = toJumuiyaSlug(lookup.member.jumuiya_slug || lookup.member.jumuiya_name || lookup.member.jumuiya_id);
-      const targetJumuiyaSlug = toJumuiyaSlug(currentCategory);
-      if (memberJumuiyaSlug && targetJumuiyaSlug && memberJumuiyaSlug !== targetJumuiyaSlug) {
-        return res.status(409).json({
-          success: false,
-          message: `This member belongs to ${lookup.member.jumuiya_name || 'another Jumuiya'} and cannot be assigned to ${currentCategory}`
-        });
-      }
-
-      validatedRegNumber = lookup.member.member_id;
     }
 
-    // Limit check for category+position combo during an update
-    if (category || position) {
+    if (!validatedRegNumber && normalizedContact) {
+      const cleanPhone = normalizedContact.replace(/[^0-9]/g, '');
+      if (cleanPhone.length >= 8) {
+        const phoneMatch = await pool.query(
+          `SELECT member_id FROM members WHERE phone LIKE '%' || $1 || '%' LIMIT 1`,
+          [cleanPhone.slice(-8)]
+        );
+        if (phoneMatch.rows.length > 0) validatedRegNumber = phoneMatch.rows[0].member_id;
+      }
+    }
+
+    if (!validatedRegNumber && name) {
+      const nameMatch = await pool.query(
+        `SELECT member_id FROM members 
+         WHERE (first_name || ' ' || last_name) ILIKE $1 
+            OR (last_name || ' ' || first_name) ILIKE $1 
+         LIMIT 1`,
+        [`%${name.trim()}%`]
+      );
+      if (nameMatch.rows.length > 0) validatedRegNumber = nameMatch.rows[0].member_id;
+    }
+
+    // Position uniqueness — skip for archived officials
+    const isArchivedUpdate = existing.rows[0].status === 'archived';
+
+    if (!isArchivedUpdate && (category || position)) {
       const posDup = await pool.query(
         "SELECT name FROM jumuiya_officials WHERE category = $1 AND position = $2 AND id != $3 AND (status = 'active' OR status IS NULL)",
         [currentCategory, currentPosition, id]
@@ -427,39 +497,49 @@ export const updateJumuiyaOfficial = async (req, res) => {
       [name, category, position, normalizedContact, photoUrl, term_of_service || null, validatedRegNumber, id]
     );
 
-    const oldPosition = existing.rows[0].position;
-    const oldRegNumber = existing.rows[0].reg_number;
-    const newPosition = position || oldPosition;
-    const newRegNumber = validatedRegNumber || oldRegNumber;
+    // Role assignment — skip for archived officials
+    let roleWarning = null;
+    if (!isArchivedUpdate) {
+      const oldPosition = existing.rows[0].position;
+      const oldRegNumber = existing.rows[0].reg_number;
+      const newPosition = position || oldPosition;
+      const newRegNumber = validatedRegNumber || oldRegNumber;
 
-    if (oldPosition !== newPosition || oldRegNumber !== newRegNumber) {
-      if (oldPosition && oldRegNumber) {
-        await removeRoleForOfficial(oldRegNumber, oldPosition, true);
-      }
-      if (newRegNumber && newPosition) {
+      if (oldPosition !== newPosition || oldRegNumber !== newRegNumber) {
+        if (oldPosition && oldRegNumber) {
+          await removeRoleForOfficial(oldRegNumber, oldPosition, true);
+        }
+        if (newRegNumber && newPosition) {
+          const roleResult = await autoAssignRoleForOfficial(
+            newRegNumber, newPosition, true, result.rows[0].category, req.user?.member_id || null
+          );
+          if (roleResult?.status === 'conflict') {
+            roleWarning = roleResult.message;
+            logger.warn(`Role not assigned on update: ${roleResult.message}`);
+          } else if (roleResult) {
+            logger.info(`Auto-assigned role for updated jumuiya official: ${JSON.stringify(roleResult)}`);
+          }
+        }
+      } else if (validatedRegNumber && position && oldPosition === position) {
         const roleResult = await autoAssignRoleForOfficial(
-          newRegNumber, newPosition, true, result.rows[0].category, req.user?.member_id || null
+          validatedRegNumber, position, true, result.rows[0].category, req.user?.member_id || null
         );
-        if (roleResult) {
-          logger.info(`Auto-assigned role for updated jumuiya official: ${JSON.stringify(roleResult)}`);
+        if (roleResult?.status === 'conflict') {
+          roleWarning = roleResult.message;
+          logger.warn(`Role not assigned on update: ${roleResult.message}`);
+        } else if (roleResult) {
+          logger.info(`Re-assigned role for jumuiya official: ${JSON.stringify(roleResult)}`);
         }
       }
-    } else if (validatedRegNumber && position && oldPosition === position) {
-      const roleResult = await autoAssignRoleForOfficial(
-        validatedRegNumber, position, true, result.rows[0].category, req.user?.member_id || null
-      );
-      if (roleResult) {
-        logger.info(`Re-assigned role for jumuiya official: ${JSON.stringify(roleResult)}`);
-      }
-    }
 
-    if (term_of_service) {
-      await syncCurrentTerm(term_of_service);
+      if (term_of_service) {
+        await syncCurrentTerm(term_of_service);
+      }
     }
 
     emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "update_jumuiya", id, data: result.rows[0] });
 
-    res.json({ success: true, data: result.rows[0] });
+    res.json({ success: true, data: result.rows[0], ...(roleWarning ? { warning: roleWarning } : {}) });
   } catch (error) {
     logger.error('Error updating jumuiya official: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to update official' });
@@ -484,11 +564,6 @@ export const deleteJumuiyaOfficial = async (req, res) => {
         const filePath = path.join(process.cwd(), 'localFileUploads', path.basename(official.photo));
         deleteFile(filePath);
       }
-    }
-
-
-    if (official.reg_number && official.position) {
-      await removeRoleForOfficial(official.reg_number, official.position, true);
     }
 
     await pool.query('DELETE FROM jumuiya_officials WHERE id = $1', [id]);
@@ -734,12 +809,23 @@ export const getJumuiyaOfficialsByTerm = async (req, res) => {
         LEFT JOIN election_terms et ON o.election_term_id = et.id
         WHERE o.election_term_id = $1 AND o.status = 'archived'`;
       params = [termId];
+      const category = req.query.category;
+      if (category) {
+        queryBase += ` AND o.category = $2`;
+        params.push(category);
+      }
     } else if (req.query.only_archived === 'true') {
       queryBase = `
         FROM jumuiya_officials o
         LEFT JOIN election_terms et ON o.election_term_id = et.id
         WHERE o.status = 'archived'`;
       params = [];
+
+      const category = req.query.category;
+      if (category) {
+        queryBase += ` AND o.category = $${params.length + 1}`;
+        params.push(category);
+      }
     } else if (includeArchived) {
       queryBase = `
         FROM jumuiya_officials o
@@ -764,6 +850,10 @@ export const getJumuiyaOfficialsByTerm = async (req, res) => {
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     
     const result = await pool.query(dataQuery, [...params, limit, offset]);
+
+    if (!isOfficial(req)) {
+      result.rows.forEach(r => delete r.reg_number);
+    }
 
     res.json({ 
       success: true, 

@@ -1,17 +1,19 @@
 import { useState, useEffect, useMemo, useCallback, memo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Users, ArrowLeft, Church, CheckCircle, AlertTriangle, RefreshCw, UserPlus, BarChart3, Upload, Search, GitMerge, ClipboardList, ThumbsDown, Edit2, Save, Trash2, GraduationCap, Image, Bell, BookOpen, UserCheck, Calendar, ListChecks, PieChart } from "lucide-react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { Users, ArrowLeft, Church, RefreshCw, UserPlus, Upload, Search, ThumbsDown, Edit2, Save, Trash2, GraduationCap, UserCheck, PieChart } from "lucide-react";
 import { memberService } from "../../../api/jumuiyaMemberService";
+import { getYearOfStudy, isMale, isFemale, genderCode } from "../../../utils/memberYear";
+import { useAuth } from "../../../context/AuthContext";
 import RegistrationDashboard from "../../Jumuiya/admin/RegistrationDashboard";
 import MemberImportForm from "../../Jumuiya/admin/MemberImportForm";
 import MemberReview from "../../Jumuiya/admin/MemberReview";
-import OrganizationPanel from "../../Jumuiya/admin/OrganizationPanel";
 import MembersList from "../../Jumuiya/admin/MembersList";
 import CSADistributionCenter from "./CSADistributionCenter";
 import CsaAllocationsApproval from "../../Jumuiya/components/CsaAllocationsApproval";
 import AllMembersTable from "./AllMembersTable";
 import AssociatesTable from "./AssociatesTable";
-import JumuiyaQuickManager from "./JumuiyaQuickManager";
+import { SkeletonCardGrid, SkeletonSummaryBar } from "../../../components/Skeleton";
+
 
 // Improved cache with longer TTL (60s) and memory efficiency
 let statsCache: { data: Record<string, any>; ts: number } | null = null;
@@ -36,45 +38,27 @@ const JUMUIYAS = [
 
 type Tab = "admissions" | "jumuiyas" | "all-members" | "associates";
 
-type SubTab = "dashboard" | "import" | "review" | "organize" | "results" | "allocations";
+type SubTab = "dashboard" | "review" | "results" | "allocations" | "import" | "associates";
 
 const subTabMeta: Record<SubTab, { label: string; icon: React.ReactNode; description: string }> = {
   dashboard: { label: "Dashboard", icon: <PieChart size={16} />, description: "Overview and registration statistics" },
-  import: { label: "New Admission", icon: <Upload size={16} />, description: "Import and add new members" },
-  organize: { label: "Organize", icon: <GitMerge size={16} />, description: "Assign members to groups" },
-  review: { label: "Review", icon: <ClipboardList size={16} />, description: "Review and approve pending registrations" },
+  review: { label: "Active Review", icon: <UserCheck size={16} />, description: "Review and edit active registered members" },
   results: { label: "All Members", icon: <Users size={16} />, description: "View and manage all registered members" },
   allocations: { label: "Allocations", icon: <UserCheck size={16} />, description: "Approve CSA member allocations" },
+  import: { label: "Manual Admission", icon: <Upload size={16} />, description: "Import and add new members manually" },
+  associates: { label: "Associates", icon: <GraduationCap size={16} />, description: "View graduated associates from this Jumuiya" },
 };
-
-function StatCard({ label, value, icon, bg, color }: { label: string; value: string | number; icon: React.ReactNode; bg: string; color: string }) {
-  return (
-    <div className={`${bg} rounded-xl border border-slate-200 p-4`}>
-      <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center`} style={{ background: color + "20", color }}>
-          {icon}
-        </div>
-        <div>
-          <p className="text-2xl font-bold text-slate-800">{value}</p>
-          <p className="text-xs text-slate-500 font-medium">{label}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const StatCardMemo = memo(StatCard);
 
 function SummaryBar({ stats }: { stats: Record<string, any> }) {
   const total = Object.values(stats).reduce((sum: number, s: any) => sum + (s?.totalMembers || 0), 0);
   const totalJum = Object.values(stats).reduce((sum: number, s: any) => sum + (s?.jum?.total || 0), 0);
   const totalCSA = Object.values(stats).reduce((sum: number, s: any) => sum + (s?.csa?.total || 0), 0);
   const totalMale = Object.values(stats).reduce((sum: number, s: any) => {
-    const m = s?.genderBreakdown?.find((g: any) => g.gender === "Male" || g.gender === "male");
+    const m = s?.genderBreakdown?.find((g: any) => isMale(g.gender));
     return sum + (m?.count || 0);
   }, 0);
   const totalFemale = Object.values(stats).reduce((sum: number, s: any) => {
-    const f = s?.genderBreakdown?.find((g: any) => g.gender === "Female" || g.gender === "female");
+    const f = s?.genderBreakdown?.find((g: any) => isFemale(g.gender));
     return sum + (f?.count || 0);
   }, 0);
 
@@ -98,7 +82,7 @@ function SummaryBar({ stats }: { stats: Record<string, any> }) {
           <span className="text-slate-300">|</span>
           <span className="text-pink-600">♀ {totalFemale}</span>
         </p>
-        <p className="text-xs text-slate-500 font-medium">Men / Women</p>
+        <p className="text-xs text-slate-500 font-medium">Gents / Ladies</p>
       </div>
     </div>
   );
@@ -106,17 +90,25 @@ function SummaryBar({ stats }: { stats: Record<string, any> }) {
 
 const SummaryBarMemo = memo(SummaryBar);
 
-const MemberManagementView: React.FC<{ jumuiyaId: string; jumuiyaName: string; jumuiyaColor: string }> = ({ jumuiyaId, jumuiyaName, jumuiyaColor }) => {
+const MemberManagementView: React.FC<{ jumuiyaId: string; jumuiyaName: string; jumuiyaColor: string; isJumuiyaOfficial?: boolean; canImport?: boolean }> = ({ jumuiyaId, jumuiyaName, jumuiyaColor, isJumuiyaOfficial, canImport }) => {
   const [activeTab, setActiveTab] = useState<SubTab>("dashboard");
 
-  const currentMeta = subTabMeta[activeTab];
+  const visibleTabs = useMemo(() => {
+    const all = (Object.entries(subTabMeta) as [SubTab, typeof subTabMeta[SubTab]][]);
+    if (canImport) return all;
+    return all.filter(([id]) => id !== "import");
+  }, [canImport]);
+
+  useEffect(() => {
+    if (!canImport && activeTab === "import") setActiveTab("dashboard");
+  }, [canImport, activeTab]);
 
   return (
     <div>
       {/* Main Tabs */}
       <div className="bg-white rounded-2xl border border-slate-200 p-2 mb-6">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
-          {(Object.entries(subTabMeta) as [SubTab, typeof subTabMeta[SubTab]][]).map(([id, meta]) => {
+        <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-1">
+          {visibleTabs.map(([id, meta]) => {
             const isActive = activeTab === id;
             return (
               <button
@@ -141,26 +133,28 @@ const MemberManagementView: React.FC<{ jumuiyaId: string; jumuiyaName: string; j
       </div>
 
       {activeTab === "dashboard" && <RegistrationDashboard jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} jumuiyaColor={jumuiyaColor} />}
-      {activeTab === "import" && <MemberImportForm jumuiyaId={jumuiyaId} />}
       {activeTab === "review" && <MemberReview jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />}
-      {activeTab === "organize" && <OrganizationPanel jumuiyaId={jumuiyaId} />}
       {activeTab === "results" && <MembersList jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} />}
       {activeTab === "allocations" && <CsaAllocationsApproval jumuiyaId={jumuiyaId} jumuiyaName={jumuiyaName} jumuiyaColor={jumuiyaColor} />}
+      {activeTab === "import" && <MemberImportForm jumuiyaId={jumuiyaId} />}
+      {activeTab === "associates" && <AssociatesTable refreshKey={0} jumuiyaId={jumuiyaId} />}
     </div>
   );
 };
 
-function JumuiyaCard({ j, stats, onClick }: { j: typeof JUMUIYAS[0]; stats: any; onClick: () => void }) {
+function JumuiyaCard({ j, stats, onClick }: { j: typeof JUMUIYAS[0]; stats: any; onClick?: () => void }) {
   const s = stats;
   const totalMembers = s?.totalMembers || 0;
   const hasData = totalMembers > 0;
-  const maleTotal = (s?.genderBreakdown?.find((g: any) => g.gender === "Male" || g.gender === "male")?.count || 0);
-  const femaleTotal = (s?.genderBreakdown?.find((g: any) => g.gender === "Female" || g.gender === "female")?.count || 0);
+  const isLocked = !onClick;
+  const maleTotal = (s?.genderBreakdown?.find((g: any) => isMale(g.gender))?.count || 0);
+  const femaleTotal = (s?.genderBreakdown?.find((g: any) => isFemale(g.gender))?.count || 0);
 
   return (
     <button
       onClick={onClick}
-      className="bg-white rounded-xl border border-slate-200 p-5 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 group w-full"
+      disabled={isLocked}
+      className={`bg-white rounded-xl border ${isLocked ? "border-slate-100 opacity-50 cursor-not-allowed" : "border-slate-200 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer"} p-5 text-left transition-all duration-200 group w-full`}
     >
       <div className="flex items-center gap-4 mb-4">
         <div
@@ -229,8 +223,52 @@ const JumuiyaCardMemo = memo(JumuiyaCard);
 
 export default function JumuiyaMembersAdmin() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams<{ id: string }>();
-  const [globalTab, setGlobalTab] = useState<Tab>("admissions");
+  const { user } = useAuth();
+  const userRoles = useMemo(() => (
+    Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : []
+  ), [user?.role]);
+  const normalizedRoles = useMemo(() => (
+    userRoles.map(r => String(r).toUpperCase().trim())
+  ), [userRoles]);
+  const isJumuiyaOfficial = useMemo(() => (
+    normalizedRoles.some(r => ["JUMUIYA_OS", "JUMUIYA_SECRETARY", "JUMUIYA_CHAIRPERSON"].includes(r))
+  ), [normalizedRoles]);
+  const userJumuiyaId = user?.jumuiya_id || "";
+  const [userJumuiyaSlug, setUserJumuiyaSlug] = useState("");
+  const backTab = (location.state as any)?.tab as Tab | undefined;
+  const initialTab: Tab = isJumuiyaOfficial ? "jumuiyas" : (backTab || "admissions");
+  const [globalTab, setGlobalTab] = useState<Tab>(initialTab);
+  const [visitedTabs, setVisitedTabs] = useState<Tab[]>([initialTab]);
+
+  const openTab = (tab: Tab) => {
+    setGlobalTab(tab);
+    setVisitedTabs(prev => prev.includes(tab) ? prev : [...prev, tab]);
+  };
+
+  useEffect(() => {
+    if (user && isJumuiyaOfficial) {
+      setGlobalTab("jumuiyas");
+      setVisitedTabs(prev => prev.includes("jumuiyas") ? prev : [...prev, "jumuiyas"]);
+    }
+  }, [user, isJumuiyaOfficial]);
+
+  // Resolve UUID jumuiya_id → slug for matching against JUMUIYAS array
+  useEffect(() => {
+    if (!userJumuiyaId || !isJumuiyaOfficial) { setUserJumuiyaSlug(""); return; }
+    const found = JUMUIYAS.find(j => j.id === userJumuiyaId);
+    if (found) { setUserJumuiyaSlug(found.id); return; }
+    memberService.getJumuiyaLookup().then((res: any) => {
+      const lookup = res?.data || res || {};
+      const entry = lookup[userJumuiyaId];
+      if (entry) {
+        const slug = JUMUIYAS.find(j => j.name.toLowerCase() === (entry.name || "").toLowerCase())?.id || "";
+        setUserJumuiyaSlug(slug);
+      }
+    }).catch(() => {});
+  }, [userJumuiyaId, isJumuiyaOfficial]);
+
   const [stats, setStats] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -295,7 +333,15 @@ export default function JumuiyaMembersAdmin() {
     };
     
     loadData();
-  }, [id, refreshKey]);
+
+    const handleMembersUpdated = () => {
+      clearCache();
+      fetchAllStats(true);
+      setRefreshKey(k => k + 1);
+    };
+    window.addEventListener("csa_members_updated", handleMembersUpdated);
+    return () => window.removeEventListener("csa_members_updated", handleMembersUpdated);
+  }, [id, refreshKey, fetchAllStats, fetchRejectedMembers]);
 
   const handleEditRejected = (m: any) => {
     setEditingRejected(m.id);
@@ -332,14 +378,24 @@ export default function JumuiyaMembersAdmin() {
     [debouncedSearch]
   );
 
-  // ── Per-Jumuiya detail view ──
   if (id) {
     const jumuiya = JUMUIYAS.find((j) => j.id === id);
     if (!jumuiya) {
       return (
         <div className="text-center py-20">
           <p className="text-red-500 font-semibold">Jumuiya not found</p>
-          <button onClick={() => navigate("/admin/jumuiya-members")} className="mt-4 text-sm text-indigo-600 hover:underline">
+          <button onClick={() => navigate("/admin/jumuiya-members", { state: { tab: "jumuiyas" } })} className="mt-4 text-sm text-indigo-600 hover:underline">
+            Back to all Jumuiyas
+          </button>
+        </div>
+      );
+    }
+    if (isJumuiyaOfficial && userJumuiyaSlug && userJumuiyaSlug !== id) {
+      return (
+        <div className="text-center py-20">
+          <p className="text-red-500 font-semibold">Access denied</p>
+          <p className="text-sm text-slate-500 mt-1 mb-4">You can only manage your own Jumuiya.</p>
+          <button onClick={() => navigate("/admin/jumuiya-members", { state: { tab: "jumuiyas" } })} className="mt-4 text-sm text-indigo-600 hover:underline">
             Back to all Jumuiyas
           </button>
         </div>
@@ -347,29 +403,30 @@ export default function JumuiyaMembersAdmin() {
     }
     return (
       <div>
-        <button
-          onClick={() => navigate("/admin/jumuiya-members")}
-          className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium mb-5 transition-colors"
-        >
-          <ArrowLeft size={16} /> Back to all Jumuiyas
-        </button>
+          <button
+            onClick={() => navigate("/admin/jumuiya-members", { state: { tab: "jumuiyas" } })}
+            className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium mb-5 transition-colors"
+          >
+            <ArrowLeft size={16} /> Back to all Jumuiyas
+          </button>
 
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg" style={{ background: jumuiya.color }}>
-            {jumuiya.initials}
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-slate-800">{jumuiya.name}</h2>
-            <p className="text-sm text-slate-500">Member Management</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg" style={{ background: jumuiya.color }}>
+              {jumuiya.initials}
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-slate-800">{jumuiya.name}</h2>
+              <p className="text-sm text-slate-500">Member Management</p>
+            </div>
           </div>
         </div>
 
-        <MemberManagementView jumuiyaId={id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} />
+        <MemberManagementView jumuiyaId={id} jumuiyaName={jumuiya.name} jumuiyaColor={jumuiya.color} isJumuiyaOfficial={isJumuiyaOfficial} canImport={normalizedRoles.includes("CSA_CHAIR") || normalizedRoles.includes("JUMUIYA_COORDINATOR") || normalizedRoles.includes("ASSISTANT_JUMUIYA_COORDINATOR")} />
       </div>
     );
   }
 
-  // ── Global view with tabs ──
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -386,38 +443,44 @@ export default function JumuiyaMembersAdmin() {
 
       {/* Global Tabs */}
       <div className="flex gap-1 border-b border-slate-200 mb-6">
+        {!isJumuiyaOfficial && (
+          <button
+            onClick={() => openTab("admissions")}
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+              globalTab === "admissions"
+                ? "border-indigo-500 text-indigo-600"
+                : "border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300"
+            }`}
+          >
+            <UserPlus size={16} /> New Admissions
+          </button>
+        )}
+        {!isJumuiyaOfficial && (
+          <button
+            onClick={() => openTab("all-members")}
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+              globalTab === "all-members"
+                ? "border-indigo-500 text-indigo-600"
+                : "border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300"
+            }`}
+          >
+            <Users size={16} /> All CSA Members
+          </button>
+        )}
+        {!isJumuiyaOfficial && (
+          <button
+            onClick={() => openTab("associates")}
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+              globalTab === "associates"
+                ? "border-indigo-500 text-indigo-600"
+                : "border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300"
+            }`}
+          >
+            <GraduationCap size={16} /> Associates
+          </button>
+        )}
         <button
-          onClick={() => { setGlobalTab("admissions"); setRefreshKey(k => k + 1); }}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-            globalTab === "admissions"
-              ? "border-indigo-500 text-indigo-600"
-              : "border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300"
-          }`}
-        >
-          <UserPlus size={16} /> New Admissions
-        </button>
-        <button
-          onClick={() => { setGlobalTab("all-members"); setRefreshKey(k => k + 1); }}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-            globalTab === "all-members"
-              ? "border-indigo-500 text-indigo-600"
-              : "border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300"
-          }`}
-        >
-          <Users size={16} /> All CSA Members
-        </button>
-        <button
-          onClick={() => { setGlobalTab("associates"); setRefreshKey(k => k + 1); }}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-            globalTab === "associates"
-              ? "border-indigo-500 text-indigo-600"
-              : "border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300"
-          }`}
-        >
-          <GraduationCap size={16} /> Associates
-        </button>
-        <button
-          onClick={() => { setGlobalTab("jumuiyas"); setRefreshKey(k => k + 1); }}
+          onClick={() => openTab("jumuiyas")}
           className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${
             globalTab === "jumuiyas"
               ? "border-indigo-500 text-indigo-600"
@@ -428,68 +491,81 @@ export default function JumuiyaMembersAdmin() {
         </button>
       </div>
 
-      {globalTab === "admissions" && <CSADistributionCenter />}
+      {!isJumuiyaOfficial && visitedTabs.includes("admissions") && (
+        <div className={globalTab === "admissions" ? "" : "hidden"}>
+          <CSADistributionCenter />
+        </div>
+      )}
 
-      {globalTab === "all-members" && <AllMembersTable key={refreshKey} refreshKey={refreshKey} />}
+      {!isJumuiyaOfficial && visitedTabs.includes("all-members") && (
+        <div className={globalTab === "all-members" ? "" : "hidden"}>
+          <AllMembersTable key={refreshKey} refreshKey={refreshKey} />
+        </div>
+      )}
 
-      {globalTab === "associates" && <AssociatesTable key={refreshKey} refreshKey={refreshKey} />}
+      {!isJumuiyaOfficial && visitedTabs.includes("associates") && (
+        <div className={globalTab === "associates" ? "" : "hidden"}>
+          <AssociatesTable key={refreshKey} refreshKey={refreshKey} />
+        </div>
+      )}
 
-      {globalTab === "jumuiyas" && (
-        <div>
-          {!loading && <SummaryBarMemo stats={stats} />}
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-slate-500">Select a Jumuiya to manage member registration, validation, organization, and distribution.</p>
-            <button
-              onClick={() => { clearCache(); setRefreshKey(k => k + 1); }}
-              className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
-            >
-              <RefreshCw size={14} /> Refresh
-            </button>
-          </div>
-
-          {/* Search */}
-          <div className="relative mb-6 max-w-xs">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search Jumuiya..."
-              className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
-            />
-          </div>
-
+      {visitedTabs.includes("jumuiyas") && (
+        <div className={globalTab === "jumuiyas" ? "" : "hidden"}>
+          <div>
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {Array.from({ length: 7 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 animate-pulse">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-slate-200" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-slate-200 rounded w-3/4" />
-                      <div className="h-3 bg-slate-100 rounded w-1/2" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="h-3 bg-slate-100 rounded w-1/3" />
-                    <div className="h-3 bg-slate-100 rounded w-1/2" />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <>
+              <SkeletonSummaryBar count={4} />
+              <SkeletonCardGrid count={7} />
+            </>
           ) : (
+            <>
+              <SummaryBarMemo stats={stats} />
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm text-slate-500">
+                  Select a Jumuiya to manage member registration, validation, organization, and distribution.
+                </p>
+                <button
+                  onClick={() => {
+                    clearCache();
+                    setRefreshKey((k) => k + 1);
+                  }}
+                  className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+                >
+                  <RefreshCw size={14} /> Refresh
+                </button>
+              </div>
+
+              {/* Search */}
+              <div className="relative mb-6 max-w-xs">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search Jumuiya..."
+                  className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+                />
+              </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filtered.map((j) => (
-                <JumuiyaCardMemo key={j.id} j={j} stats={stats[j.id]} onClick={() => navigate(`/admin/jumuiya-members/${j.id}`)} />
-              ))}
+              {filtered.map((j) => {
+                const canClick = !isJumuiyaOfficial || userJumuiyaSlug === j.id;
+                return (
+                  <JumuiyaCardMemo
+                    key={j.id}
+                    j={j}
+                    stats={stats[j.id]}
+                    onClick={canClick ? () => navigate(`/admin/jumuiya-members/${j.id}`) : undefined}
+                  />
+                );
+              })}
               {filtered.length === 0 && (
                 <div className="col-span-full text-center py-12 text-slate-400">
                   No Jumuiya matching "{debouncedSearch}"
                 </div>
               )}
             </div>
+            </>
           )}
 
-          {/* ── Rejected Members ── */}
           {rejectedMembers.length > 0 && (
             <div className="bg-white rounded-xl border border-red-200 p-5 mt-6">
               <h4 className="font-semibold text-slate-800 flex items-center gap-2 mb-4">
@@ -500,6 +576,7 @@ export default function JumuiyaMembersAdmin() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase w-10">No.</th>
                       <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase">Name</th>
                       <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase">Reg #</th>
                       <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase">Gender</th>
@@ -511,10 +588,11 @@ export default function JumuiyaMembersAdmin() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rejectedMembers.map(m => {
+                    {rejectedMembers.map((m, idx) => {
                       const isEditing = editingRejected === m.id;
                       return (
                         <tr key={m.id} className="border-b border-slate-100 hover:bg-slate-50">
+                          <td className="py-2 px-3 text-slate-400 text-xs">{idx + 1}</td>
                           <td className="py-2 px-3">
                             {isEditing ? (
                               <input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))}
@@ -536,12 +614,12 @@ export default function JumuiyaMembersAdmin() {
                               <select value={editForm.gender} onChange={e => setEditForm(p => ({ ...p, gender: e.target.value }))}
                                 className="text-xs border border-slate-200 rounded px-1.5 py-1">
                                 <option value="">—</option>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
+<option value="gent">Gent</option>
+                                 <option value="lady">Lady</option>
                               </select>
                             ) : (
-                              <span className={`text-xs font-semibold ${m.gender === "Male" ? "text-blue-600" : "text-pink-600"}`}>
-                                {m.gender === "Male" ? "M" : m.gender === "Female" ? "W" : "—"}
+                              <span className={`text-xs font-semibold ${genderCode(m.gender) === "M" ? "text-blue-600" : genderCode(m.gender) === "L" ? "text-pink-600" : "text-slate-400"}`}>
+                                {genderCode(m.gender)}
                               </span>
                             )}
                           </td>
@@ -553,7 +631,7 @@ export default function JumuiyaMembersAdmin() {
                               <span className="text-slate-600">{m.phone || "—"}</span>
                             )}
                           </td>
-                          <td className="py-2 px-3 text-slate-600">{m.academic_year || "—"}</td>
+                          <td className="py-2 px-3 text-slate-600">{getYearOfStudy(m.reg_number || m.member_id || "") || "—"}</td>
                           <td className="py-2 px-3">
                             <span className="text-xs text-red-500">{m.rejection_reason || "Rejected"}</span>
                           </td>
@@ -596,6 +674,7 @@ export default function JumuiyaMembersAdmin() {
               </div>
             </div>
           )}
+          </div>
         </div>
       )}
     </div>

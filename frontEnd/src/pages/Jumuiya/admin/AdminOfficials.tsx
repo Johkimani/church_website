@@ -9,7 +9,6 @@ interface AdminOfficialsProps {
     selectedId?: string;
 }
 
-// ── Exact positions as requested ──────────────────────────────────────────────
 const JUMUIYA_POSITIONS = [
     { value: 'Chairperson',           label: 'Chairperson',           description: 'Heads the Jumuiya & chairs all meetings' },
     { value: 'Vice Chairperson',      label: 'Vice Chairperson',      description: 'Deputises the Chairperson' },
@@ -21,7 +20,6 @@ const JUMUIYA_POSITIONS = [
     { value: 'Vice Liturgist',        label: 'Vice Liturgist',        description: 'Assists the Liturgist' },
 ];
 
-// ── Patron saint image per Jumuiya name ───────────────────────────────────────
 const SAINT_IMAGES: Record<string, string> = {
     'St. Anthony':      '/images/Anthony.png',
     'St. Augustine':    '/images/Augustine.png',
@@ -32,7 +30,6 @@ const SAINT_IMAGES: Record<string, string> = {
     'St. Monica':       '/images/Monica.png',
 };
 
-// ── Searchable Position Dropdown ─────────────────────────────────────────────
 const PositionDropdown: React.FC<{
     value: string;
     onChange: (val: string) => void;
@@ -117,7 +114,6 @@ const PositionDropdown: React.FC<{
     );
 };
 
-// ── Reusable Field ────────────────────────────────────────────────────────────
 const Field: React.FC<{ label: string; required?: boolean; children: React.ReactNode }> = ({ label, required, children }) => (
     <div>
         <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.77rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
@@ -133,7 +129,6 @@ const inp = (_tc: string): React.CSSProperties => ({
     boxSizing: 'border-box', transition: 'border-color 0.2s', color: '#1e293b', fontFamily: 'inherit',
 });
 
-// ── Main Component ────────────────────────────────────────────────────────────
 const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
     const { jumuiyaList } = useData();
     const [selectedJumuiyaId, setSelectedJumuiyaId] = useState(selectedId || jumuiyaList[0]?.id || '');
@@ -296,7 +291,6 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
     return (
         <div className="admin-page-container" style={{ '--admin-theme-color': themeColor } as React.CSSProperties}>
             <div className="admin-card">
-                {/* ── Header ── */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '28px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                         <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: themeColor + '22', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -323,7 +317,6 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
                     </div>
                 </div>
 
-                {/* ── Cards ── */}
                 {officials && officials.length > 0 ? (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(195px, 1fr))', gap: '16px' }}>
                         {officials.map(o => (
@@ -363,7 +356,6 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
                 )}
             </div>
 
-            {/* ── Modal ── */}
             {isEditing && (
                 <div
                     onClick={closeModal}
@@ -416,7 +408,7 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
                                 </div>
                             </div>
                             <p style={{ textAlign: 'center', fontSize: '0.72rem', color: '#94a3b8', marginTop: '-16px', marginBottom: '20px' }}>
-                                Showing {selectedJumuiya?.name} patron saint image · tap 📷 to upload personal photo
+                                Showing {selectedJumuiya?.name} patron saint image · tap to upload personal photo
                             </p>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -492,7 +484,7 @@ const AdminOfficials: React.FC<AdminOfficialsProps> = ({ selectedId }) => {
                                 {jumuiyaMismatch && (
                                     <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <span style={{ color: '#dc2626', fontSize: '0.82rem', fontWeight: '600' }}>
-                                            ⚠ This member belongs to <strong>{current.matchedJumuiyaName}</strong>, not {selectedJumuiya?.name}. Registering them here will assign them to the wrong Jumuiya.
+                                            This member belongs to <strong>{current.matchedJumuiyaName}</strong>, not {selectedJumuiya?.name}. Registering them here will assign them to the wrong Jumuiya.
                                         </span>
                                     </div>
                                 )}

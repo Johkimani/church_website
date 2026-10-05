@@ -1,13 +1,13 @@
 import { initiateSTK, waitForPaymentResult } from "./stkController.js";
 
 export const payAndWait = async (userId, phoneNumber, amount) => {
-  // 1️⃣ Send STK Push
+  // 1. Send STK Push
   console.log(
     `Initiating STK Push for userId: ${userId}, phoneNumber: ${phoneNumber}, amount: ${amount}`,
   );
   const checkoutId = await initiateSTK(userId, phoneNumber, amount);
 
-  // 2️⃣ Wait for result (polling)
+  // 2. Wait for result (polling)
   console.log(`Waiting for payment result for checkoutId: ${checkoutId}`);
   const result = await waitForPaymentResult(checkoutId);
   return { checkoutId, result };

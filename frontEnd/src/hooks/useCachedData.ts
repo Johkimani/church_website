@@ -7,7 +7,13 @@ export function useCachedData<T>(
 ) {
   const [data, setData] = useState<T>(() => {
     const cached = localStorage.getItem(key);
-    return cached ? JSON.parse(cached) : initialFallback;
+    if (!cached) return initialFallback;
+    try {
+      return JSON.parse(cached) as T;
+    } catch {
+      localStorage.removeItem(key);
+      return initialFallback;
+    }
   });
 
   const [loading, setLoading] = useState(() => {

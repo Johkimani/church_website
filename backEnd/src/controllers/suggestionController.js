@@ -1,10 +1,18 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
-import crypto from "crypto";
-import sendEmail from "../Configs/emailConfig.js";
+
+const sanitizeSuggestion = (row) => {
+  if (!row) return row;
+  return row;
+};
 
 const SUGGESTION_WITH_MEMBER = `
-  SELECT s.*,
+  SELECT
+    s.id, s.suggestion, s.category, s.scope, s.jumuiya_id, s.status,
+    s.name, s.email, s.reply, s.replied_by, s.replied_at,
+    s.created_at, s.deleted_at,
+    COALESCE(NULLIF(TRIM(CONCAT(dm.first_name, ' ', dm.last_name)), ''), s.deleted_by) AS deleted_by,
+    CASE WHEN s.name IS NOT NULL OR s.status = 'approved' THEN s.user_id END AS user_id,
     CASE WHEN s.name IS NOT NULL OR s.status = 'approved' THEN m.first_name END AS member_first_name,
     CASE WHEN s.name IS NOT NULL OR s.status = 'approved' THEN m.last_name END AS member_last_name,
     CASE WHEN s.name IS NOT NULL OR s.status = 'approved' THEN m.year_of_study END AS member_year_of_study,
@@ -12,12 +20,84 @@ const SUGGESTION_WITH_MEMBER = `
   FROM suggestions s
   LEFT JOIN members m ON s.user_id = m.member_id
   LEFT JOIN sub_groups sg ON m.jumuiya_id = sg.group_id
+  LEFT JOIN members dm ON LOWER(TRIM(s.deleted_by)) = LOWER(TRIM(dm.member_id))
 `;
+
+const getUserRoles = (req) => {
+  if (!req.user) return [];
+  return Array.isArray(req.user.role)
+    ? req.user.role
+    : req.user.role ? [req.user.role] : [];
+};
+
+// Community (hub module) official roles → the jumuiya_id value that member
+// suggestions from that community page are stored under (scope 'community').
+const COMMUNITY_ROLE_SCOPES = {
+  choir_chairperson: 'choir',
+  choir_secretary: 'choir',
+  choir_project_coordinator: 'choir',
+  dance_chair: 'dancers',
+  charismatic_chair: 'charismatic',
+  st_francis_chair: 'st-francis',
+  mentorship_chair: 'mentorship',
+};
+
+const GLOBAL_SUGGESTION_ROLES = ['admin', 'csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator', 'assistant_jumuiya_coordinator'];
+
+const COMMUNITY_OFFICIAL_ROLES = Object.keys(COMMUNITY_ROLE_SCOPES);
+
+// Returns { isGlobal, scopedIds } — scopedIds are jumuiya_id values this
+// official may access (their own jumuiya plus any community module they lead).
+const getSuggestionAccess = (req) => {
+  const roles = getUserRoles(req);
+  const isGlobal = roles.some(r => GLOBAL_SUGGESTION_ROLES.includes(r));
+  const scopedIds = new Set();
+  if (!isGlobal) {
+    if (req.user?.jumuiya_id) scopedIds.add(String(req.user.jumuiya_id));
+    for (const r of roles) {
+      if (COMMUNITY_ROLE_SCOPES[r]) scopedIds.add(COMMUNITY_ROLE_SCOPES[r]);
+    }
+  }
+  return { isGlobal, scopedIds: [...scopedIds] };
+};
+
+// Builds "(s.jumuiya_id = $n OR s.jumuiya_id IN (...))" for each scoped id.
+const buildScopeClause = (scopedIds, startIndex) => {
+  const clauses = scopedIds.map((_, i) => {
+    const p = startIndex + i;
+    return `(s.jumuiya_id = $${p} OR s.jumuiya_id IN (SELECT slug FROM sub_groups WHERE group_id::text = $${p}))`;
+  });
+  return { clause: `(${clauses.join(' OR ')})`, params: scopedIds };
+};
 
 export const listSuggestions = async (req, res) => {
   try {
+    const { isGlobal, scopedIds } = getSuggestionAccess(req);
+    const { jumuiya_id } = req.query;
+    const roles = getUserRoles(req);
+    const isCSAViceChairOnly = roles.includes('csa_vice_chair') && !roles.includes('csa_chair') && !roles.includes('admin') && !roles.includes('developer');
+
+    let whereClause = `WHERE s.deleted_at IS NULL`;
+    let params = [];
+
+    if (isCSAViceChairOnly || jumuiya_id === 'csa') {
+      whereClause += ` AND s.scope = 'csa'`;
+    } else if (!isGlobal) {
+      if (scopedIds.length === 0) {
+        return res.json({ status: "success", data: [] });
+      }
+      const scope = buildScopeClause(scopedIds, params.length + 1);
+      whereClause += ` AND ${scope.clause}`;
+      params = [...params, ...scope.params];
+    } else if (jumuiya_id && jumuiya_id !== 'all') {
+      const scope = buildScopeClause([jumuiya_id], params.length + 1);
+      whereClause += ` AND ${scope.clause}`;
+      params = [...params, ...scope.params];
+    }
+
     const result = await pool.query(
-      `${SUGGESTION_WITH_MEMBER} WHERE s.deleted_at IS NULL ORDER BY s.created_at DESC`
+      `${SUGGESTION_WITH_MEMBER} ${whereClause} ORDER BY s.created_at DESC`,
+      params
     );
     res.json({ status: "success", data: result.rows });
   } catch (error) {
@@ -28,8 +108,32 @@ export const listSuggestions = async (req, res) => {
 
 export const getBin = async (req, res) => {
   try {
+    const { isGlobal, scopedIds } = getSuggestionAccess(req);
+    const { jumuiya_id } = req.query;
+    const roles = getUserRoles(req);
+    const isCSAViceChairOnly = roles.includes('csa_vice_chair') && !roles.includes('csa_chair') && !roles.includes('admin') && !roles.includes('developer');
+
+    let whereClause = `WHERE s.deleted_at IS NOT NULL`;
+    let params = [];
+
+    if (isCSAViceChairOnly || jumuiya_id === 'csa') {
+      whereClause += ` AND s.scope = 'csa'`;
+    } else if (!isGlobal) {
+      if (scopedIds.length === 0) {
+        return res.json({ status: "success", data: [] });
+      }
+      const scope = buildScopeClause(scopedIds, params.length + 1);
+      whereClause += ` AND ${scope.clause}`;
+      params = [...params, ...scope.params];
+    } else if (jumuiya_id && jumuiya_id !== 'all') {
+      const scope = buildScopeClause([jumuiya_id], params.length + 1);
+      whereClause += ` AND ${scope.clause}`;
+      params = [...params, ...scope.params];
+    }
+
     const result = await pool.query(
-      `SELECT * FROM suggestions WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC`
+      `${SUGGESTION_WITH_MEMBER} ${whereClause} ORDER BY s.deleted_at DESC`,
+      params
     );
     res.json({ status: "success", data: result.rows });
   } catch (error) {
@@ -39,9 +143,9 @@ export const getBin = async (req, res) => {
 };
 
 const requireVcRole = (req, res) => {
-  const roles = Array.isArray(req.user.role) ? req.user.role : [req.user.role];
-  if (!roles.some(r => r === 'csa_vice_chair')) {
-    res.status(403).json({ error: 'Only CSA Vice Chair can perform this action' });
+  const roles = getUserRoles(req);
+  if (!roles.some(r => [...GLOBAL_SUGGESTION_ROLES, 'csa_vice_chair', 'jumuiya_vice_chairperson', 'jumuiya_chairperson', ...COMMUNITY_OFFICIAL_ROLES].includes(r))) {
+    res.status(404).json({ success: false, message: "Resource not found" });
     return false;
   }
   return true;
@@ -51,18 +155,66 @@ export const softDelete = async (req, res) => {
   if (!requireVcRole(req, res)) return;
   try {
     const { id } = req.params;
-    const deletedBy = req.body?.deleted_by || req.user?.member_id || "unknown";
+    const { isGlobal, scopedIds } = getSuggestionAccess(req);
+    const roles = getUserRoles(req);
+    const isDevOrAdmin = roles.some(r => ['admin', 'developer'].includes(r));
+    const isCSAViceChair = roles.includes('csa_vice_chair');
+    const isJumuiyaViceChair = roles.includes('jumuiya_vice_chairperson');
 
-    const result = await pool.query(
-      `UPDATE suggestions SET deleted_at = CURRENT_TIMESTAMP, deleted_by = $1 WHERE id = $2 AND deleted_at IS NULL RETURNING *`,
-      [deletedBy, id]
+    // Fetch the target suggestion first to verify scope
+    const targetCheck = await pool.query(
+      `SELECT id, scope, jumuiya_id FROM suggestions WHERE id = $1 AND deleted_at IS NULL`,
+      [id]
     );
+    if (!targetCheck.rows.length) {
+      return res.status(404).json({ error: "Suggestion not found or already deleted" });
+    }
+    const target = targetCheck.rows[0];
+
+    // Only CSA Vice Chairperson (or admin/developer) can soft-delete CSA suggestions
+    if (target.scope === 'csa') {
+      if (!isCSAViceChair && !isDevOrAdmin) {
+        return res.status(403).json({ error: "Only the CSA Vice Chairperson can delete CSA suggestions" });
+      }
+    } else if (target.scope === 'jumuiya') {
+      if (!isJumuiyaViceChair && !isDevOrAdmin && !roles.includes('jumuiya_coordinator') && !roles.includes('assistant_jumuiya_coordinator')) {
+        return res.status(403).json({ error: "Only the Jumuiya Vice Chairperson can delete this suggestion" });
+      }
+    }
+
+    // Resolve deleter's full name (prefer first_name + last_name over reg_no)
+    let deletedByName = "";
+    if (req.user?.firstName || req.user?.lastName) {
+      deletedByName = `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim();
+    }
+    if (!deletedByName && req.user?.member_id) {
+      const mRes = await pool.query(
+        `SELECT first_name, last_name FROM members WHERE member_id = $1 OR LOWER(TRIM(member_id)) = LOWER(TRIM($1)) LIMIT 1`,
+        [req.user.member_id]
+      );
+      if (mRes.rows.length) {
+        deletedByName = `${mRes.rows[0].first_name || ''} ${mRes.rows[0].last_name || ''}`.trim();
+      }
+    }
+    const deletedBy = deletedByName || req.body?.deleted_by || req.user?.member_id || "Administrator";
+
+    let query = `UPDATE suggestions SET deleted_at = CURRENT_TIMESTAMP, deleted_by = $1 WHERE id = $2 AND deleted_at IS NULL`;
+    let params = [deletedBy, id];
+
+    if (!isGlobal && scopedIds.length > 0 && target.scope !== 'csa') {
+      const scope = buildScopeClause(scopedIds, params.length + 1);
+      query += ` AND ${scope.clause}`;
+      params = [...params, ...scope.params];
+    }
+
+    query += ` RETURNING *`;
+    const result = await pool.query(query, params);
 
     if (!result.rows.length) {
       return res.status(404).json({ error: "Suggestion not found or already deleted" });
     }
 
-    res.json({ status: "success", data: result.rows[0] });
+    res.json({ status: "success", data: sanitizeSuggestion(result.rows[0]) });
   } catch (error) {
     logger.error("softDelete error:", error.message);
     res.status(500).json({ error: error.message });
@@ -70,18 +222,32 @@ export const softDelete = async (req, res) => {
 };
 
 export const restoreFromBin = async (req, res) => {
+  if (!requireVcRole(req, res)) return;
   try {
     const { id } = req.params;
-    const result = await pool.query(
-      `UPDATE suggestions SET deleted_at = NULL, deleted_by = NULL WHERE id = $1 AND deleted_at IS NOT NULL RETURNING *`,
-      [id]
-    );
+    const { isGlobal, scopedIds } = getSuggestionAccess(req);
+    const roles = getUserRoles(req);
+    const isCSAOfficial = roles.some(r => ['csa_chair', 'csa_vice_chair', 'admin', 'developer'].includes(r));
 
-    if (!result.rows.length) {
-      return res.status(404).json({ error: "Suggestion not found in bin" });
+    let query = `UPDATE suggestions SET deleted_at = NULL, deleted_by = NULL WHERE id = $1 AND deleted_at IS NOT NULL`;
+    let params = [id];
+
+    if (isCSAOfficial) {
+      query += ` AND scope = 'csa'`;
+    } else if (!isGlobal && scopedIds.length > 0) {
+      const scope = buildScopeClause(scopedIds, params.length + 1);
+      query += ` AND ${scope.clause}`;
+      params = [...params, ...scope.params];
     }
 
-    res.json({ status: "success", data: result.rows[0] });
+    query += ` RETURNING *`;
+    const result = await pool.query(query, params);
+
+    if (!result.rows.length) {
+      return res.status(404).json({ error: "Suggestion not found in bin or insufficient permissions" });
+    }
+
+    res.json({ status: "success", data: sanitizeSuggestion(result.rows[0]) });
   } catch (error) {
     logger.error("restoreFromBin error:", error.message);
     res.status(500).json({ error: error.message });
@@ -91,13 +257,47 @@ export const restoreFromBin = async (req, res) => {
 export const permanentDelete = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query(
-      `DELETE FROM suggestions WHERE id = $1 AND deleted_at IS NOT NULL RETURNING *`,
+    const { isGlobal, scopedIds } = getSuggestionAccess(req);
+    const roles = getUserRoles(req);
+    const isDevOrAdmin = roles.some(r => ['admin', 'developer'].includes(r));
+    const isCSAChair = roles.includes('csa_chair');
+    const isJumuiyaChair = roles.includes('jumuiya_chairperson');
+
+    // Fetch the target suggestion in bin to check scope
+    const targetCheck = await pool.query(
+      `SELECT id, scope, jumuiya_id FROM suggestions WHERE id = $1 AND deleted_at IS NOT NULL`,
       [id]
     );
+    if (!targetCheck.rows.length) {
+      return res.status(404).json({ error: "Suggestion not found in bin" });
+    }
+    const target = targetCheck.rows[0];
+
+    // Only CSA Chairperson (or admin/developer) can permanently delete CSA suggestions
+    if (target.scope === 'csa') {
+      if (!isCSAChair && !isDevOrAdmin) {
+        return res.status(403).json({ error: "Only the CSA Chairperson can permanently delete CSA suggestions" });
+      }
+    } else if (target.scope === 'jumuiya') {
+      if (!isJumuiyaChair && !isDevOrAdmin) {
+        return res.status(403).json({ error: "Only the Jumuiya Chairperson can permanently delete this suggestion" });
+      }
+    }
+
+    let query = `DELETE FROM suggestions WHERE id = $1 AND deleted_at IS NOT NULL`;
+    let params = [id];
+
+    if (!isGlobal && scopedIds.length > 0 && target.scope !== 'csa') {
+      const scope = buildScopeClause(scopedIds, params.length + 1);
+      query += ` AND ${scope.clause}`;
+      params = [...params, ...scope.params];
+    }
+
+    query += ` RETURNING *`;
+    const result = await pool.query(query, params);
 
     if (!result.rows.length) {
-      return res.status(404).json({ error: "Suggestion not found in bin" });
+      return res.status(404).json({ error: "Suggestion not found in bin or insufficient permissions" });
     }
 
     res.json({ status: "success", message: "Permanently deleted" });
@@ -109,170 +309,69 @@ export const permanentDelete = async (req, res) => {
 
 export const clearBin = async (req, res) => {
   try {
-    const result = await pool.query(
-      `DELETE FROM suggestions WHERE deleted_at IS NOT NULL`
-    );
-    res.json({ status: "success", message: `Cleared ${result.rowCount} suggestion(s) from bin` });
+    const { isGlobal, scopedIds } = getSuggestionAccess(req);
+    const roles = getUserRoles(req);
+    const isDevOrAdmin = roles.some(r => ['admin', 'developer'].includes(r));
+    const isCSAChair = roles.includes('csa_chair');
+    const isJumuiyaChair = roles.includes('jumuiya_chairperson');
+    const { jumuiya_id } = req.query;
+
+    if (jumuiya_id === 'csa' || (!jumuiya_id && !isJumuiyaChair)) {
+      if (!isCSAChair && !isDevOrAdmin) {
+        return res.status(403).json({ error: "Only the CSA Chairperson can clear the CSA suggestion bin" });
+      }
+    } else if (jumuiya_id && jumuiya_id !== 'csa') {
+      if (!isJumuiyaChair && !isDevOrAdmin) {
+        return res.status(403).json({ error: "Only the Jumuiya Chairperson can clear this suggestion bin" });
+      }
+    }
+
+    let query = `DELETE FROM suggestions WHERE deleted_at IS NOT NULL`;
+    let params = [];
+
+    if (jumuiya_id === 'csa') {
+      query += ` AND scope = 'csa'`;
+    } else if (!isGlobal && scopedIds.length > 0) {
+      const scope = buildScopeClause(scopedIds, params.length + 1);
+      query += ` AND ${scope.clause}`;
+      params = [...params, ...scope.params];
+    } else if (jumuiya_id && jumuiya_id !== 'all') {
+      const scope = buildScopeClause([jumuiya_id], params.length + 1);
+      query += ` AND ${scope.clause}`;
+      params = [...params, ...scope.params];
+    }
+
+    const result = await pool.query(query, params);
+    res.json({ status: "success", message: `Permanently deleted ${result.rowCount} suggestions` });
   } catch (error) {
     logger.error("clearBin error:", error.message);
     res.status(500).json({ error: error.message });
   }
 };
 
-export const requestUnmask = async (req, res) => {
-  if (!requireVcRole(req, res)) return;
+// Member-facing: the caller's own suggestions with official replies.
+// Scoped strictly to user_id from the verified token — a member can never
+// read anyone else's suggestions through this endpoint.
+export const getMySuggestions = async (req, res) => {
   try {
-    const { id } = req.params;
-    const chairToken = crypto.randomBytes(32).toString("hex");
-    const liturgistToken = crypto.randomBytes(32).toString("hex");
+    const userId = req.user?.member_id;
+    if (!userId) {
+      return res.json({ status: "success", data: [] });
+    }
 
     const result = await pool.query(
-      `UPDATE suggestions SET chair_unmask_token = $1, liturgist_unmask_token = $2, unmask_requested_at = CURRENT_TIMESTAMP, status = 'unmask_requested' WHERE id = $3 RETURNING *`,
-      [chairToken, liturgistToken, id]
+      `${SUGGESTION_WITH_MEMBER} WHERE s.deleted_at IS NULL AND s.user_id = $1 ORDER BY s.created_at DESC LIMIT 50`,
+      [userId]
     );
 
-    if (!result.rows.length) {
-      return res.status(404).json({ error: "Suggestion not found" });
-    }
-
-    // Look up CSA Chair and Liturgist emails
-    const roleQuery = `
-      SELECT m.member_id, m.first_name, m.last_name, m.email, r.role_name
-      FROM members m
-      JOIN member_roles mr ON m.member_id = mr.member_id AND mr.status = 'approved'
-      JOIN roles r ON mr.role_id = r.role_id
-      WHERE r.role_name IN ('csa_chair', 'liturgist')
-    `;
-    const roleResult = await pool.query(roleQuery);
-
-    const origin = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
-    const chairLink = `${origin}/suggestions/unmask/chair/${chairToken}`;
-    const liturgistLink = `${origin}/suggestions/unmask/liturgist/${liturgistToken}`;
-
-    let sent = 0;
-    let failed = 0;
-
-    for (const row of roleResult.rows) {
-      const link = row.role_name === 'csa_chair' ? chairLink : liturgistLink;
-      const roleLabel = row.role_name === 'csa_chair' ? 'CSA Chair' : 'CSA Liturgist';
-      const subject = `Suggestion Box – Unmask Request Requires Your ${roleLabel} Approval`;
-      const text = `A CSA Vice Chair has requested to unmask an anonymous suggestion.\n\n` +
-        `To review and respond, click the link below:\n${link}\n\n` +
-        `Both CSA Chair and CSA Liturgist must approve for the identity to be revealed.\n\n` +
-        `This link is unique and valid for one use only.`;
-
-      if (row.email) {
-        try {
-          await sendEmail(subject, text, row.email);
-          sent++;
-        } catch (err) {
-          failed++;
-          logger.error(`Failed to send unmask email to ${row.email} (${roleLabel}): ${err.message}`);
-        }
-      }
-    }
-
-    if (failed > 0) {
-      logger.warn(`Unmask request #${id}: ${sent} email(s) sent, ${failed} failed`);
-    }
-
-    const message = failed > 0
-      ? `Unmask request sent to ${sent} official(s), ${failed} failed — check server email config`
-      : `Unmask request sent to ${sent} official(s)`;
-
-    res.json({ status: "success", message });
+    res.json({ status: "success", data: result.rows.map(sanitizeSuggestion) });
   } catch (error) {
-    logger.error("requestUnmask error:", error.message);
+    logger.error("getMySuggestions error:", error.message);
     res.status(500).json({ error: error.message });
   }
 };
 
-const unmaskColumn = (role) =>
-  role === "chair" ? "chair_unmask_token" : "liturgist_unmask_token";
-
-const approverColumn = (role) =>
-  role === "chair" ? "chair_approved" : "liturgist_approved";
-
-export const getRoleUnmaskRequest = async (req, res) => {
-  try {
-    const { role, token } = req.params;
-    if (!["chair", "liturgist"].includes(role)) {
-      return res.status(400).json({ error: "role must be 'chair' or 'liturgist'" });
-    }
-
-    const col = unmaskColumn(role);
-    const result = await pool.query(
-      `${SUGGESTION_WITH_MEMBER} WHERE s.${col} = $1`,
-      [token]
-    );
-
-    if (!result.rows.length) {
-      return res.status(404).json({ error: "Invalid or expired token" });
-    }
-
-    res.json({ status: "success", role, data: result.rows[0] });
-  } catch (error) {
-    logger.error("getRoleUnmaskRequest error:", error.message);
-    res.status(500).json({ error: error.message });
-  }
-};
-
-export const respondRoleUnmask = async (req, res) => {
-  try {
-    const { role, token } = req.params;
-    const { action } = req.body;
-
-    if (!["chair", "liturgist"].includes(role)) {
-      return res.status(400).json({ error: "role must be 'chair' or 'liturgist'" });
-    }
-    if (!["approve", "reject"].includes(action)) {
-      return res.status(400).json({ error: "action must be 'approve' or 'reject'" });
-    }
-
-    const tokenCol = unmaskColumn(role);
-    const approvedCol = approverColumn(role);
-
-    if (action === "reject") {
-      const result = await pool.query(
-        `UPDATE suggestions SET status = 'rejected', chair_unmask_token = NULL, liturgist_unmask_token = NULL, chair_approved = FALSE, liturgist_approved = FALSE WHERE ${tokenCol} = $1 RETURNING *`,
-        [token]
-      );
-      if (!result.rows.length) return res.status(404).json({ error: "Invalid or expired token" });
-      return res.json({ status: "success", message: `Unmask rejected by ${role}`, data: result.rows[0] });
-    }
-
-    // Mark this role as approved
-    const markResult = await pool.query(
-      `UPDATE suggestions SET ${approvedCol} = TRUE WHERE ${tokenCol} = $1 RETURNING *`,
-      [token]
-    );
-    if (!markResult.rows.length) return res.status(404).json({ error: "Invalid or expired token" });
-
-    const row = markResult.rows[0];
-
-    // Check if both have approved
-    if (row.chair_approved && row.liturgist_approved) {
-      // Both approved – fully unmask
-      await pool.query(
-        `UPDATE suggestions SET status = 'approved', chair_unmask_token = NULL, liturgist_unmask_token = NULL WHERE id = $1`,
-        [row.id]
-      );
-      const finalResult = await pool.query(
-        `${SUGGESTION_WITH_MEMBER} WHERE s.id = $1`,
-        [row.id]
-      );
-      return res.json({ status: "success", message: "Unmask approved by both roles", data: finalResult.rows[0] });
-    }
-
-    // Only one so far – keep tokens active for the other
-    res.json({ status: "success", message: `${role} approved, waiting for the other role`, data: row });
-  } catch (error) {
-    logger.error("respondRoleUnmask error:", error.message);
-    res.status(500).json({ error: error.message });
-  }
-};
-
-export const replyToSuggestion = async (req, res) => {
+export const replyToSuggestion = async (req, res) => {  if (!requireVcRole(req, res)) return;
   try {
     const { id } = req.params;
     const { reply } = req.body;
@@ -291,9 +390,40 @@ export const replyToSuggestion = async (req, res) => {
       return res.status(404).json({ error: "Suggestion not found" });
     }
 
-    res.json({ status: "success", data: result.rows[0] });
+    res.json({ status: "success", data: sanitizeSuggestion(result.rows[0]) });
   } catch (error) {
     logger.error("replyToSuggestion error:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const VALID_CATEGORIES = [
+  'general', 'worship', 'progress', 'feedback', 'other',
+  'officials', 'jumuiya', 'members', 'ideas', 'requests', 'events',
+];
+
+export const updateSuggestionCategory = async (req, res) => {
+  if (!requireVcRole(req, res)) return;
+  try {
+    const { id } = req.params;
+    const { category } = req.body;
+
+    if (!VALID_CATEGORIES.includes(category)) {
+      return res.status(400).json({ error: "Invalid category" });
+    }
+
+    const result = await pool.query(
+      `UPDATE suggestions SET category = $1 WHERE id = $2 AND deleted_at IS NULL RETURNING *`,
+      [category, id]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ error: "Suggestion not found" });
+    }
+
+    res.json({ status: "success", data: sanitizeSuggestion(result.rows[0]) });
+  } catch (error) {
+    logger.error("updateSuggestionCategory error:", error.message);
     res.status(500).json({ error: error.message });
   }
 };

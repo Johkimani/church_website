@@ -1,0 +1,14 @@
+/backEnd
+/logs
+/src
+/.github
+/.kilo
+*.md
+*.json
+!vercel.json
+!package.json
+!frontEnd/*.json
+frontEnd/node_modules
+frontEnd/dist
+.env*
+*.log

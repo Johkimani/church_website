@@ -3,19 +3,27 @@ const VALID_JUMUIYAS = [
   "St. Dominic", "St. Elizabeth", "St. Maria Goretti", "St. Monica"
 ];
 
+// Academic year rolls over in August (new intake arrives end of August), so
+// the current intake year is the current calendar year from Aug onwards.
+// Mirrors frontEnd/src/utils/memberYear.ts.
+export const academicStartYear = () => {
+  const now = new Date();
+  return now.getMonth() + 1 >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+};
+
 // Known flexible pattern: e.g. CS01/A/2024/01, PA106/G/12345/23, ED101/G/98765/26
 const REG_NUM_PATTERN = /^[A-Za-z]+\d+\/[A-Za-z]+\/\d+\/\d{2}$/;
 // Very loose — any alphanumeric with at least one slash, so admins can enter custom formats
 const REG_NUM_LOOSE_PATTERN = /^[A-Za-z0-9\/.\-_]+\/\d{2}$/;
 
 const JUMUIYA_ALIASES = {
-  "anthony": "St. Anthony", "st anthony": "St. Anthony", "st. anthony": "St. Anthony",
-  "augustine": "St. Augustine", "st augustine": "St. Augustine", "st. augustine": "St. Augustine",
-  "catherine": "St. Catherine", "st catherine": "St. Catherine", "st. catherine": "St. Catherine",
-  "dominie": "St. Dominic", "st dominic": "St. Dominic", "st. dominic": "St. Dominic",
-  "elizabeth": "St. Elizabeth", "st elizabeth": "St. Elizabeth", "st. elizabeth": "St. Elizabeth",
-  "maria goretti": "St. Maria Goretti", "st maria goretti": "St. Maria Goretti",
-  "monica": "St. Monica", "st monica": "St. Monica", "st. monica": "St. Monica",
+  "anthony": "St. Anthony", "st anthony": "St. Anthony", "st. anthony": "St. Anthony", "st-anthony": "St. Anthony",
+  "augustine": "St. Augustine", "st augustine": "St. Augustine", "st. augustine": "St. Augustine", "st-augustine": "St. Augustine",
+  "catherine": "St. Catherine", "st catherine": "St. Catherine", "st. catherine": "St. Catherine", "st-catherine": "St. Catherine",
+  "dominic": "St. Dominic", "dominie": "St. Dominic", "st dominic": "St. Dominic", "st. dominic": "St. Dominic", "st-dominic": "St. Dominic",
+  "elizabeth": "St. Elizabeth", "st elizabeth": "St. Elizabeth", "st. elizabeth": "St. Elizabeth", "st-elizabeth": "St. Elizabeth",
+  "maria goretti": "St. Maria Goretti", "st maria goretti": "St. Maria Goretti", "st. maria goretti": "St. Maria Goretti", "st-maria-goretti": "St. Maria Goretti",
+  "monica": "St. Monica", "st monica": "St. Monica", "st. monica": "St. Monica", "st-monica": "St. Monica",
 };
 
 export const standardizeName = (name) => {
@@ -32,6 +40,21 @@ export const standardizeName = (name) => {
 export const standardizeRegNumber = (regNumber) => {
   if (!regNumber || typeof regNumber !== "string") return { cleaned: null, errors: ["Registration number is required"], warnings: [] };
   let cleaned = regNumber.trim().toUpperCase();
+
+  // The last two digits encode the intake year. A year after the current
+  // academic start year (e.g. "/27" while intake is "/26") is either a typo
+  // or a future student — reject it outright.
+  const intakeMatch = cleaned.match(/(\d{2})\s*$/);
+  if (intakeMatch) {
+    const admissionYear = 2000 + parseInt(intakeMatch[1], 10);
+    if (admissionYear > academicStartYear()) {
+      return {
+        cleaned: null,
+        errors: [`Registration number "${cleaned}" has a future intake year (/${intakeMatch[1]}) — expected /${String(academicStartYear()).slice(-2)} or earlier`],
+        warnings: [],
+      };
+    }
+  }
 
   // 1. Known format → clean pass
   if (REG_NUM_PATTERN.test(cleaned)) return { cleaned, errors: [], warnings: [] };
@@ -51,27 +74,27 @@ export const standardizeRegNumber = (regNumber) => {
 };
 
 export const standardizeGender = (gender) => {
-  if (!gender || typeof gender !== "string") return { cleaned: null, errors: ["Gender is required"], warnings: [] };
+  if (!gender || typeof gender !== "string" || !gender.trim()) return { cleaned: null, errors: [], warnings: ["Gender not specified"] };
   const warnings = [];
   const g = gender.trim().toLowerCase();
-  if (["m", "male", "man", "boy"].includes(g)) return { cleaned: "Male", warnings };
-  if (["f", "female", "woman", "girl"].includes(g)) return { cleaned: "Female", warnings };
+    if (["m", "male", "man", "boy", "gent"].includes(g)) return { cleaned: "Gent", warnings };
+    if (["f", "female", "woman", "girl", "lady"].includes(g)) return { cleaned: "Lady", warnings };
   warnings.push(`Unrecognized gender "${gender}" — set to null for review`);
   return { cleaned: null, warnings };
 };
 
 export const matchJumuiya = (input) => {
-  if (!input || typeof input !== "string") return { cleaned: null, errors: [], warnings: [] };
-  const key = input.trim().toLowerCase().replace(/\s+/g, " ");
+  if (!input || typeof input !== "string" || !input.trim()) return { cleaned: null, errors: [], warnings: [] };
+  const key = input.trim().toLowerCase().replace(/[\s_-]+/g, " ");
   if (VALID_JUMUIYAS.includes(input.trim())) return { cleaned: input.trim(), errors: [], warnings: [] };
-  const match = JUMUIYA_ALIASES[key];
+  const match = JUMUIYA_ALIASES[key] || JUMUIYA_ALIASES[input.trim().toLowerCase()];
   if (match) return { cleaned: match, errors: [], warnings: [] };
   for (const valid of VALID_JUMUIYAS) {
     if (valid.toLowerCase().includes(key) || key.includes(valid.toLowerCase().slice(0, 6))) {
       return { cleaned: valid, errors: [], warnings: [`Auto-matched "${input}" to ${valid}`] };
     }
   }
-  return { cleaned: null, errors: [`"${input}" does not match any known Jumuiya`], warnings: [] };
+  return { cleaned: null, errors: [], warnings: [`"${input}" does not match known Jumuiya — will use active target Jumuiya`] };
 };
 
 export const validatePhone = (phone) => {
@@ -93,7 +116,7 @@ export const validateEmail = (email) => {
   return { cleaned, warnings: [] };
 };
 
-export const validateMemberRow = (row) => {
+export const validateMemberRow = (row, defaultJumuiya = null) => {
   const errors = [];
   const warnings = [];
 
@@ -108,7 +131,8 @@ export const validateMemberRow = (row) => {
   if (genderResult.errors) errors.push(...genderResult.errors);
   if (genderResult.warnings) warnings.push(...genderResult.warnings);
 
-  const jumuiyaResult = matchJumuiya(row.jumuiya || row.jumuiya_name || row.community);
+  const rawJumuiya = row.jumuiya || row.jumuiya_name || row.community || defaultJumuiya;
+  const jumuiyaResult = matchJumuiya(rawJumuiya);
   if (jumuiyaResult.errors) errors.push(...jumuiyaResult.errors);
   if (jumuiyaResult.warnings) warnings.push(...jumuiyaResult.warnings);
 
@@ -128,7 +152,7 @@ export const validateMemberRow = (row) => {
       regNumber: row.registrationNumber || row.regNumber || row.reg_number || row.registration_number || null,
       gender: row.gender || null,
       course: row.course || null,
-      jumuiya: row.jumuiya || row.jumuiya_name || row.community || null,
+      jumuiya: rawJumuiya || null,
       phone: row.phone || row.phoneNumber || row.phone_number || null,
       email: row.email || null,
     },
@@ -137,7 +161,7 @@ export const validateMemberRow = (row) => {
       regNumber: regResult.cleaned,
       gender: genderResult.cleaned,
       course: row.course || null,
-      jumuiya: jumuiyaResult.cleaned,
+      jumuiya: jumuiyaResult.cleaned || defaultJumuiya || null,
       phone: phoneResult.cleaned,
       email: emailResult.cleaned,
     },

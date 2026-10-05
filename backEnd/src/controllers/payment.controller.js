@@ -1,6 +1,8 @@
 import { MpesaService } from "../services/mpesa.js";
 import { db } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
+import { sendOrderPaymentConfirmation } from "../services/notificationService.js";
+import { allowPhonePush, recordPhonePush } from "../middlewares/phoneThrottle.js";
 
 /**
  * SEND STK PUSH
@@ -16,12 +18,32 @@ export const stkPush = async (req, res) => {
       });
     }
 
+    const parsedAmount = Number(amount);
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0 || parsedAmount > 1_000_000) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid payment amount"
+      });
+    }
+
+    if (!allowPhonePush(phoneNumber)) {
+      return res.status(429).json({
+        success: false,
+        message: "Too many payment requests to this phone number. Please wait before trying again."
+      });
+    }
+
     const response = await MpesaService.stkPush(
   phoneNumber,
-  amount,
+  Math.round(parsedAmount),
   process.env.CALLBACK_URL
 );
 
+    if (!response?.CheckoutRequestID) {
+      throw new Error(response?.errorMessage || "M-Pesa did not return a checkout ID");
+    }
+
+recordPhonePush(phoneNumber);
 const checkoutId = response.CheckoutRequestID;
     return res.status(200).json({
       success: true,
@@ -56,6 +78,23 @@ export const mpesaCallback = async (req, res) => {
     }
 
     const { ResultCode, ResultDesc, CheckoutRequestID, MerchantRequestID } = stkCallback;
+
+    // Reject callbacks for payments we never initiated (forged requests).
+    if (!CheckoutRequestID) {
+      logger.warn("payment callback: missing CheckoutRequestID");
+      return;
+    }
+    const known = await db.query(
+      `SELECT 1 FROM mpesa_request WHERE checkout_id = $1 LIMIT 1`,
+      [CheckoutRequestID],
+    );
+    if (known.rows.length === 0) {
+      logger.warn(
+        `Payment callback ignored: unknown CheckoutRequestID ${CheckoutRequestID}`,
+      );
+      return;
+    }
+
     logger.info(`Payment callback: CheckoutID=${CheckoutRequestID}, ResultCode=${ResultCode}`);
 
     if (ResultCode === 0) {
@@ -66,28 +105,62 @@ export const mpesaCallback = async (req, res) => {
       const amount       = getMeta("Amount");
       const phoneNumber  = getMeta("PhoneNumber");
 
+      // AMOUNT RECONCILIATION — block fulfilment when Safaricom reports the
+      // payer paid less than what this server demanded at initiation.
+      const pendingRes = await db.query(
+        `SELECT amount FROM mpesa_request WHERE checkout_id = $1 LIMIT 1`,
+        [CheckoutRequestID],
+      );
+      const expected = Number(pendingRes.rows[0]?.amount ?? 0);
+      const paidAmount = Number(amount ?? 0);
+      if (expected > 0 && paidAmount + 0.99 < expected) {
+        logger.warn(
+          `Payment callback UNDERPAID: CheckoutID=${CheckoutRequestID} expected=${expected} paid=${paidAmount} — fulfilment blocked`,
+        );
+        await db.query(
+          `UPDATE mpesa_request
+              SET status = 'underpaid', result_code = $1, result_desc = $2,
+                  amount = $3, mpesa_receipt = $4, updated_at = CURRENT_TIMESTAMP
+            WHERE checkout_id = $5`,
+          [ResultCode, `Underpaid: expected ${expected}, paid ${paidAmount}`, amount, mpesaReceipt, CheckoutRequestID],
+        );
+        return;
+      }
+
       await db.query(
         `INSERT INTO mpesa_request
-           (checkout_id, merchant_request_id, phone, amount, status, result_code, result_desc, mpesa_receipt)
+           (checkout_id, merchant_request_id, phone_number, amount, status, result_code, result_desc, mpesa_receipt)
          VALUES ($1, $2, $3, $4, 'paid', $5, $6, $7)
          ON CONFLICT (checkout_id) DO UPDATE SET
            status        = 'paid',
            result_code   = EXCLUDED.result_code,
            result_desc   = EXCLUDED.result_desc,
            mpesa_receipt  = EXCLUDED.mpesa_receipt,
-           phone         = COALESCE(EXCLUDED.phone, mpesa_request.phone),
+           phone_number   = COALESCE(EXCLUDED.phone_number, mpesa_request.phone_number),
            amount        = COALESCE(EXCLUDED.amount, mpesa_request.amount),
            updated_at    = CURRENT_TIMESTAMP`,
         [CheckoutRequestID, MerchantRequestID, String(phoneNumber), amount, ResultCode, ResultDesc, mpesaReceipt]
       );
 
-      await db.query(
+      const orderUpdate = await db.query(
         `UPDATE orders SET status = 'paid', mpesa_receipt = $1, updated_at = CURRENT_TIMESTAMP
-          WHERE checkout_id = $2 AND status = 'pending'`,
+          WHERE checkout_id = $2 AND status = 'pending'
+          RETURNING *`,
         [mpesaReceipt, CheckoutRequestID]
       );
 
-      // ── Activity booking payments (lipa mdogo mdogo) ──
+      if (orderUpdate.rows.length > 0) {
+        try {
+          await sendOrderPaymentConfirmation({
+            order: orderUpdate.rows[0],
+            mpesaReceipt,
+          });
+          logger.info(`Order confirmation sent for checkout ${CheckoutRequestID}`);
+        } catch (notifErr) {
+          logger.error(`Failed to send order confirmation: ${notifErr.message}`);
+        }
+      }
+
       const payResult = await db.query(
         `UPDATE activity_payments SET status = 'paid', mpesa_receipt = $1
          WHERE checkout_id = $2 AND status = 'pending'
@@ -110,7 +183,7 @@ export const mpesaCallback = async (req, res) => {
         logger.info(`Activity payment applied: booking_id=${booking_id}, amount=${paidAmt}`);
       }
 
-      logger.info(`✅ Payment callback processed: CheckoutID=${CheckoutRequestID}, Receipt=${mpesaReceipt}`);
+      logger.info(`Payment callback processed: CheckoutID=${CheckoutRequestID}, Receipt=${mpesaReceipt}`);
 
     } else {
       await db.query(
@@ -137,7 +210,7 @@ export const mpesaCallback = async (req, res) => {
         [CheckoutRequestID]
       );
 
-      logger.warn(`❌ Payment failed: CheckoutID=${CheckoutRequestID}, Reason=${ResultDesc}`);
+      logger.warn(`Payment failed: CheckoutID=${CheckoutRequestID}, Reason=${ResultDesc}`);
     }
 
   } catch (error) {
@@ -153,7 +226,7 @@ export const getPayments = async (req, res) => {
     const result = await db.query(`
       SELECT *
       FROM mpesa_request
-      ORDER BY id DESC
+      ORDER BY created_at DESC
     `);
 
     return res.json(result.rows);

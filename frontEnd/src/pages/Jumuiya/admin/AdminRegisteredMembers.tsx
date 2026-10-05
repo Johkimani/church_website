@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
-import { FaSearch, FaDownload, FaSync, FaUserGraduate, FaFilter, FaUsers, FaCheckCircle, FaGraduationCap } from "react-icons/fa";
+import { isMale, isFemale, genderCode } from "../../../utils/memberYear";
+import { FaSearch, FaDownload, FaSync, FaUserGraduate, FaUsers, FaCheckCircle, FaGraduationCap } from "react-icons/fa";
 import * as XLSX from "xlsx";
 
 interface AdminRegisteredMembersProps {
@@ -45,12 +46,21 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
   const fetchMembers = async () => {
     setLoading(true);
     try {
-      const res = await memberService.csaGetJumuiyaMemberList(jumuiyaId);
-      setMembers(res.data || []);
+      const res = await memberService.getJumuiyaRoster(jumuiyaId);
+      if (res?.success) setMembers(res.data || []);
     } catch {
       try {
         const res = await memberService.exportMembers(jumuiyaId);
-        setMembers(res.data || []);
+        const raw = res?.data || [];
+        setMembers(raw.map((m: any) => ({
+          id: m.member_id || m.id,
+          name: m.Name || m.name,
+          reg_number: m.RegNo || m.reg_number || m.member_id || m.id,
+          gender: m.Gender || m.gender,
+          course: m.course,
+          year: m.Year || m.year,
+          join_date: m.Joined || m.join_date,
+        })));
       } catch (err) {
         console.error("Failed to load registered members:", err);
       }
@@ -64,8 +74,8 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
   // Stats
   const stats = useMemo(() => {
     const total = members.length;
-    const male = members.filter(m => (m.gender || "").toLowerCase() === "male").length;
-    const female = members.filter(m => (m.gender || "").toLowerCase() === "female").length;
+    const male = members.filter(m => isMale(m.gender)).length;
+    const female = members.filter(m => isFemale(m.gender)).length;
     const semesterCounts: Record<string, number> = {};
     SEMESTERS.forEach(s => {
       semesterCounts[s.label] = members.filter(m => m[s.dbCol] === true || m[s.dbCol] === "true" || m[s.dbCol] === 1).length;
@@ -81,13 +91,13 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
       const q = search.toLowerCase();
       result = result.filter(m =>
         (m.name || `${m.first_name || ""} ${m.last_name || ""}`.trim()).toLowerCase().includes(q) ||
-        (m.reg_number || "").toLowerCase().includes(q) ||
+        (m.reg_number || m.member_id || "").toLowerCase().includes(q) ||
         (m.course || "").toLowerCase().includes(q)
       );
     }
 
     if (genderFilter !== "all") {
-      result = result.filter(m => (m.gender || "").toLowerCase() === genderFilter);
+      result = result.filter(m => genderFilter === "gent" ? isMale(m.gender) : isFemale(m.gender));
     }
 
     if (semesterFilter !== "all") {
@@ -103,11 +113,11 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
       const name = m.name || `${m.first_name || ""} ${m.last_name || ""}`.trim();
       const row: Record<string, any> = {
         Name: name,
-        "Reg Number": m.reg_number || "—",
+        "Reg Number": m.reg_number || m.member_id || m.id || "—",
         Gender: m.gender || "—",
         Course: m.course || "—",
         "Year.Sem": m.year_sem || getYearSemLabel(m),
-        Registered: formatDate(m.registration_date),
+        Registered: formatDate(m.registration_date || m.join_date),
       };
       SEMESTERS.forEach(s => {
         row[`Sem ${s.label}`] = m[s.dbCol] ? "✓" : "—";
@@ -120,6 +130,8 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
     XLSX.utils.book_append_sheet(wb, ws, "Registered Members");
     XLSX.writeFile(wb, `${jumuiyaName.replace(/\s+/g, "-")}-registered-members.xlsx`);
   };
+
+  const _c = (s: string) => jumuiyaColor.length > 7 ? jumuiyaColor.slice(0, 7) + s : jumuiyaColor + s;
 
   return (
     <div className="admin-card" style={{ "--jumuiya-color": jumuiyaColor } as React.CSSProperties}>
@@ -136,7 +148,7 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
 
       {/* Stats Row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px", marginBottom: "24px" }}>
-        <div style={{ background: `${jumuiyaColor}10`, borderRadius: "12px", padding: "16px", textAlign: "center" }}>
+        <div style={{ background: `${_c('10')}`, borderRadius: "12px", padding: "16px", textAlign: "center" }}>
           <FaUsers style={{ color: jumuiyaColor, fontSize: "1.2rem", marginBottom: "6px" }} />
           <p style={{ fontSize: "1.5rem", fontWeight: 800, margin: 0, color: "var(--text-primary)" }}>{stats.total}</p>
           <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: 0 }}>Total</p>
@@ -144,12 +156,12 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
         <div style={{ background: "#eff6ff", borderRadius: "12px", padding: "16px", textAlign: "center" }}>
           <FaUsers style={{ color: "#3b82f6", fontSize: "1.2rem", marginBottom: "6px" }} />
           <p style={{ fontSize: "1.5rem", fontWeight: 800, margin: 0, color: "#3b82f6" }}>{stats.male}</p>
-          <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: 0 }}>Male</p>
+          <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: 0 }}>Gents</p>
         </div>
         <div style={{ background: "#fdf2f8", borderRadius: "12px", padding: "16px", textAlign: "center" }}>
           <FaUsers style={{ color: "#ec4899", fontSize: "1.2rem", marginBottom: "6px" }} />
           <p style={{ fontSize: "1.5rem", fontWeight: 800, margin: 0, color: "#ec4899" }}>{stats.female}</p>
-          <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: 0 }}>Female</p>
+          <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: 0 }}>Ladies</p>
         </div>
         <div style={{ background: "#f0fdf4", borderRadius: "12px", padding: "16px", textAlign: "center" }}>
           <FaCheckCircle style={{ color: "#10b981", fontSize: "1.2rem", marginBottom: "6px" }} />
@@ -204,8 +216,8 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
           style={{ padding: "10px 14px", borderRadius: "10px", border: "1px solid var(--border-color)", fontSize: "0.875rem", background: "white" }}
         >
           <option value="all">All Genders</option>
-          <option value="male">Male</option>
-          <option value="female">Female</option>
+<option value="gent">Gents</option>
+                        <option value="lady">Ladies</option>
         </select>
 
         <select
@@ -288,15 +300,15 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
                     {m.name || `${m.first_name || ""} ${m.last_name || ""}`.trim() || "—"}
                   </td>
                   <td style={{ padding: "10px 14px", color: "var(--text-secondary)", fontFamily: "monospace", fontSize: "0.8rem" }}>
-                    {m.reg_number || "—"}
+                    {m.reg_number || m.member_id || m.id || "—"}
                   </td>
                   <td style={{ padding: "10px 14px" }}>
                     <span style={{
                       padding: "3px 10px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: 600,
-                      background: (m.gender || "").toLowerCase() === "male" ? "#eff6ff" : "#fdf2f8",
-                      color: (m.gender || "").toLowerCase() === "male" ? "#3b82f6" : "#ec4899"
+                      background: genderCode(m.gender) === "M" ? "#eff6ff" : genderCode(m.gender) === "L" ? "#fdf2f8" : "#f1f5f9",
+                      color: genderCode(m.gender) === "M" ? "#3b82f6" : genderCode(m.gender) === "L" ? "#ec4899" : "#64748b"
                     }}>
-                      {(m.gender || "").toLowerCase() === "male" ? "M" : "W"}
+                      {genderCode(m.gender)}
                     </span>
                   </td>
                   <td style={{ padding: "10px 14px", color: "var(--text-secondary)", maxWidth: "150px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={m.course}>
@@ -305,13 +317,13 @@ const AdminRegisteredMembers: React.FC<AdminRegisteredMembersProps> = ({ jumuiya
                   <td style={{ padding: "10px 14px" }}>
                     <span style={{
                       padding: "3px 10px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: 600,
-                      background: `${jumuiyaColor}15`, color: jumuiyaColor
+                      background: `${_c('15')}`, color: jumuiyaColor
                     }}>
                       {m.year_sem || getYearSemLabel(m)}
                     </span>
                   </td>
                   <td style={{ padding: "10px 14px", color: "var(--text-secondary)", fontSize: "0.8rem" }}>
-                    {formatDate(m.registration_date)}
+                    {formatDate(m.registration_date || m.join_date)}
                   </td>
                 </tr>
               ))}

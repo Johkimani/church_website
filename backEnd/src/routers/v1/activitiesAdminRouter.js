@@ -1,6 +1,7 @@
 import { Router } from "express";
 import verifyToken from "../../middlewares/Tokens.js";
 import { authorize } from "../../middlewares/authorization.js";
+import { uploadMiddleware } from "../../middlewares/uploadMiddleware.js";
 
 import {
   // weekly
@@ -10,6 +11,8 @@ import {
   activateWeeklyActivity,
   deactivateWeeklyActivity,
   reorderWeeklyActivities,
+  uploadWeeklyImage,
+  removeWeeklyImage,
 
   // novena schedules
   getNovenaSchedules,
@@ -32,12 +35,21 @@ import {
   deleteSemesterActivity,
   activateSemesterActivity,
   deactivateSemesterActivity,
+  uploadSemesterImage,
+  removeSemesterImage,
+  uploadSemesterDefaultImage,
+  removeSemesterDefaultImage,
 } from "../../controllers/activitiesController.js";
 
 import {
   getBookings,
-  exportBookingsCSV,
+  exportBookingsExcel,
+  createBookingForMember,
+  recordCashPayment,
+  cancelBooking,
+  deleteBooking,
 } from "../../controllers/activityBookingController.js";
+import { requireRole } from "../../middlewares/requireRole.js";
 
 const router = Router();
 
@@ -65,10 +77,22 @@ const permission = (action, resource) => {
 };
 const requireAdmin = (action, resource) => [verifyToken, permission(action, resource)];
 
-// ── Weekly (admin) ───────────────────────────────
 router.post("/weekly", ...requireAdmin('create', 'weekly_activities'), createWeeklyActivity);
 router.patch("/weekly/:id", ...requireAdmin('update', 'weekly_activities'), updateWeeklyActivity);
 router.delete("/weekly/:id", ...requireAdmin('delete', 'weekly_activities'), deleteWeeklyActivity);
+
+// Weekly activity image (upload / remove)
+router.post(
+  "/weekly/:id/image",
+  ...requireAdmin('update', 'weekly_activities'),
+  uploadMiddleware,
+  uploadWeeklyImage
+);
+router.delete(
+  "/weekly/:id/image",
+  ...requireAdmin('update', 'weekly_activities'),
+  removeWeeklyImage
+);
 
 router.post(
   "/weekly/:id/activate",
@@ -87,10 +111,34 @@ router.post(
   reorderWeeklyActivities
 );
 
-// ── Semester (admin) ─────────────────────────────
 router.post("/semester", ...requireAdmin('create', 'semester_activities'), createSemesterActivity);
+
+// Semester event image (upload / remove)
+// Default image routes MUST come before :id routes to avoid route collision
+router.post(
+  "/semester/default-image",
+  ...requireAdmin('update', 'semester_activities'),
+  uploadMiddleware,
+  uploadSemesterDefaultImage
+);
+router.delete(
+  "/semester/default-image",
+  ...requireAdmin('update', 'semester_activities'),
+  removeSemesterDefaultImage
+);
 router.patch("/semester/:id", ...requireAdmin('update', 'semester_activities'), updateSemesterActivity);
 router.delete("/semester/:id", ...requireAdmin('delete', 'semester_activities'), deleteSemesterActivity);
+router.post(
+  "/semester/:id/image",
+  ...requireAdmin('update', 'semester_activities'),
+  uploadMiddleware,
+  uploadSemesterImage
+);
+router.delete(
+  "/semester/:id/image",
+  ...requireAdmin('update', 'semester_activities'),
+  removeSemesterImage
+);
 
 router.post(
   "/semester/:id/activate",
@@ -103,7 +151,6 @@ router.post(
   deactivateSemesterActivity
 );
 
-// ── Novena schedules (admin) ─────────────────────
 router.get(
   "/novena/schedules",
   ...requireAdmin('read', 'novena_schedules'),
@@ -135,7 +182,6 @@ router.post(
   deactivateNovenaSchedule
 );
 
-// ── Novena override activities (admin) ───────────
 router.get(
   "/novena/overrides",
   ...requireAdmin('read', 'novena_override_activities'),
@@ -164,9 +210,20 @@ router.post(
   reorderNovenaOverrides
 );
 
-// ── Bookings (admin) ────────────────────────────────
-router.get("/bookings", verifyToken, getBookings);
-router.get("/bookings/export", verifyToken, exportBookingsCSV);
+// Booking lists expose member PII (name, email, phone, reg, jumuiya) and
+// payment info, so reads are gated to the CSA OS / CSA chairperson only.
+router.get("/bookings", verifyToken, requireRole("os", "csa_chair"), getBookings);
+router.get("/bookings/export", verifyToken, requireRole("os", "csa_chair"), exportBookingsExcel);
+// CSA OS (or chair) books an activity on a member's behalf when the member
+// approaches them in person. Non-member guests are also supported (event-only).
+router.post("/bookings", verifyToken, requireRole("os", "csa_chair"), createBookingForMember);
+// OS (or chair) records cash taken in person toward a booking's fare.
+router.patch("/bookings/:id/payment", verifyToken, requireRole("os", "csa_chair"), recordCashPayment);
+// OS (or chair) cancels a booking because the person couldn't make the event.
+router.patch("/bookings/:id/cancel", verifyToken, requireRole("os", "csa_chair"), cancelBooking);
+// OS (or chair) permanently removes a booking (and its payments) from the
+// record. Distinct from cancel, which keeps a soft-cancelled row.
+router.delete("/bookings/:id", verifyToken, requireRole("os", "csa_chair"), deleteBooking);
 
 export default router;
 

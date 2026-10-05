@@ -21,10 +21,6 @@ const YEAR_NAMES: Record<number, string> = {
 
 const SEMESTERS = ["1.1", "1.2", "2.1", "2.2", "3.1", "3.2", "4.1", "4.2"];
 
-function getDisplayLabel(c: any): string {
-  return `${YEAR_NAMES[c.yearLevel] ?? `Year ${c.yearLevel}`} (${c.admissionYear})`;
-}
-
 function getDisplayShort(c: any): string {
   return YEAR_NAMES[c.yearLevel] ?? `Year ${c.yearLevel}`;
 }
@@ -93,15 +89,6 @@ export default function CrossComparisonTab() {
       pct: semData?.pct || 0,
       color: getCohortColor(c),
     };
-  });
-
-  const gridData = SEMESTERS.map(sem => {
-    const point: any = { semester: sem };
-    sorted.forEach((c: any) => {
-      const semData = c.semesters.find((s: any) => s.sem === sem);
-      point[c.label] = semData?.pct || 0;
-    });
-    return point;
   });
 
   const CohortBar = ({ color, label }: { color: string; label: string }) => (
@@ -188,7 +175,7 @@ export default function CrossComparisonTab() {
             />
             <Tooltip
               contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }}
-              formatter={(value: number, _: string, props: any) => [`${props.payload.count} members (${value}%)`, props.payload.cohort]}
+              formatter={(value: any, _: any, props: any) => [`${props.payload.count} members (${value}%)`, props.payload.cohort]}
             />
             <Bar dataKey="pct" radius={[6, 6, 0, 0]} name="Registration Rate" barSize={60}>
               {selectedSemData.map((entry: any, index: number) => (
@@ -210,8 +197,7 @@ export default function CrossComparisonTab() {
           <h3 className="text-sm font-bold text-slate-800">All Semesters — Year Level Comparison Grid</h3>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {SEMESTERS.map((sem, si) => {
-            const semData = gridData[si];
+          {SEMESTERS.map((sem) => {
             const maxVal = Math.max(...sorted.map((c: any) => {
               const sd = c.semesters.find((s: any) => s.sem === sem);
               return sd?.pct || 0;
@@ -224,7 +210,6 @@ export default function CrossComparisonTab() {
                   {sorted.map((c: any) => {
                     const sd = c.semesters.find((s: any) => s.sem === sem);
                     const pct = sd?.pct || 0;
-                    const count = sd?.count || 0;
                     const color = getCohortColor(c);
                     return (
                       <div key={c.label} className="relative h-5 flex items-center">

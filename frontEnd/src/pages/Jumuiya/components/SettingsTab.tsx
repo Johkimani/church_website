@@ -22,8 +22,8 @@ export default function SettingsTab({ jumuiyaColor }: Props) {
       toast.error("Please fill in all fields");
       return;
     }
-    if (newPassword.length < 6) {
-      toast.error("New password must be at least 6 characters");
+    if (newPassword.length < 8) {
+      toast.error("New password must be at least 8 characters");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -49,10 +49,12 @@ export default function SettingsTab({ jumuiyaColor }: Props) {
     }
   };
 
+  const _c = (s: string) => jumuiyaColor.length > 7 ? jumuiyaColor.slice(0, 7) + s : jumuiyaColor + s;
+
   return (
     <div className="max-w-md mx-auto py-8 space-y-6">
       <div className="text-center space-y-2">
-        <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center" style={{ backgroundColor: `${jumuiyaColor}20` }}>
+        <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center" style={{ backgroundColor: `${_c('20')}` }}>
           <KeyRound className="w-7 h-7" style={{ color: jumuiyaColor }} />
         </div>
         <h2 className="text-2xl font-bold text-slate-900">Account Settings</h2>

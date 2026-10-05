@@ -7,6 +7,16 @@ import {
   getAllData,
 } from "../../controllers/ApiController.js";
 import logger from "../../logger/winston.js";
+import verifyToken from "../../middlewares/Tokens.js";
+import optionalVerifyToken from "../../middlewares/optionalVerifyToken.js";
+import verifyCaptcha from "../../middlewares/captcha.js";
+import { requireRole, OFFICIAL_ROLES } from "../../middlewares/requireRole.js";
+import {
+  getCallerModuleScopes,
+  canAccessCommunityModule,
+  normalizeModuleId,
+  getEnrollmentModuleById,
+} from "../../middlewares/communityScopes.js";
 
 export const api = Router();
 
@@ -31,12 +41,15 @@ const allowedTables = [
   "hub_gallery",
   "enrollments",
   "suggestions",
-  "products",
   "orders",
   "hire_requests",
   "product_categories",
   "categories",
   "testimonials",
+  "finance_ledger",
+  "finance_budgets",
+  "choir_songs",
+  "choir-songs",
 ];
 
 // Middleware to validate table name
@@ -50,11 +63,82 @@ const validateTable = (req, res, next) => {
   next();
 };
 
+// Tables whose full contents (incl. PII / password hashes / payment records)
+// must NEVER be readable without authentication.
+const PROTECTED_READ_TABLES = new Set([
+  "members",
+  "users",
+  "mpesa_request",
+  "contributions",
+  "orders",
+  "hire_requests",
+  "suggestions",
+  "finance_ledger",
+  "finance_budgets",
+]);
+
+// Tables with a legitimate PUBLIC write (public registration / feedback / suggestions)
+const PUBLIC_POST_TABLES = new Set([
+  "enrollments",
+  "testimonials",
+  "suggestions",
+]);
+
+// Tables so sensitive (PII, password hashes, payment records) that only members
+// holding an approved official role may read them. orders/hire_requests contain
+// buyer PII (names, phones, addresses) and are therefore official-only too.
+// suggestions carries reporter PII (name, phone, email) and is only ever shown
+// inside the admin UI, so its reads are official-only as well.
+const SENSITIVE_ROLE_READ_TABLES = new Set([
+  "members",
+  "users",
+  "mpesa_request",
+  "contributions",
+  "orders",
+  "hire_requests",
+  "suggestions",
+  "finance_ledger",
+  "finance_budgets",
+]);
+
+// Authz: lock down reads of sensitive tables and ALL writes except public POSTs.
+// Role-level enforcement: officials-only reads for the most sensitive tables.
+// Writes (POST/PATCH/DELETE) outside the public set are official-only — the
+// generic record API accepts arbitrary columns, so a plain member must never
+// be allowed to write (e.g. PATCH /members/:id to change email/password).
+const authorizeTableAccess = (req, res, next) => {
+  const { table } = req.params;
+  const method = req.method.toUpperCase();
+
+  if (method === "GET" || method === "HEAD") {
+    // Enrollments carry applicant PII (names/phones) and per-community pending
+    // queues — never public. Any logged-in user may call it (members see the
+    // approved roster), but the handler filters rows to the caller's scope.
+    if (table === "enrollments") return verifyToken(req, res, next);
+    if (SENSITIVE_ROLE_READ_TABLES.has(table)) {
+      return verifyToken(req, res, () => requireRole(...OFFICIAL_ROLES)(req, res, next));
+    }
+    if (PROTECTED_READ_TABLES.has(table)) return verifyToken(req, res, next);
+    return next();
+  }
+
+  if (method === "POST" && PUBLIC_POST_TABLES.has(table)) {
+    // Public writes: for suggestions, still attach the caller identity when a
+    // (valid) token is present so user_id is trusted server-side.
+    if (table === "suggestions") {
+      return optionalVerifyToken(req, res, () => verifyCaptcha(req, res, next));
+    }
+    return verifyCaptcha(req, res, next);
+  }
+  return verifyToken(req, res, () => requireRole(...OFFICIAL_ROLES)(req, res, next));
+};
+
 // GET all data from all tables (must be before /:table route)
-api.get("/all/data", async (req, res) => {
+// Not used by the frontend; kept behind auth and stripped of sensitive tables.
+api.get("/all/data", verifyToken, async (req, res) => {
   try {
     const data = await getAllData();
-    logger.debug(`received data from route '/all/data'`);
+    for (const key of PROTECTED_READ_TABLES) delete data[key];
     return res.json(data);
   } catch (error) {
     logger.error(`Error in '/all/data': ${error.message}\n${error.stack}`);
@@ -63,13 +147,37 @@ api.get("/all/data", async (req, res) => {
 });
 
 // GET all records from a table
-api.get("/:table", validateTable, async (req, res) => {
+api.get("/:table", validateTable, authorizeTableAccess, async (req, res) => {
   try {
     const { table } = req.params;
-    let data = await getTableData(table, req.query);
-    
+    const payload = await getTableData(table, req.query);
+
+    // When pagination params were supplied the controller returns an object
+    // { data, pagination }; otherwise it returns a plain array (legacy shape).
+    const data = payload && !Array.isArray(payload) ? payload.data : payload;
+
     if (table === 'enrollments') {
-      data = data.map(item => {
+      // Scope rows to the caller: global roles see everything; a community
+      // official sees only their own community; plain members see just the
+      // approved roster (community membership is public to members, pending
+      // applicants are not).
+      const scopes = getCallerModuleScopes(req);
+      let scoped = data;
+      if (!scopes.all) {
+        scoped =
+          scopes.modules.length === 0
+            ? data.filter(
+                (item) =>
+                  String(item.status || "").toLowerCase() === "approved"
+              )
+            : data.filter((item) =>
+                scopes.modules.includes(
+                  normalizeModuleId(item.module_id || item.class_id)
+                )
+              );
+      }
+
+      const mapped = scoped.map(item => {
         if (['charismatic', 'dancers', 'youth'].includes(item.module_id) || ['charismatic', 'dancers', 'youth'].includes(item.class_id)) {
           return {
             id: item.id,
@@ -84,10 +192,15 @@ api.get("/:table", validateTable, async (req, res) => {
         }
         return item;
       });
+
+      if (payload && !Array.isArray(payload)) {
+        return res.json({ ...payload, data: mapped });
+      }
+      return res.json(mapped);
     }
 
     logger.debug(`Success fetching from route '/:table'`);
-    return res.json(data);
+    return res.json(payload);
   } catch (error) {
     logger.error(`Error in '/:table': ${error.message}\n${error.stack}`);
 
@@ -102,7 +215,7 @@ api.get("/:table", validateTable, async (req, res) => {
 });
 
 // POST create a new record in a table
-api.post("/:table", validateTable, async (req, res) => {
+api.post("/:table", validateTable, authorizeTableAccess, async (req, res) => {
   try {
     const { table } = req.params;
     
@@ -120,6 +233,26 @@ api.post("/:table", validateTable, async (req, res) => {
       logger.info(`Mapping ${targetModule} registration payload: ${JSON.stringify(payload)}`);
     }
 
+    if (table === 'suggestions') {
+      // Column allowlist: public submitters can never set status, approval
+      // flags, tokens, replies or forge user_id / read-scoped fields.
+      const text = String(req.body?.suggestion || '').trim();
+      if (!text) return res.status(400).json({ error: "suggestion text is required" });
+      const allowedCategories = ['general', 'worship', 'progress', 'feedback', 'other', 'officials', 'jumuiya', 'members', 'ideas', 'requests', 'events'];
+      const scope = req.body?.scope === 'jumuiya' ? 'jumuiya' : 'csa';
+      req.body = {
+        suggestion: text.slice(0, 2000),
+        category: allowedCategories.includes(req.body?.category) ? req.body.category : 'general',
+        scope,
+        jumuiya_id: scope === 'jumuiya' ? String(req.body?.jumuiya_id || '').slice(0, 100) : 'csa',
+        name: String(req.body?.name || '').trim().slice(0, 255) || null,
+        email: String(req.body?.email || '').trim().slice(0, 255) || null,
+        user_id: req.user?.member_id || null,
+        status: 'pending',
+      };
+      logger.info(`Sanitized suggestions payload`);
+    }
+
     const newRecord = await createRecord(table, req.body);
     logger.debug(`newRecord created from route '/:table'`);
 
@@ -132,14 +265,23 @@ api.post("/:table", validateTable, async (req, res) => {
       return res.status(503).json({ error: 'Database unavailable. Please try again later.' });
     }
 
+    if (error && error.status) return res.status(error.status).json({ error: error.message });
+
     return res.status(500).json({ error: error.message });
   }
 });
 
 // PATCH update a record in a table
-api.patch("/:table/:id", validateTable, async (req, res) => {
+api.patch("/:table/:id", validateTable, authorizeTableAccess, async (req, res) => {
   try {
     const { table, id } = req.params;
+    // Community officials may only update enrollments of their own community.
+    if (table === "enrollments") {
+      const row = await getEnrollmentModuleById(id);
+      if (!row || !canAccessCommunityModule(req, row.module_id || row.class_id)) {
+        return res.status(404).json({ error: "Record not found" });
+      }
+    }
     const updated = await updateRecord(table, id, req.body);
     if (!updated) {
       return res.status(404).json({ error: "Record not found" });
@@ -147,14 +289,22 @@ api.patch("/:table/:id", validateTable, async (req, res) => {
     return res.json(updated);
   } catch (error) {
     logger.error(`Error in PATCH '/:table/:id': ${error.message}`);
+    if (error && error.status) return res.status(error.status).json({ error: error.message });
     return res.status(500).json({ error: error.message });
   }
 });
 
 // DELETE a record from a table
-api.delete("/:table/:id", validateTable, async (req, res) => {
+api.delete("/:table/:id", validateTable, authorizeTableAccess, async (req, res) => {
   try {
     const { table, id } = req.params;
+    // Community officials may only delete enrollments of their own community.
+    if (table === "enrollments") {
+      const row = await getEnrollmentModuleById(id);
+      if (!row || !canAccessCommunityModule(req, row.module_id || row.class_id)) {
+        return res.status(404).json({ error: "Record not found" });
+      }
+    }
     const deleted = await deleteRecord(table, id);
     if (!deleted) {
       logger.warn(

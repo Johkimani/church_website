@@ -24,6 +24,7 @@ export interface Props {
 // imported to church_website\frontEnd\src\pages\Devotions\csaComparison\CsaComparison.tsx
 export interface JumuiData {
   _id: string;
+  name?: string;
   totalAttempts: number;
   correctAttempts: number;
   accuracy: number;

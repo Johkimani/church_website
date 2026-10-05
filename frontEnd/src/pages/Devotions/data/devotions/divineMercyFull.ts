@@ -1,0 +1,72 @@
+export const divineMercyPrayers = {
+  title: "The Divine Mercy Chaplet",
+  subtitle: "Revealed to St. Faustina",
+  description: "Prayed on ordinary rosary beads. The chaplet is an extraordinary prayer of mercy, offering the Eternal Father the Body, Blood, Soul and Divinity of His dearly beloved Son for the mercy of the whole world.",
+  color: "#EF4444",
+  image: "/images/christ.jpg",
+  howToPray: [
+    "Make the Sign of the Cross on the Crucifix.",
+    "On the large bead, pray the Our Father.",
+    "On the three small beads, pray the Hail Mary, Glory Be, and the Apostles' Creed.",
+    "On each large bead, pray the Eternal Father prayer.",
+    "On each of the ten small beads, pray 'For the sake of His sorrowful Passion.'",
+    "After each decade, pray the Holy God prayer three times.",
+    "Conclude with the closing prayer: 'Holy God, Holy Mighty One, Holy Immortal One, have mercy on us and on the whole world.'",
+  ],
+  openingPrayer: {
+    title: "Opening Prayer (on the Crucifix)",
+    text: "You expired, Jesus, but the source of life gushed forth for souls, and the ocean of mercy opened up for the whole world. O Fount of Life, unfathomable Divine Mercy, envelop the whole world and empty Yourself out upon us.\n\nO Blood and Water, which gushed forth from the Heart of Jesus as a fount of Mercy for us, I trust in You.\n\nO Blood and Water, which gushed forth from the Heart of Jesus as a fount of Mercy for us, I trust in You.\n\nO Blood and Water, which gushed forth from the Heart of Jesus as a fount of Mercy for us, I trust in You.",
+  },
+  beforeTheRosary: {
+    title: "Before the Rosary Beads",
+    prayers: [
+      { label: "Our Father", text: "Our Father, who art in heaven, hallowed be thy name; thy kingdom come; thy will be done on earth as it is in heaven. Give us this day our daily bread; and forgive us our trespasses as we forgive those who trespass against us; and lead us not into temptation, but deliver us from evil. Amen." },
+      { label: "Hail Mary", text: "Hail Mary, full of grace, the Lord is with thee. Blessed art thou among women, and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen." },
+      { label: "The Apostles' Creed", text: "I believe in God, the Father almighty, Creator of heaven and earth, and in Jesus Christ, his only Son, our Lord, who was conceived by the Holy Spirit, born of the Virgin Mary, suffered under Pontius Pilate, was crucified, died and was buried; he descended into hell; on the third day he rose again from the dead; he ascended into heaven, and is seated at the right hand of God the Father almighty; from there he will come to judge the living and the dead. I believe in the Holy Spirit, the holy catholic Church, the communion of saints, the forgiveness of sins, the resurrection of the body, and life everlasting. Amen." },
+    ],
+  },
+  decades: [
+    {
+      title: "First Decade — The Agony in the Garden",
+      mystery: "Jesus prays in the Garden of Gethsemane, accepting the chalice of suffering.",
+      ourFather: "Our Father, who art in heaven, hallowed be thy name; thy kingdom come; thy will be done on earth as it is in heaven. Give us this day our daily bread; and forgive us our trespasses as we forgive those who trespass against us; and lead us not into temptation, but deliver us from evil. Amen.",
+      hailMarys: "Hail Mary, full of grace, the Lord is with thee. Blessed art thou among women, and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.",
+      gloryBe: "Glory be to the Father, and to the Son, and to the Holy Spirit. As it was in the beginning, is now, and ever shall be, world without end. Amen.",
+    },
+    {
+      title: "Second Decade — The Scourging at the Pillar",
+      mystery: "Jesus is scourged at the pillar, His body torn for our sins.",
+      ourFather: "Our Father, who art in heaven, hallowed be thy name; thy kingdom come; thy will be done on earth as it is in heaven. Give us this day our daily bread; and forgive us our trespasses as we forgive those who trespass against us; and lead us not into temptation, but deliver us from evil. Amen.",
+      hailMarys: "Hail Mary, full of grace, the Lord is with thee. Blessed art thou among women, and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.",
+      gloryBe: "Glory be to the Father, and to the Son, and to the Holy Spirit. As it was in the beginning, is now, and ever shall be, world without end. Amen.",
+    },
+    {
+      title: "Third Decade — The Crowning with Thorns",
+      mystery: "Jesus is crowned with thorns, mocked and ridiculed for our sake.",
+      ourFather: "Our Father, who art in heaven, hallowed be thy name; thy kingdom come; thy will be done on earth as it is in heaven. Give us this day our daily bread; and forgive us our trespasses as we forgive those who trespass against us; and lead us not into temptation, but deliver us from evil. Amen.",
+      hailMarys: "Hail Mary, full of grace, the Lord is with thee. Blessed art thou among women, and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.",
+      gloryBe: "Glory be to the Father, and to the Son, and to the Holy Spirit. As it was in the beginning, is now, and ever shall be, world without end. Amen.",
+    },
+    {
+      title: "Fourth Decade — The Carrying of the Cross",
+      mystery: "Jesus carries His Cross to Calvary, embracing the weight of our sins.",
+      ourFather: "Our Father, who art in heaven, hallowed be thy name; thy kingdom come; thy will be done on earth as it is in heaven. Give us this day our daily bread; and forgive us our trespasses as we forgive those who trespass against us; and lead us not into temptation, but deliver us from evil. Amen.",
+      hailMarys: "Hail Mary, full of grace, the Lord is with thee. Blessed art thou among women, and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.",
+      gloryBe: "Glory be to the Father, and to the Son, and to the Holy Spirit. As it was in the beginning, is now, and ever shall be, world without end. Amen.",
+    },
+    {
+      title: "Fifth Decade — The Crucifixion",
+      mystery: "Jesus is nailed to the Cross and dies for the salvation of the world.",
+      ourFather: "Our Father, who art in heaven, hallowed be thy name; thy kingdom come; thy will be done on earth as it is in heaven. Give us this day our daily bread; and forgive us our trespasses as we forgive those who trespass against us; and lead us not into temptation, but deliver us from evil. Amen.",
+      hailMarys: "Hail Mary, full of grace, the Lord is with thee. Blessed art thou among women, and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.",
+      gloryBe: "Glory be to the Father, and to the Son, and to the Holy Spirit. As it was in the beginning, is now, and ever shall be, world without end. Amen.",
+    },
+  ],
+  eternalFather: "Eternal Father, I offer You the Body and Blood, Soul and Divinity of Your dearly beloved Son, Our Lord Jesus Christ, in atonement for our sins and those of the whole world.",
+  decadePrayer: "For the sake of His sorrowful Passion, have mercy on us and on the whole world.",
+  holyGod: "Holy God, Holy Mighty One, Holy Immortal One, have mercy on us and on the whole world.",
+  closingPrayer: {
+    title: "Closing Prayer",
+    text: "O God, lover of mankind, You have spared nothing until You have brought us back to You, and now, mercifully grant us what we ask of You through the intercession of the Blessed Virgin Mary, Mother of Mercy. Amen.\n\nLet us pray:\nO Most Holy God, O Mighty One, O Holy Immortal One, have mercy on us and on the whole world. (3x)\n\nJesus, I trust in You.",
+  },
+};

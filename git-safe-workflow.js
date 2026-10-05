@@ -141,8 +141,16 @@ if (hasStaged) {
 }
 
 // Push
-info('Pushing to upstream...');
-run('git push');
+info('Pushing to origin (shrewd-baddest)...');
+run(`git push origin ${branch}`);
+
+info('Pushing to johkimani...');
+try {
+  run(`git push johkimani ${branch}`);
+} catch (e) {
+  warn(`Failed to push to johkimani remote: ${e.message}`);
+}
 
 info('Done.');
+
 

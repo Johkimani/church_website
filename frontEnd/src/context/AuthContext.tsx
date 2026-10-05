@@ -1,12 +1,11 @@
-import { createContext, useState, useContext, useEffect } from 'react';
+﻿import { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import { LocalStorage } from '../utils';
+import { SessionStorage } from '../utils';
 import axios from 'axios';
 import { BASE_URL } from '../api/config';
 
 interface UserData {
   accessToken: string;
-  refreshToken: string;
   role: string | string[];
   name: string;
   email: string;
@@ -24,6 +23,7 @@ interface AuthContextType {
   logout: () => void;
   register: () => void;
   isAuthenticated: boolean;
+  refreshSession: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -32,70 +32,95 @@ const AuthContext = createContext<AuthContextType>({
   logout: () => {},
   register: () => {},
   isAuthenticated: false,
+  refreshSession: async () => null,
 });
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
   const [user, setUser] = useState<UserData | null>(() => {
-    const storedData = LocalStorage.get('userdata');
+    const storedData = SessionStorage.get('userdata');
     if (storedData && storedData.status === 'success') {
       return storedData;
     }
     return null;
   });
 
-  useEffect(() => {
-    const storedData = LocalStorage.get('userdata');
-    if (!storedData || storedData.status !== 'success') return;
+  const refreshSession = useCallback(async (): Promise<string | null> => {
+    const storedData = SessionStorage.get('userdata');
+    if (!storedData || storedData.status !== 'success') return null;
 
-    const tryRefresh = async () => {
-      const token = storedData.accessToken;
-      if (typeof token !== 'string' || token.split('.').length !== 3) {
-        LocalStorage.remove('userdata');
-        setUser(null);
-        return;
+    const token = storedData.accessToken;
+    if (typeof token !== 'string' || token.split('.').length !== 3) {
+      SessionStorage.remove('userdata');
+      setUser(null);
+      return null;
+    }
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const isExpired = payload.exp * 1000 < Date.now();
+
+      if (!isExpired) {
+        setUser((prev) =>
+          prev && prev.accessToken === storedData.accessToken ? prev : storedData
+        );
+        return storedData.accessToken;
       }
 
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const isExpired = payload.exp * 1000 < Date.now();
+      // Access token expired: mint a new one from the httpOnly refresh cookie.
+      // The expired access token is sent as a binding so a shared cookie (open
+      // in another tab as another user) can't flip this tab's session.
+      const { data } = await axios.post(
+        `${BASE_URL}/authentication/refresh`,
+        { accessToken: token },
+        { withCredentials: true }
+      );
 
-        if (!isExpired) return;
-
-        if (!storedData.refreshToken) {
-          LocalStorage.remove('userdata');
-          setUser(null);
-          return;
-        }
-
-        const { data } = await axios.post(`${BASE_URL}/authentication/refresh`, {
-          refreshToken: storedData.refreshToken,
-        });
-
-        const updated = {
-          ...storedData,
-          accessToken: data.accessToken,
-          refreshToken: data.refreshToken || storedData.refreshToken,
-        };
-        setUser(updated);
-        LocalStorage.set('userdata', updated);
-      } catch {
-        LocalStorage.remove('userdata');
+      const updated = {
+        ...storedData,
+        accessToken: data.accessToken,
+      };
+      setUser(updated);
+      SessionStorage.set('userdata', updated);
+      return updated.accessToken;
+    } catch (err) {
+      // Only end the session on a definitive auth rejection (4xx from the
+      // refresh endpoint). Transient network/server failures (backend waking
+      // up, no internet) must not wipe a still-valid session.
+      const isRejected =
+        axios.isAxiosError(err) &&
+        err.response?.status !== undefined &&
+        err.response.status >= 400 &&
+        err.response.status < 500;
+      if (isRejected) {
+        SessionStorage.remove('userdata');
         setUser(null);
       }
-    };
-
-    tryRefresh();
+      return null;
+    }
   }, []);
+
+  useEffect(() => {
+    refreshSession();
+  }, [refreshSession]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      refreshSession();
+    }, 10 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [refreshSession]);
 
   const login = (data: UserData) => {
     setUser(data);
-    LocalStorage.set('userdata', data);
+    SessionStorage.set('userdata', data);
   };
 
   const logout = () => {
+    // Revoke the refresh token server-side and drop the httpOnly cookie.
+    axios.post(`${BASE_URL}/authentication/log-out`, {}, { withCredentials: true }).catch(() => {});
     setUser(null);
-    LocalStorage.remove('userdata');
+    SessionStorage.remove('userdata');
   };
 
   const register = () => {};
@@ -103,7 +128,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const isAuthenticated = !!user && user.status === 'success';
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, register, isAuthenticated }}>
+    <AuthContext.Provider value={{ user, login, logout, register, isAuthenticated, refreshSession }}>
       {children}
     </AuthContext.Provider>
   );

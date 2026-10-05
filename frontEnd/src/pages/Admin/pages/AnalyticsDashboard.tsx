@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
+import { useAuth } from "../../../context/AuthContext";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -7,7 +8,7 @@ import {
 import {
   TrendingUp, Users, Church, GraduationCap, CreditCard, Smartphone, Wallet,
   RefreshCw, Calendar, ArrowUpRight, CheckCircle2, Clock, XCircle,
-  X, ChevronDown, Loader2, ExternalLink, Eye, EyeOff,
+  X, Loader2, ExternalLink, Trash2,
   Layers, GitCompare, Activity, Trophy
 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -15,16 +16,6 @@ import CohortProgressionTab from "./CohortProgressionTab";
 import CrossComparisonTab from "./CrossComparisonTab";
 import JumuiyaProgressionTab from "./JumuiyaProgressionTab";
 import YearlyContributionTab from "./YearlyContributionTab";
-
-const JUMUIYA_COLORS: Record<string, string> = {
-  "St. Anthony": "#8b5cf6",
-  "St. Augustine": "#3b82f6",
-  "St. Catherine": "#800000",
-  "St. Dominic": "#979695ff",
-  "St. Elizabeth": "#07a414d1",
-  "St. Maria Goretti": "#0ea5e9",
-  "St. Monica": "#ef4444",
-};
 
 const SEMESTER_LABELS = ["1.1", "1.2", "2.1", "2.2", "3.1", "3.2", "4.1", "4.2"];
 const PIE_COLORS = ["#6366f1", "#ec4899", "#14b8a6", "#f59e0b", "#8b5cf6", "#ef4444", "#22c55e", "#3b82f6", "#f97316", "#06b6d4"];
@@ -55,20 +46,33 @@ export default function AnalyticsDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Payment period filters (academic year + semester window)
+  const [academicYear, setAcademicYear] = useState("");
+  const [semesterId, setSemesterId] = useState("");
+
   // Payment modal state
   const [showPayments, setShowPayments] = useState(false);
   const [paymentsFilter, setPaymentsFilter] = useState<string>("pending");
   const [payments, setPayments] = useState<any[]>([]);
   const [paymentsLoading, setPaymentsLoading] = useState(false);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
-  const [demoMode, setDemoMode] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingBatch, setDeletingBatch] = useState(false);
+  const [paymentsFrom, setPaymentsFrom] = useState("");
+  const [paymentsTo, setPaymentsTo] = useState("");
   const [activeSubTab, setActiveSubTab] = useState<"overview" | "cohort" | "cross" | "jumuiya" | "yearly">("overview");
+
+  const { user } = useAuth();
+  const userRoles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
+  const canDeletePayments = userRoles.some((r: any) => ["csa_chair", "csa_secretary"].includes(String(r).toLowerCase().trim()));
+
+  const filterParams = { academic_year: academicYear || undefined, semester_id: semesterId || undefined };
 
   const fetchData = async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await memberService.getAnalytics();
+      const res = await memberService.getAnalytics(filterParams);
       setData(res.data);
     } catch (err: any) {
       setError(err?.response?.data?.error || "Failed to load analytics");
@@ -77,63 +81,12 @@ export default function AnalyticsDashboard() {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [academicYear, semesterId]);
 
-  // ── Mock data for demo mode (high-volume scenario: 100 per jumuiya) ──
-  const MOCK_DATA = {
-    overview: { totalRegistered: 647, totalMembers: 720, registrationRate: 90 },
-    registrationTrends: [
-      { month: "2025-07", count: 12 }, { month: "2025-08", count: 45 },
-      { month: "2025-09", count: 89 }, { month: "2025-10", count: 67 },
-      { month: "2025-11", count: 34 }, { month: "2025-12", count: 18 },
-      { month: "2026-01", count: 28 }, { month: "2026-02", count: 56 },
-      { month: "2026-03", count: 78 }, { month: "2026-04", count: 92 },
-      { month: "2026-05", count: 41 }, { month: "2026-06", count: 87 },
-    ],
-    jumuiyaComparison: [
-      { jumuiya_name: "St. Anthony", jumuiya_color: "#8b5cf6", count: 102 },
-      { jumuiya_name: "St. Augustine", jumuiya_color: "#3b82f6", count: 98 },
-      { jumuiya_name: "St. Catherine", jumuiya_color: "#800000", count: 95 },
-      { jumuiya_name: "St. Dominic", jumuiya_color: "#979695ff", count: 87 },
-      { jumuiya_name: "St. Elizabeth", jumuiya_color: "#07a414d1", count: 91 },
-      { jumuiya_name: "St. Maria Goretti", jumuiya_color: "#0ea5e9", count: 99 },
-      { jumuiya_name: "St. Monica", jumuiya_color: "#ef4444", count: 75 },
-    ],
-    semesterFillRates: { sem_1: 647, sem_2: 580, sem_3: 490, sem_4: 412, sem_5: 328, sem_6: 245, sem_7: 168, sem_8: 95 },
-    coursesBreakdown: [
-      { course: "Computer Science", count: 142 }, { course: "Business Admin", count: 118 },
-      { course: "Education Arts", count: 95 }, { course: "Nursing", count: 87 },
-      { course: "Engineering", count: 72 }, { course: "Law", count: 58 },
-      { course: "Accounting", count: 45 }, { course: "Journalism", count: 22 },
-      { course: "Theology", count: 8 },
-    ],
-    yearBreakdown: [
-      { year: "1", count: 210 }, { year: "2", count: 185 },
-      { year: "3", count: 142 }, { year: "4", count: 110 },
-    ],
-    genderBreakdown: [
-      { gender: "male", count: 356 }, { gender: "female", count: 291 },
-    ],
-    recentRegistrations: [
-      { first_name: "Faith", last_name: "Wanjiku", jumuiya_name: "St. Maria Goretti", registration_date: "2026-06-28", serial_no: 99 },
-      { first_name: "Brian", last_name: "Ochieng", jumuiya_name: "St. Anthony", registration_date: "2026-06-27", serial_no: 102 },
-      { first_name: "Grace", last_name: "Muthoni", jumuiya_name: "St. Monica", registration_date: "2026-06-27", serial_no: 75 },
-      { first_name: "Kevin", last_name: "Kiprop", jumuiya_name: "St. Elizabeth", registration_date: "2026-06-26", serial_no: 91 },
-      { first_name: "Mercy", last_name: "Akinyi", jumuiya_name: "St. Catherine", registration_date: "2026-06-25", serial_no: 95 },
-      { first_name: "Daniel", last_name: "Mutua", jumuiya_name: "St. Augustine", registration_date: "2026-06-24", serial_no: 98 },
-      { first_name: "Esther", last_name: "Njeri", jumuiya_name: "St. Dominic", registration_date: "2026-06-23", serial_no: 87 },
-    ],
-    paymentSummary: { total_transactions: 647, total_amount: 32350, successful: 589, pending: 34, failed: 24, mpesa_success_amount: 28350, manual_success_amount: 4000 },
-  };
-
-  const displayData = demoMode ? MOCK_DATA : data;
-
-  const openPayments = async (status: string) => {
-    setPaymentsFilter(status);
-    setShowPayments(true);
+  const loadPayments = async (status: string, from?: string, to?: string) => {
     setPaymentsLoading(true);
     try {
-      const res = await memberService.getPayments({ status });
+      const res = await memberService.getPayments({ status, ...filterParams, from: from || undefined, to: to || undefined });
       setPayments(res.data || []);
     } catch {
       setPayments([]);
@@ -141,10 +94,18 @@ export default function AnalyticsDashboard() {
     setPaymentsLoading(false);
   };
 
-  const updatePaymentStatus = async (paymentId: number, newStatus: string) => {
+  const openPayments = async (status: string) => {
+    setPaymentsFilter(status);
+    setShowPayments(true);
+    setPaymentsFrom("");
+    setPaymentsTo("");
+    await loadPayments(status);
+  };
+
+  const updatePaymentStatus = async (paymentId: string | number, newStatus: string) => {
     setUpdatingId(paymentId);
     try {
-      await memberService.updatePaymentStatus(paymentId, { status: newStatus });
+      await memberService.updatePaymentStatus(String(paymentId), { status: newStatus });
       toast.success(`Payment #${paymentId} updated to ${newStatus}`);
       setPayments(prev => prev.filter(p => p.id !== paymentId));
       fetchData();
@@ -152,6 +113,38 @@ export default function AnalyticsDashboard() {
       toast.error(err?.response?.data?.error || "Failed to update");
     }
     setUpdatingId(null);
+  };
+
+  const deletePayment = async (paymentId: string) => {
+    if (!window.confirm("Permanently delete this payment record? This cannot be undone.")) return;
+    setDeletingId(paymentId);
+    try {
+      await memberService.deletePayment(paymentId);
+      toast.success("Payment deleted");
+      setPayments(prev => prev.filter(p => String(p.id) !== paymentId));
+      fetchData();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "Failed to delete payment");
+    }
+    setDeletingId(null);
+  };
+
+  const batchDeletePayments = async () => {
+    if (!paymentsFrom && !paymentsTo) {
+      toast.error("Set a date range to delete");
+      return;
+    }
+    if (!window.confirm(`Delete ALL ${paymentsFilter} payments from ${paymentsFrom || "the beginning"} to ${paymentsTo || "now"}? This cannot be undone.`)) return;
+    setDeletingBatch(true);
+    try {
+      const res = await memberService.batchDeletePayments({ from: paymentsFrom || undefined, to: paymentsTo || undefined, status: paymentsFilter === "success" ? "success" : paymentsFilter });
+      toast.success(`${res?.deleted_count || 0} payment(s) deleted`);
+      setPayments([]);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "Failed to delete payments");
+    }
+    setDeletingBatch(false);
   };
 
   if (loading) {
@@ -173,9 +166,9 @@ export default function AnalyticsDashboard() {
     );
   }
 
-  if (!displayData) return null;
+  if (!data) return null;
 
-  const { overview, registrationTrends, jumuiyaComparison, semesterFillRates, coursesBreakdown, yearBreakdown, genderBreakdown, recentRegistrations, paymentSummary } = displayData;
+  const { overview, registrationTrends, jumuiyaComparison, semesterFillRates, coursesBreakdown, yearBreakdown, genderBreakdown, recentRegistrations, paymentSummary, paymentFilters } = data;
 
   const trendData = registrationTrends.map((t: any) => ({ month: formatMonth(t.month), count: t.count }));
   const jumuiyaData = jumuiyaComparison.map((j: any) => ({
@@ -196,10 +189,15 @@ export default function AnalyticsDashboard() {
     })
     .filter((y: any) => y.name !== "Year NaN")
     .sort((a: any, b: any) => a.name.localeCompare(b.name));
-  const genderData = genderBreakdown.map((g: any) => ({
-    name: g.gender?.charAt(0).toUpperCase() + g.gender?.slice(1).toLowerCase() || "Unknown",
-    value: g.count,
-  }));
+  const genderData = genderBreakdown.map((g: any) => {
+    const raw = (g.gender || "").toLowerCase().trim();
+    const name = raw.includes("gent") || raw === "male" || raw === "m" || raw === "man" || raw === "boy"
+      ? "Gents"
+      : raw.includes("lady") || raw === "female" || raw === "f" || raw === "woman" || raw === "girl"
+        ? "Ladies"
+        : g.gender?.charAt(0).toUpperCase() + g.gender?.slice(1).toLowerCase() || "Unknown";
+    return { name, value: g.count };
+  });
 
   const paymentCards = [
     { key: "success", label: "Successful", count: paymentSummary.successful || 0, color: "emerald", icon: CheckCircle2 },
@@ -210,10 +208,10 @@ export default function AnalyticsDashboard() {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Sub-tab Navigation */}
-      <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1 w-fit overflow-x-auto">
+      <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1 w-full lg:w-fit overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <button
           onClick={() => setActiveSubTab("overview")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-all ${
             activeSubTab === "overview"
               ? "bg-white text-slate-800 shadow-sm"
               : "text-slate-500 hover:text-slate-700"
@@ -223,7 +221,7 @@ export default function AnalyticsDashboard() {
         </button>
         <button
           onClick={() => setActiveSubTab("cohort")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-all ${
             activeSubTab === "cohort"
               ? "bg-white text-slate-800 shadow-sm"
               : "text-slate-500 hover:text-slate-700"
@@ -233,7 +231,7 @@ export default function AnalyticsDashboard() {
         </button>
         <button
           onClick={() => setActiveSubTab("cross")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-all ${
             activeSubTab === "cross"
               ? "bg-white text-slate-800 shadow-sm"
               : "text-slate-500 hover:text-slate-700"
@@ -243,7 +241,7 @@ export default function AnalyticsDashboard() {
         </button>
         <button
           onClick={() => setActiveSubTab("jumuiya")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-all ${
             activeSubTab === "jumuiya"
               ? "bg-white text-slate-800 shadow-sm"
               : "text-slate-500 hover:text-slate-700"
@@ -253,7 +251,7 @@ export default function AnalyticsDashboard() {
         </button>
         <button
           onClick={() => setActiveSubTab("yearly")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-all ${
             activeSubTab === "yearly"
               ? "bg-white text-slate-800 shadow-sm"
               : "text-slate-500 hover:text-slate-700"
@@ -273,82 +271,114 @@ export default function AnalyticsDashboard() {
         <YearlyContributionTab />
       ) : (
       <>
+      {/* Payment Period Filter */}
+      <div className="bg-white rounded-xl border border-slate-200 p-4">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 mr-1">
+            <Calendar size={17} className="text-indigo-500" />
+            <span className="text-xs font-bold text-slate-700 whitespace-nowrap">Payment Period</span>
+          </div>
+          <select
+            value={academicYear}
+            onChange={(e) => setAcademicYear(e.target.value)}
+            className="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+          >
+            <option value="">All Academic Years</option>
+            {(paymentFilters?.academicYears || []).map((y: string) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+          <select
+            value={semesterId}
+            onChange={(e) => setSemesterId(e.target.value)}
+            className="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+          >
+            <option value="">All Semesters</option>
+            {(paymentFilters?.semesters || []).map((s: any) => (
+              <option key={s.id} value={String(s.id)}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+          {(academicYear || semesterId) && (
+            <button
+              onClick={() => { setAcademicYear(""); setSemesterId(""); }}
+              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 whitespace-nowrap"
+            >
+              Clear
+            </button>
+          )}
+          <span className="text-[10px] sm:text-xs text-slate-400 ml-auto whitespace-nowrap">
+            {paymentFilters?.selected?.applied
+              ? `Filtered: ${paymentFilters.selected.from} → ${paymentFilters.selected.to}`
+              : "Showing all payments (all time)"}
+          </span>
+        </div>
+      </div>
+
       {/* Overview Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
         <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-4 text-white">
           <div className="flex items-center gap-2 mb-2">
-            <Users size={18} className="text-blue-200" />
+            <Users size={18} className="text-blue-200 shrink-0" />
             <span className="text-[11px] text-blue-200 font-medium">Total Registered</span>
           </div>
-          <p className="text-3xl font-bold">{overview.totalRegistered}</p>
+          <p className="text-2xl sm:text-3xl font-bold tracking-tight">{overview.totalRegistered}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <Church size={18} className="text-purple-500" />
+            <Church size={18} className="text-purple-500 shrink-0" />
             <span className="text-[11px] text-slate-500 font-medium">Total Members</span>
           </div>
-          <p className="text-3xl font-bold text-slate-800">{overview.totalMembers}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-slate-800 tracking-tight">{overview.totalMembers}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <TrendingUp size={18} className="text-emerald-500" />
+            <TrendingUp size={18} className="text-emerald-500 shrink-0" />
             <span className="text-[11px] text-slate-500 font-medium">Registration Rate</span>
           </div>
-          <p className="text-3xl font-bold text-emerald-600">{overview.registrationRate}%</p>
+          <p className="text-2xl sm:text-3xl font-bold text-emerald-600 tracking-tight">{overview.registrationRate}%</p>
         </div>
         <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-4 text-white">
           <div className="flex items-center gap-2 mb-2">
-            <Smartphone size={16} className="text-emerald-200" />
+            <Smartphone size={16} className="text-emerald-200 shrink-0" />
             <span className="text-[11px] text-emerald-200 font-medium">M-Pesa</span>
           </div>
-          <p className="text-2xl font-bold">KES {Number(paymentSummary.mpesa_success_amount || 0).toLocaleString()}</p>
+          <p className="text-lg sm:text-2xl font-bold tracking-tight">KES {Number(paymentSummary.mpesa_success_amount || 0).toLocaleString()}</p>
         </div>
         <div className="bg-gradient-to-br from-amber-400 to-yellow-600 rounded-xl p-4 text-white">
           <div className="flex items-center gap-2 mb-2">
-            <Wallet size={16} className="text-yellow-200" />
+            <Wallet size={16} className="text-yellow-200 shrink-0" />
             <span className="text-[11px] text-yellow-200 font-medium">Manual (Cash)</span>
           </div>
-          <p className="text-2xl font-bold">KES {Number(paymentSummary.manual_success_amount || 0).toLocaleString()}</p>
+          <p className="text-lg sm:text-2xl font-bold tracking-tight">KES {Number(paymentSummary.manual_success_amount || 0).toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <CreditCard size={18} className="text-amber-500" />
+            <CreditCard size={18} className="text-amber-500 shrink-0" />
             <span className="text-[11px] text-slate-500 font-medium">Grand Total</span>
           </div>
-          <p className="text-3xl font-bold text-slate-800">KES {Number(paymentSummary.total_amount || 0).toLocaleString()}</p>
+          <p className="text-lg sm:text-3xl font-bold text-slate-800 tracking-tight">KES {Number(paymentSummary.total_amount || 0).toLocaleString()}</p>
           <p className="text-[10px] text-slate-400 mt-0.5">{paymentSummary.total_transactions || 0} transactions</p>
         </div>
       </div>
 
-      {/* Demo Mode Toggle */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => setDemoMode(!demoMode)}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-            demoMode ? "bg-indigo-100 text-indigo-700 ring-1 ring-indigo-200" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-          }`}
-        >
-          {demoMode ? <EyeOff size={14} /> : <Eye size={14} />}
-          {demoMode ? "Exit Demo" : "Demo Mode"}
-        </button>
-      </div>
-
       {/* Payment Status Row — clickable */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {paymentCards.map(card => {
           const styles = STATUS_STYLES[card.key] || STATUS_STYLES.pending;
           return (
             <button
               key={card.key}
               onClick={() => openPayments(card.key)}
-              className={`${styles.bg} rounded-xl p-3 flex items-center gap-3 hover:ring-2 hover:ring-offset-1 hover:ring-blue-300 transition-all text-left group`}
+              className={`${styles.bg} rounded-xl p-2 sm:p-3 flex items-center gap-2 sm:gap-3 hover:ring-2 hover:ring-offset-1 hover:ring-blue-300 transition-all text-left group min-h-[52px]`}
             >
-              <card.icon size={20} className={styles.text} />
-              <div className="flex-1">
-                <p className={`text-lg font-bold ${styles.text}`}>{card.count}</p>
-                <p className={`text-[10px] ${styles.text} font-medium`}>{card.label}</p>
+              <card.icon size={18} className={`${styles.text} shrink-0 sm:!w-5 sm:!h-5`} />
+              <div className="flex-1 min-w-0">
+                <p className={`text-base sm:text-lg font-bold ${styles.text}`}>{card.count}</p>
+                <p className={`text-[10px] ${styles.text} font-medium truncate`}>{card.label}</p>
               </div>
-              <ExternalLink size={14} className={`${styles.text} opacity-0 group-hover:opacity-100 transition-opacity`} />
+              <ExternalLink size={14} className={`${styles.text} opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block`} />
             </button>
           );
         })}
@@ -390,7 +420,7 @@ export default function AnalyticsDashboard() {
                 <YAxis tick={{ fontSize: 12, fill: '#334155' }} stroke="#cbd5e1" allowDecimals={false} width={40} domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.15 / 10) * 10]} />
                 <Tooltip
                   contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }}
-                  formatter={(value: number, _: string, props: any) => [`${value} members`, props.payload.fullName]}
+                  formatter={(value: any, _: any, props: any) => [`${value} members`, props.payload.fullName]}
                 />
                 <Bar dataKey="count" radius={[6, 6, 0, 0]} name="Members" barSize={42} label={{ position: 'top', fontSize: 11, fontWeight: 600, fill: '#475569' }}>
                   {jumuiyaData.map((entry: any, index: number) => <Cell key={index} fill={entry.color} />)}
@@ -428,7 +458,7 @@ export default function AnalyticsDashboard() {
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={genderData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                <Pie data={genderData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value" label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}>
                   {genderData.map((_: any, index: number) => <Cell key={index} fill={["#6366f1", "#ec4899", "#94a3b8"][index] || "#94a3b8"} />)}
                 </Pie>
                 <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
@@ -511,15 +541,14 @@ export default function AnalyticsDashboard() {
         </div>
       </div>
 
-      {/* ── Payment Status Modal ── */}
       {showPayments && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowPayments(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 sm:p-0" onClick={() => setShowPayments(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg sm:mx-4 max-h-[92vh] sm:max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <div>
                 <h3 className="text-base font-bold text-slate-800">Manage Payments</h3>
-                <p className="text-xs text-slate-400 mt-0.5">Showing {paymentsFilter} payments — click a status to change it</p>
+                <p className="text-xs text-slate-400 mt-0.5">Showing {paymentsFilter} payments{academicYear || semesterId ? ` · ${academicYear || ""}${semesterId ? ` · ${paymentFilters?.semesters?.find((s: any) => String(s.id) === semesterId)?.label || "Semester"}` : ""}` : " · all time"} — click a status to change it</p>
               </div>
               <button onClick={() => setShowPayments(false)} className="p-1 hover:bg-slate-100 rounded-lg"><X size={20} className="text-slate-400" /></button>
             </div>
@@ -531,7 +560,7 @@ export default function AnalyticsDashboard() {
                 return (
                   <button
                     key={s}
-                    onClick={() => { setPaymentsFilter(s); setPaymentsLoading(true); memberService.getPayments({ status: s }).then(r => { setPayments(r.data || []); setPaymentsLoading(false); }).catch(() => setPaymentsLoading(false)); }}
+                    onClick={() => { setPaymentsFilter(s); loadPayments(s, paymentsFrom, paymentsTo); }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                       paymentsFilter === s ? `${st.bg} ${st.text} ring-1 ring-offset-1 ${st.border}` : "text-slate-400 hover:bg-slate-50"
                     }`}
@@ -541,6 +570,44 @@ export default function AnalyticsDashboard() {
                 );
               })}
             </div>
+
+            {/* Date-range filter (gives admins a way to scale down & delete old data) */}
+            {canDeletePayments && (
+              <div className="flex items-end gap-2 px-5 pb-2 flex-wrap">
+                <div className="flex flex-col">
+                  <label className="text-[10px] font-semibold text-slate-400 uppercase mb-1">From</label>
+                  <input
+                    type="date"
+                    value={paymentsFrom}
+                    onChange={e => setPaymentsFrom(e.target.value)}
+                    className="px-2 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-[10px] font-semibold text-slate-400 uppercase mb-1">To</label>
+                  <input
+                    type="date"
+                    value={paymentsTo}
+                    onChange={e => setPaymentsTo(e.target.value)}
+                    className="px-2 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+                <button
+                  onClick={() => loadPayments(paymentsFilter, paymentsFrom, paymentsTo)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                >
+                  Filter
+                </button>
+                <button
+                  onClick={batchDeletePayments}
+                  disabled={deletingBatch}
+                  className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {deletingBatch ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                  Delete {paymentsFilter}s in range
+                </button>
+              </div>
+            )}
 
             {/* Payments List */}
             <div className="flex-1 overflow-y-auto px-5 pb-4">
@@ -575,6 +642,17 @@ export default function AnalyticsDashboard() {
                         <p className="text-[10px] text-slate-400">{formatDate(p.created_at)}</p>
                       </div>
                         <div className="flex flex-col gap-1">
+                          {canDeletePayments && (
+                            <button
+                              disabled={deletingId === p.id}
+                              onClick={() => deletePayment(p.id)}
+                              title="Permanently delete this payment"
+                              className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-red-50 text-red-600 hover:bg-red-100 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 justify-center"
+                            >
+                              {deletingId === p.id ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
+                              Delete
+                            </button>
+                          )}
                           {targetStatuses.map(ts => {
                             const tsStyle = STATUS_STYLES[ts];
                             return (

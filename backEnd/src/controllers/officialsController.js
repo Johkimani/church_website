@@ -11,17 +11,19 @@ import {
   formatPhoneForExcel 
 } from '../utils/helpers.js';
 import { autoAssignRoleForOfficial, removeRoleForOfficial } from '../utils/positionToRole.js';
+import { normalizeDancePosition, syncDancerToGroups, syncDancerDeletion } from '../utils/danceSync.js';
 import logger from "../logger/winston.js";
 import { emitSocketEvent } from "../socket/index.js";
+import { isOfficial } from "../middlewares/requireRole.js";
 
 export const CATEGORY_LIMITS = {
   'Executive': 6,
   'Jumuiya Coordinators': 2,
   'Bible Coordinators': 2,
-  'Rosary': 2,
+  'Rosary Coordinators': 2,
   'Pamphlet Managers': 2,
   'Project Managers': 2,
-  'Liturgist': 2,
+  'Liturgists': 2,
   'Choir Officials': 2,
   'Instrument Managers': 2,
   'Liturgical Dancers': 2,
@@ -30,14 +32,64 @@ export const CATEGORY_LIMITS = {
 
 export const VALID_CATEGORIES = Object.keys(CATEGORY_LIMITS);
 
+/**
+ * Single source of truth for turning an official's typed registration number
+ * into a real `members.member_id`.
+ *
+ * Both create and update go through here so the two screens cannot disagree:
+ * the same input either resolves the same member everywhere, or is rejected
+ * everywhere. Matching is case-insensitive and tolerates surrounding
+ * whitespace, because reg numbers get copied out of the member list in caps
+ * and re-typed in lower case. LIMIT 2 is deliberate — it lets us detect that
+ * a partial number matches more than one member and refuse, instead of
+ * silently binding the official to an arbitrary row.
+ *
+ * @returns {Promise<{memberId: string}|{error: string, reason: 'missing'|'not_found'|'ambiguous'}>}
+ */
+const resolveMemberForRegNumber = async (regNumber) => {
+  const search = regNumber?.trim();
+  if (!search) {
+    return {
+      error: 'Registration number is required — the official must be a registered member',
+      reason: 'missing',
+    };
+  }
+
+  const result = await pool.query(
+    `SELECT member_id FROM members
+      WHERE member_id = $1
+         OR LOWER(TRIM(member_id)) = LOWER(TRIM($1))
+         OR member_id ILIKE '%/' || $1 || '/%'
+         OR member_id ILIKE $2
+      LIMIT 2`,
+    [search, `%${search}%`]
+  );
+
+  if (result.rows.length === 0) {
+    return {
+      error: `No member found with registration number matching "${search}". The official must be a registered member.`,
+      reason: 'not_found',
+    };
+  }
+  if (result.rows.length > 1) {
+    return {
+      error: 'Registration number matches multiple members. Please use the exact member ID.',
+      reason: 'ambiguous',
+    };
+  }
+  return { memberId: result.rows[0].member_id };
+};
+
 export const CSA_SORT_SQL = `
   CASE o.category
     WHEN 'Executive' THEN 1
     WHEN 'Jumuiya Coordinators' THEN 2
     WHEN 'Bible Coordinators' THEN 3
+    WHEN 'Rosary Coordinators' THEN 4
     WHEN 'Rosary' THEN 4
     WHEN 'Pamphlet Managers' THEN 5
     WHEN 'Project Managers' THEN 6
+    WHEN 'Liturgists' THEN 7
     WHEN 'Liturgist' THEN 7
     WHEN 'Instrument Managers' THEN 8
     WHEN 'Choir Officials' THEN 9
@@ -71,7 +123,8 @@ export const getAllElectionTerms = async (req, res) => {
     const query = `
       SELECT et.*, 
         (SELECT COUNT(*) FROM officials o WHERE o.election_term_id = et.id AND o.status = 'archived') as archived_csa_count,
-        (SELECT COUNT(*) FROM jumuiya_officials jo WHERE jo.election_term_id = et.id AND jo.status = 'archived') as archived_jumuiya_count
+        (SELECT COUNT(*) FROM jumuiya_officials jo WHERE jo.election_term_id = et.id AND jo.status = 'archived') as archived_jumuiya_count,
+        (SELECT COUNT(*) FROM group_officials go WHERE go.election_term_id = et.id AND go.status = 'archived') as archived_group_count
       FROM election_terms et 
       ORDER BY et.is_current DESC, et.year DESC, et.created_at DESC
     `;
@@ -88,7 +141,8 @@ export const getCurrentElectionTerm = async (req, res) => {
     const query = `
       SELECT et.*, 
         (SELECT COUNT(*) FROM officials o WHERE o.election_term_id = et.id AND o.status = 'archived') as archived_csa_count,
-        (SELECT COUNT(*) FROM jumuiya_officials jo WHERE jo.election_term_id = et.id AND jo.status = 'archived') as archived_jumuiya_count
+        (SELECT COUNT(*) FROM jumuiya_officials jo WHERE jo.election_term_id = et.id AND jo.status = 'archived') as archived_jumuiya_count,
+        (SELECT COUNT(*) FROM group_officials go WHERE go.election_term_id = et.id AND go.status = 'archived') as archived_group_count
       FROM election_terms et 
       WHERE et.is_current = TRUE
     `;
@@ -338,16 +392,28 @@ export const getOfficialsByTerm = async (req, res) => {
     const total = parseInt(totalResult.rows[0].count);
 
     const dataQuery = `
-      SELECT o.*, et.name as term_name, et.year as term_year 
+      SELECT o.*, et.name as term_name, et.year as term_year, et.closing_message
       ${queryBase} 
       ORDER BY ${termId || req.query.only_archived === 'true' ? 'et.year DESC, ' : ''}${CSA_SORT_SQL} 
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     
     const result = await pool.query(dataQuery, [...params, limit, offset]);
 
+    if (!isOfficial(req)) {
+      result.rows.forEach(r => delete r.reg_number);
+    }
+
+    // Per-term tribute message shown under the cards on the public history page
+    let closingMessage = null;
+    if (termId) {
+      const tRes = await pool.query('SELECT closing_message FROM election_terms WHERE id = $1', [termId]);
+      closingMessage = tRes.rows[0]?.closing_message || null;
+    }
+
     res.json({ 
       success: true, 
       data: result.rows,
+      closing_message: closingMessage,
       meta: {
         total,
         page,
@@ -358,6 +424,32 @@ export const getOfficialsByTerm = async (req, res) => {
   } catch (error) {
     logger.error('Error fetching officials by term: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to fetch officials' });
+  }
+};
+
+export const updateTermClosingMessage = async (req, res) => {
+  try {
+    const { termId } = req.params;
+    const { message } = req.body || {};
+
+    if (typeof message !== 'string' || message.trim().length > 1000) {
+      return res.status(400).json({ success: false, message: 'Message must be text of at most 1000 characters' });
+    }
+
+    const check = await pool.query('SELECT id FROM election_terms WHERE id = $1', [termId]);
+    if (check.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Election term not found' });
+    }
+
+    await pool.query(
+      'UPDATE election_terms SET closing_message = $1 WHERE id = $2',
+      [message.trim() || null, termId]
+    );
+
+    res.json({ success: true, message: 'Closing message saved', data: { closing_message: message.trim() || null } });
+  } catch (error) {
+    logger.error('Error updating term closing message: ' + error.message);
+    res.status(500).json({ success: false, message: 'Failed to save closing message' });
   }
 };
 
@@ -377,11 +469,18 @@ export const restoreArchivedOfficials = async (req, res) => {
       [officialIds]
     );
 
-    // 2. Check for contact conflicts
+    // 2. Check for contact conflicts — same registered member is allowed
     if (contacts.rows.length > 0) {
       const dup = await pool.query(
-        `SELECT id FROM officials WHERE contact = ANY($1) AND status = 'active' AND NOT (id = ANY($2))`,
-        [contacts.rows.map(c => c.contact), officialIds]
+        `SELECT dup.id FROM officials target
+         JOIN officials dup ON dup.contact = target.contact
+           AND (dup.status = 'active' OR dup.status IS NULL)
+           AND dup.id <> ALL($2)
+           AND (dup.reg_number IS NULL OR dup.reg_number IS DISTINCT FROM target.reg_number)
+         WHERE target.id = ANY($1)
+           AND target.contact IS NOT NULL AND target.contact != ''
+         LIMIT 1`,
+        [officialIds, officialIds]
       );
       if (dup.rows.length > 0) {
         return res.status(409).json({
@@ -459,9 +558,11 @@ export const getAllOfficials = async (req, res) => {
     let query;
     let params = [];
 
-    const SELECT_COLS = `o.id, o.name, o.category, o.photo, o.position, o.contact, o.term_of_service, o.created_at, o.status,
-               o.reg_number,
+    const baseCols = `o.id, o.name, o.category, o.photo, o.position, o.contact, o.term_of_service, o.created_at, o.status,
                et.name as term_name, et.year as term_year`;
+    // reg_number links officials to the members table: only expose it to officials
+    const regCol = isOfficial(req) ? ", o.reg_number" : "";
+    const SELECT_COLS = baseCols + regCol;
 
     if (termId) {
       query = `
@@ -519,7 +620,10 @@ export const getOfficialById = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Official not found' });
     }
 
-    res.json({ success: true, data: result.rows[0] });
+    const row = result.rows[0];
+    if (!isOfficial(req)) delete row.reg_number;
+
+    res.json({ success: true, data: row });
   } catch (error) {
     logger.error('Error fetching official: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to fetch official' });
@@ -528,11 +632,16 @@ export const getOfficialById = async (req, res) => {
 
 export const createOfficial = async (req, res) => {
   try {
-    const { name, category, position, contact, term_of_service, reg_number } = req.body;
+    const { name, category, position, contact, term_of_service, reg_number, historical } = req.body;
+    const isHistorical = historical === 'true' || historical === true;
 
     if (!name || !category) {
         return res.status(400).json({ success: false, message: 'Name and category are required' });
     }
+
+    const effectivePosition = category === 'Liturgical Dancers' && position 
+      ? normalizeDancePosition(position) 
+      : position;
 
     const normalizedContact = normalizePhone(contact);
     if (contact && !isValidPhone(contact)) {
@@ -543,19 +652,63 @@ export const createOfficial = async (req, res) => {
       return res.status(400).json({ success: false, message: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}` });
     }
 
-    // Validate reg_number if provided
     let validatedRegNumber = null;
-    if (reg_number && reg_number.trim()) {
-      const memberResult = await pool.query(
-        `SELECT member_id FROM members WHERE member_id LIKE '%/' || $1 || '/%' OR member_id = $2
-         LIMIT 1`,
-        [reg_number.trim(), reg_number.trim().toUpperCase()]
-      );
-      if (memberResult.rows.length === 0) {
-        return res.status(400).json({ success: false, message: `No member found with registration number matching "${reg_number}"` });
+
+    if (isHistorical) {
+      // Historical mode: reg_number optional, skip all active-official checks
+      if (reg_number && reg_number.trim()) {
+        const memberLookup = await resolveMemberForRegNumber(reg_number);
+        if (memberLookup.reason === 'ambiguous') {
+          return res.status(400).json({ success: false, message: memberLookup.error });
+        }
+        // Not found is tolerated here (historical mode allows no reg_number);
+        // anything else means we resolved a real member.
+        if (memberLookup.memberId) {
+          validatedRegNumber = memberLookup.memberId;
+        }
       }
-      validatedRegNumber = memberResult.rows[0].member_id;
+
+      // Resolve or create election_term for this historical term_of_service
+      let termId = null;
+      if (term_of_service && term_of_service.trim()) {
+        let termResult = await pool.query(
+          'SELECT id FROM election_terms WHERE name = $1 LIMIT 1',
+          [term_of_service.trim()]
+        );
+        if (termResult.rows.length === 0) {
+          termResult = await pool.query(
+            `INSERT INTO election_terms (name, year, start_date, is_current)
+             VALUES ($1, $1, CURRENT_DATE, FALSE) RETURNING id`,
+            [term_of_service.trim()]
+          );
+        }
+        termId = termResult.rows[0].id;
+      }
+
+      let photoUrl = req.file ? formatPhotoUrl(req.file) : null;
+
+      const result = await pool.query(
+        `INSERT INTO officials (name, category, position, contact, photo, election_term_id, status, term_of_service, reg_number)
+         VALUES ($1, $2, $3, $4, $5, $6, 'archived', $7, $8) RETURNING *`,
+        [name, category, effectivePosition || null, normalizedContact || null, photoUrl, termId, term_of_service || null, validatedRegNumber]
+      );
+
+      if (category === 'Liturgical Dancers') {
+        await syncDancerToGroups(result.rows[0]);
+      }
+
+      emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "create", data: result.rows[0] });
+      return res.status(201).json({ success: true, data: result.rows[0] });
     }
+
+    // ── Normal (non-historical) path ──
+
+    // Validate reg_number exists in members table (same rules as the edit path)
+    const memberLookup = await resolveMemberForRegNumber(reg_number);
+    if (memberLookup.error) {
+      return res.status(400).json({ success: false, message: memberLookup.error });
+    }
+    validatedRegNumber = memberLookup.memberId;
 
     // Build checking promises to run in parallel
     const promises = [
@@ -565,16 +718,21 @@ export const createOfficial = async (req, res) => {
 
     let contactQueryIndex = -1;
     if (normalizedContact) {
+      // Same registered member may hold multiple records (e.g. current chairperson
+      // also added under a previous position) — only block DIFFERENT people sharing a phone.
       promises.push(
-        pool.query("SELECT id FROM officials WHERE contact = $1 AND (status = 'active' OR status IS NULL)", [normalizedContact])
+        pool.query(
+          "SELECT id FROM officials WHERE contact = $1 AND (status = 'active' OR status IS NULL) AND (reg_number IS NULL OR reg_number != $2)",
+          [normalizedContact, validatedRegNumber || '']
+        )
       );
       contactQueryIndex = promises.length - 1;
     }
 
     let positionQueryIndex = -1;
-    if (position && position.trim() !== '') {
+    if (effectivePosition && effectivePosition.trim() !== '') {
       promises.push(
-        pool.query("SELECT name FROM officials WHERE LOWER(position) = LOWER($1) AND (status = 'active' OR status IS NULL)", [position.trim()])
+        pool.query("SELECT name FROM officials WHERE LOWER(position) = LOWER($1) AND (status = 'active' OR status IS NULL)", [effectivePosition.trim()])
       );
       positionQueryIndex = promises.length - 1;
     }
@@ -603,7 +761,7 @@ export const createOfficial = async (req, res) => {
       if (posDup.rows.length > 0) {
         return res.status(409).json({
           success: false,
-          message: `The position '${position}' is already occupied by ${posDup.rows[0].name}`
+          message: `The position '${effectivePosition}' is already occupied by ${posDup.rows[0].name}`
         });
       }
     }
@@ -614,23 +772,31 @@ export const createOfficial = async (req, res) => {
     const result = await pool.query(
       `INSERT INTO officials (name, category, position, contact, photo, election_term_id, status, term_of_service, reg_number) 
        VALUES ($1, $2, $3, $4, $5, $6, 'active', $7, $8) RETURNING *`,
-      [name, category, position || null, normalizedContact || null, photoUrl, termId, term_of_service || null, validatedRegNumber]
+      [name, category, effectivePosition || null, normalizedContact || null, photoUrl, termId, term_of_service || null, validatedRegNumber]
     );
 
-    if (validatedRegNumber && position) {
+    let roleWarning = null;
+    if (validatedRegNumber && effectivePosition) {
       const roleResult = await autoAssignRoleForOfficial(
-        validatedRegNumber, position, false, category, req.user?.member_id || null
+        validatedRegNumber, effectivePosition, false, category, req.user?.member_id || null
       );
-      if (roleResult) {
+      if (roleResult?.status === 'conflict') {
+        roleWarning = roleResult.message;
+        logger.warn(`Role not assigned for official ${name}: ${roleResult.message}`);
+      } else if (roleResult) {
         logger.info(`Auto-assigned role for official ${name}: ${JSON.stringify(roleResult)}`);
       }
+    }
+
+    if (category === 'Liturgical Dancers') {
+      await syncDancerToGroups(result.rows[0]);
     }
 
     await syncCurrentTerm(term_of_service);
 
     emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "create", data: result.rows[0] });
 
-    res.status(201).json({ success: true, data: result.rows[0] });
+    res.status(201).json({ success: true, data: result.rows[0], ...(roleWarning ? { warning: roleWarning } : {}) });
   } catch (error) {
     logger.error('Error creating official: ' + error.message);
     if (error && error.code === '23505') {
@@ -655,32 +821,34 @@ export const updateOfficial = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid phone number' });
     }
 
+    // Validate reg_number if provided. Uses the same resolver as create, so an
+    // ambiguous number is refused here too instead of binding to an arbitrary
+    // member, and a lower-case reg number no longer 400s on edit while working
+    // on add.
+    let validatedRegNumber = existing.rows[0].reg_number;
+    if (reg_number && reg_number.trim()) {
+      const memberLookup = await resolveMemberForRegNumber(reg_number);
+      if (memberLookup.error) {
+        return res.status(400).json({ success: false, message: memberLookup.error });
+      }
+      validatedRegNumber = memberLookup.memberId;
+    }
+
     if (normalizedContact) {
+      const effectiveReg = validatedRegNumber || existing.rows[0].reg_number || '';
       const dup = await pool.query(
-        "SELECT id FROM officials WHERE contact = $1 AND id != $2 AND (status = 'active' OR status IS NULL)",
-        [normalizedContact, id]
+        "SELECT id FROM officials WHERE contact = $1 AND id != $2 AND (status = 'active' OR status IS NULL) AND (reg_number IS NULL OR reg_number != $3)",
+        [normalizedContact, id, effectiveReg]
       );
       if (dup.rows.length > 0) {
         return res.status(409).json({ success: false, message: 'Contact already in use' });
       }
     }
 
-    // Validate reg_number if provided
-    let validatedRegNumber = existing.rows[0].reg_number;
-    if (reg_number && reg_number.trim()) {
-      const memberResult = await pool.query(
-        `SELECT member_id FROM members WHERE member_id LIKE '%/' || $1 || '/%' OR member_id = $2
-         LIMIT 1`,
-        [reg_number.trim(), reg_number.trim().toUpperCase()]
-      );
-      if (memberResult.rows.length === 0) {
-        return res.status(400).json({ success: false, message: `No member found with registration number matching "${reg_number}"` });
-      }
-      validatedRegNumber = memberResult.rows[0].member_id;
-    }
+    // Position uniqueness check — skip for archived officials (historical data)
+    const isArchivedUpdate = existing.rows[0].status === 'archived';
 
-    // New Requirement: Check for position uniqueness (if changed or newly provided)
-    if (position && position.trim() !== '') {
+    if (!isArchivedUpdate && position && position.trim() !== '') {
       const posDup = await pool.query(
         "SELECT name FROM officials WHERE LOWER(position) = LOWER($1) AND id != $2 AND (status = 'active' OR status IS NULL)",
         [position.trim(), id]
@@ -706,50 +874,105 @@ export const updateOfficial = async (req, res) => {
       photoUrl = formatPhotoUrl(req.file);
     }
 
-
-    const result = await pool.query(
-      `UPDATE officials SET name = COALESCE($1, name), category = COALESCE($2, category),
-       position = COALESCE($3, position), contact = COALESCE($4, contact),
-       photo = COALESCE($5, photo), term_of_service = COALESCE($6, term_of_service),
-       reg_number = COALESCE($7, reg_number),
-       updated_at = CURRENT_TIMESTAMP
-       WHERE id = $8 RETURNING *`,
-      [name, category, position, normalizedContact, photoUrl, term_of_service || null, validatedRegNumber, id]
-    );
-
-    const oldPosition = existing.rows[0].position;
-    const oldRegNumber = existing.rows[0].reg_number;
-    const newPosition = position || oldPosition;
-    const newRegNumber = validatedRegNumber || oldRegNumber;
-
-    if (oldPosition !== newPosition || oldRegNumber !== newRegNumber) {
-      if (oldPosition && oldRegNumber) {
-        await removeRoleForOfficial(oldRegNumber, oldPosition, false);
-      }
-      if (newRegNumber && newPosition) {
-        const roleResult = await autoAssignRoleForOfficial(
-          newRegNumber, newPosition, false, result.rows[0].category, req.user?.member_id || null
+    // Keep election_term_id (source of truth for term grouping) in sync with the
+    // edited term_of_service label. Resolve or create the matching election_terms row.
+    let resolvedTermId = undefined;
+    if (term_of_service !== undefined) {
+      const trimmedTerm = (term_of_service || '').trim();
+      if (trimmedTerm) {
+        let termResult = await pool.query(
+          'SELECT id FROM election_terms WHERE name = $1 LIMIT 1',
+          [trimmedTerm]
         );
-        if (roleResult) {
-          logger.info(`Auto-assigned role for updated official: ${JSON.stringify(roleResult)}`);
+        if (termResult.rows.length === 0) {
+          termResult = await pool.query(
+            `INSERT INTO election_terms (name, year, start_date, is_current)
+             VALUES ($1, $1, CURRENT_DATE, FALSE) RETURNING id`,
+            [trimmedTerm]
+          );
         }
-      }
-    } else if (validatedRegNumber && position && oldPosition === position) {
-      const roleResult = await autoAssignRoleForOfficial(
-        validatedRegNumber, position, false, result.rows[0].category, req.user?.member_id || null
-      );
-      if (roleResult) {
-        logger.info(`Re-assigned role for official: ${JSON.stringify(roleResult)}`);
+        resolvedTermId = termResult.rows[0].id;
+      } else {
+        resolvedTermId = null;
       }
     }
 
-    if (term_of_service) {
-      await syncCurrentTerm(term_of_service);
+    const effectiveCategory = category || existing.rows[0].category;
+    let effectivePosition = position;
+    if (effectiveCategory === 'Liturgical Dancers' && (position || !existing.rows[0].position?.startsWith('Dance'))) {
+      effectivePosition = normalizeDancePosition(position || existing.rows[0].position);
+    }
+
+    const setParts = [
+      'name = COALESCE($1, name)',
+      'category = COALESCE($2, category)',
+      'position = COALESCE($3, position)',
+      'contact = COALESCE($4, contact)',
+      'photo = COALESCE($5, photo)',
+      'term_of_service = COALESCE($6, term_of_service)',
+      'reg_number = COALESCE($7, reg_number)',
+    ];
+    const values = [name, category, effectivePosition !== undefined ? effectivePosition : position, normalizedContact, photoUrl, term_of_service || null, validatedRegNumber];
+    if (resolvedTermId !== undefined) {
+      setParts.push(`election_term_id = $${values.length + 1}`);
+      values.push(resolvedTermId);
+    }
+    setParts.push('updated_at = CURRENT_TIMESTAMP');
+
+    const result = await pool.query(
+      `UPDATE officials SET ${setParts.join(', ')} WHERE id = $${values.length + 1} RETURNING *`,
+      [...values, id]
+    );
+
+    // Role assignment — skip for archived officials
+    let roleWarning = null;
+    if (!isArchivedUpdate) {
+      const oldPosition = existing.rows[0].position;
+      const oldRegNumber = existing.rows[0].reg_number;
+      const newPosition = effectivePosition || oldPosition;
+      const newRegNumber = validatedRegNumber || oldRegNumber;
+
+      if (oldPosition !== newPosition || oldRegNumber !== newRegNumber) {
+        if (oldPosition && oldRegNumber) {
+          await removeRoleForOfficial(oldRegNumber, oldPosition, false);
+        }
+        if (newRegNumber && newPosition) {
+          const roleResult = await autoAssignRoleForOfficial(
+            newRegNumber, newPosition, false, result.rows[0].category, req.user?.member_id || null
+          );
+          if (roleResult?.status === 'conflict') {
+            roleWarning = roleResult.message;
+            logger.warn(`Role not assigned on update: ${roleResult.message}`);
+          } else if (roleResult) {
+            logger.info(`Auto-assigned role for updated official: ${JSON.stringify(roleResult)}`);
+          }
+        }
+      } else if (validatedRegNumber && (effectivePosition || position) && oldPosition === (effectivePosition || position)) {
+        const roleResult = await autoAssignRoleForOfficial(
+          validatedRegNumber, effectivePosition || position, false, result.rows[0].category, req.user?.member_id || null
+        );
+        if (roleResult?.status === 'conflict') {
+          roleWarning = roleResult.message;
+          logger.warn(`Role not assigned on update: ${roleResult.message}`);
+        } else if (roleResult) {
+          logger.info(`Re-assigned role for official: ${JSON.stringify(roleResult)}`);
+        }
+      }
+
+      if (term_of_service) {
+        await syncCurrentTerm(term_of_service);
+      }
+    }
+
+    if (result.rows[0].category === 'Liturgical Dancers') {
+      await syncDancerToGroups(result.rows[0]);
+    } else if (existing.rows[0].category === 'Liturgical Dancers') {
+      await syncDancerDeletion('officials', existing.rows[0]);
     }
 
     emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "update", id, data: result.rows[0] });
 
-    res.json({ success: true, data: result.rows[0] });
+    res.json({ success: true, data: result.rows[0], ...(roleWarning ? { warning: roleWarning } : {}) });
   } catch (error) {
     logger.error('Error updating official: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to update official' });
@@ -776,12 +999,10 @@ export const deleteOfficial = async (req, res) => {
       }
     }
 
-
-    if (official.reg_number && official.position) {
-      await removeRoleForOfficial(official.reg_number, official.position, false);
-    }
-
     await pool.query('DELETE FROM officials WHERE id = $1', [id]);
+    if (official.category === 'Liturgical Dancers') {
+      await syncDancerDeletion('officials', official);
+    }
     emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "delete", id });
     res.json({ success: true, message: 'Official deleted successfully' });
   } catch (error) {
@@ -941,6 +1162,9 @@ export const deleteArchivedOfficial = async (req, res) => {
 
 
     await pool.query('DELETE FROM officials WHERE id = $1', [officialId]);
+    if (official.category === 'Liturgical Dancers') {
+      await syncDancerDeletion('officials', official);
+    }
     emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "delete_archived", id: officialId });
     res.json({ success: true, message: 'Archived official deleted successfully' });
   } catch (error) {
@@ -983,11 +1207,299 @@ export const bulkDeleteArchivedOfficials = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Official IDs are required' });
     }
 
+    const toDelete = await pool.query('SELECT * FROM officials WHERE id = ANY($1)', [officialIds]);
     await pool.query('DELETE FROM officials WHERE id = ANY($1)', [officialIds]);
+    for (const off of toDelete.rows) {
+      if (off.category === 'Liturgical Dancers') {
+        await syncDancerDeletion('officials', off);
+      }
+    }
     emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "bulk_delete_archived", ids: officialIds });
     res.json({ success: true, message: `Successfully deleted ${officialIds.length} archived officials` });
   } catch (error) {
     logger.error('Error bulk deleting archived officials: ' + error.message);
     res.status(500).json({ success: false, message: 'Failed to perform bulk delete' });
+  }
+};
+
+/**
+ * GET /officials/lookup-member/:regNumber
+ * Lightweight member lookup for handover form — returns name only.
+ */
+export const lookupMember = async (req, res) => {
+  try {
+    const { regNumber } = req.params;
+    if (!regNumber || !regNumber.trim()) {
+      return res.status(400).json({ success: false, message: 'Reg number is required' });
+    }
+    const trimmed = regNumber.trim();
+    const result = await pool.query(
+      `SELECT member_id, first_name, last_name FROM members
+       WHERE member_id LIKE '%/' || $1 || '/%'
+          OR LOWER(TRIM(member_id)) = LOWER(TRIM($2))
+          OR member_id ILIKE $3
+       ORDER BY CASE WHEN LOWER(TRIM(member_id)) = LOWER(TRIM($2)) THEN 1 ELSE 2 END
+       LIMIT 1`,
+      [trimmed, trimmed, `%${trimmed}%`]
+    );
+    if (result.rows.length === 0) {
+      return res.json({ success: true, data: null });
+    }
+    const m = result.rows[0];
+    res.json({
+      success: true,
+      data: {
+        member_id: m.member_id,
+        name: `${m.first_name || ''} ${m.last_name || ''}`.trim(),
+      },
+    });
+  } catch (error) {
+    logger.error('Error looking up member: ' + error.message);
+    res.status(500).json({ success: false, message: 'Failed to look up member' });
+  }
+};
+
+/**
+ * Handover — archive ALL active officials across CSA, Jumuiya & Group tables
+ * in a single transaction, then create / promote the next election term.
+ *
+ * Also performs the leadership transition:
+ *  - Revokes every term-scoped system role (CSA exec, jumuiya & group roles)
+ *  - Grants `csa_chair` (auto-approved) to the nominated successor, who must
+ *    be a registered member. They gain admin access on their next login.
+ *
+ * Body: { successor_reg_number, name, year, start_date, end_date?, description? }
+ */
+
+const HANDOVER_REVOCABLE_ROLES = [
+  // CSA executive + coordinator
+  'csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator', 'assistant_jumuiya_coordinator',
+  'project_manager', 'instrument_manager', 'os', 'treasurer', 'liturgist',
+  // Jumuiya
+  'jumuiya_chairperson', 'jumuiya_vice_chairperson', 'jumuiya_os', 'jumuiya_secretary',
+  // Groups
+  'choir_chairperson', 'choir_vice_chair', 'choir_vice_secretary', 'choir_secretary', 'choir_treasurer',
+  'choir_project_coordinator', 'choir_male_representative', 'choir_female_representative',
+  'dance_chair', 'dance_vice_chair',
+  'charismatic_chair', 'charismatic_vice_chair',
+  'st_francis_chair', 'st_francis_vice_chair', 'st_francis_secretary', 'st_francis_treasurer',
+  'mentorship_chair', 'mentorship_vice_chair'
+];
+
+export const handoverOfficials = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { election_term_id, name, year, start_date, end_date, description } = req.body;
+    const successorReg = req.body.successor_reg_number?.toString().trim() || '';
+    const actorMemberId = req.user?.member_id || null;
+
+    if (!successorReg) {
+      return res.status(400).json({
+        success: false,
+        message: 'successor_reg_number is required — the outgoing Chairperson must nominate the incoming CSA Chairperson before handing over.'
+      });
+    }
+
+    // ── 0. Resolve the successor — must be a registered member ────
+    let successor = null;
+    const sExact = await pool.query(
+      'SELECT member_id, first_name, last_name FROM members WHERE member_id = $1 LIMIT 1',
+      [successorReg]
+    );
+    if (sExact.rows.length > 0) {
+      successor = sExact.rows[0];
+    } else {
+      const sLoose = await pool.query(
+        `SELECT member_id, first_name, last_name FROM members
+         WHERE LOWER(TRIM(member_id)) = LOWER(TRIM($1))
+            OR member_id ILIKE $2
+         ORDER BY CASE WHEN LOWER(TRIM(member_id)) = LOWER(TRIM($1)) THEN 1 ELSE 2 END
+         LIMIT 1`,
+        [successorReg, `%${successorReg}%`]
+      );
+      if (sLoose.rows.length > 0) successor = sLoose.rows[0];
+    }
+
+    if (!successor) {
+      return res.status(404).json({
+        success: false,
+        message: `No registered member found with reg number "${successorReg}". The new CSA Chairperson must be a registered member.`
+      });
+    }
+
+    await client.query('BEGIN');
+
+    // ── 1. Resolve or create the new term ──────────────────────────
+    let termId = election_term_id;
+
+    if (!termId) {
+      if (!name || !year) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({
+          success: false,
+          message: 'Term name and year are required'
+        });
+      }
+
+      // Demote every existing term
+      await client.query('UPDATE election_terms SET is_current = FALSE');
+
+      const termStartDate = start_date || new Date().toISOString().split('T')[0];
+      const termResult = await client.query(
+        `INSERT INTO election_terms (name, year, start_date, end_date, description, is_current)
+         VALUES ($1, $2, $3, $4, $5, TRUE) RETURNING *`,
+        [name, year, termStartDate, end_date || null, description || null]
+      );
+      termId = termResult.rows[0].id;
+    } else {
+      const termCheck = await client.query('SELECT * FROM election_terms WHERE id = $1', [termId]);
+      if (termCheck.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ success: false, message: 'Election term not found' });
+      }
+      await client.query('UPDATE election_terms SET is_current = FALSE');
+      await client.query('UPDATE election_terms SET is_current = TRUE WHERE id = $1', [termId]);
+    }
+
+    // ── 2. Archive CSA officials ──────────────────────────────────
+    const csaCount = await client.query(
+      `UPDATE officials
+       SET status = 'archived', election_term_id = $1, updated_at = CURRENT_TIMESTAMP
+       WHERE status = 'active' OR status IS NULL`,
+      [termId]
+    );
+
+    // ── 3. Archive Jumuiya officials ──────────────────────────────
+    const jumuiyaCount = await client.query(
+      `UPDATE jumuiya_officials
+       SET status = 'archived', election_term_id = $1, updated_at = CURRENT_TIMESTAMP
+       WHERE status = 'active' OR status IS NULL`,
+      [termId]
+    );
+
+    // ── 4. Archive Group officials ────────────────────────────────
+    const groupCount = await client.query(
+      `UPDATE group_officials
+       SET status = 'archived', election_term_id = $1, updated_at = CURRENT_TIMESTAMP
+       WHERE status = 'active' OR status IS NULL`,
+      [termId]
+    );
+
+    // ── 5. Revoke all term-scoped system roles ────────────────────
+    // Outgoing executive loses dashboard access; pending auto-assignments
+    // tied to now-archived officials are cleared too. Fresh roles are
+    // requested after the new officials are added.
+    const revokedRoles = await client.query(
+      `UPDATE member_roles mr
+       SET status = 'revoked', updated_at = NOW()
+       FROM roles r
+       WHERE mr.role_id = r.role_id
+         AND r.role_name = ANY($1)
+         AND mr.status IN ('approved', 'pending')`,
+      [HANDOVER_REVOCABLE_ROLES]
+    );
+
+    // ── 6. Grant csa_chair to the successor (auto-approved) ───────
+    let roleRes = await client.query("SELECT role_id FROM roles WHERE role_name = 'csa_chair'");
+    if (roleRes.rows.length === 0) {
+      roleRes = await client.query(
+        `INSERT INTO roles (role_name, description, status)
+         VALUES ('csa_chair', 'CSA Chairperson', 'active') RETURNING role_id`
+      );
+    }
+    const chairRoleId = roleRes.rows[0].role_id;
+
+    const existingRow = await client.query(
+      `SELECT id FROM member_roles WHERE member_id = $1 AND role_id = $2 ORDER BY id DESC LIMIT 1`,
+      [successor.member_id, chairRoleId]
+    );
+
+    if (existingRow.rows.length > 0) {
+      await client.query(
+        `UPDATE member_roles
+         SET status = 'approved', assigned_by = $3, approved_by = $3,
+             approved_at = NOW(), updated_at = NOW()
+         WHERE id = $4`,
+        [successor.member_id, chairRoleId, actorMemberId, existingRow.rows[0].id]
+      );
+    } else {
+      await client.query(
+        `INSERT INTO member_roles (member_id, role_id, assigned_by, approved_by, approved_at, status)
+         VALUES ($1, $2, $3, $3, NOW(), 'approved')`,
+        [successor.member_id, chairRoleId, actorMemberId]
+      );
+    }
+
+    const termInfo = await client.query('SELECT * FROM election_terms WHERE id = $1', [termId]);
+
+    await client.query('COMMIT');
+
+    const totalArchived = csaCount.rowCount + jumuiyaCount.rowCount + groupCount.rowCount;
+
+    emitSocketEvent("CSA_NOTIFICATIONS", "officialsUpdated", { action: "handover" });
+
+    res.json({
+      success: true,
+      message: `Handover complete — archived ${csaCount.rowCount} CSA, ${jumuiyaCount.rowCount} Jumuiya and ${groupCount.rowCount} Group officials under "${termInfo.rows[0].name}". ${successor.first_name} ${successor.last_name} is now the CSA Chairperson.`,
+      data: {
+        archived: {
+          csa: csaCount.rowCount,
+          jumuiya: jumuiyaCount.rowCount,
+          groups: groupCount.rowCount,
+          total: totalArchived
+        },
+        revoked_roles: revokedRoles.rowCount,
+        successor: {
+          member_id: successor.member_id,
+          name: `${successor.first_name} ${successor.last_name}`.trim(),
+          role: 'csa_chair'
+        },
+        election_term: termInfo.rows[0]
+      }
+    });
+  } catch (error) {
+    try { await client.query('ROLLBACK'); } catch (_) { /* tx may not be open */ }
+    logger.error('Error during handover: ' + error.message);
+    res.status(500).json({ success: false, message: `Handover failed: ${error.message}` });
+  } finally {
+    client.release();
+  }
+};
+
+// =============================================================================
+// PUBLIC — Jumuiya Coordinator contact info
+// GET /officials/coordinator
+// Returns the name + phone of the current active Jumuiya Coordinator so the
+// frontend can build a dynamic wa.me link without hardcoding any contact.
+// No authentication required — this is intentionally public.
+// =============================================================================
+export const getJumuiyaCoordinatorContact = async (req, res) => {
+  try {
+    // Look for an active official in the "Jumuiya Coordinators" category whose
+    // position is the main coordinator (not the assistant / vice coordinator).
+    const result = await pool.query(
+      `SELECT name, contact
+       FROM officials
+       WHERE category = 'Jumuiya Coordinators'
+         AND (status = 'active' OR status IS NULL)
+         AND LOWER(position) LIKE '%coordinator%'
+         AND LOWER(position) NOT LIKE '%assistant%'
+         AND LOWER(position) NOT LIKE '%vice%'
+         AND LOWER(position) NOT LIKE '%ass%'
+         AND contact IS NOT NULL
+         AND TRIM(contact) <> ''
+       ORDER BY created_at DESC
+       LIMIT 1`
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ coordinator: null });
+    }
+
+    const { name, contact } = result.rows[0];
+    res.json({ coordinator: { name: name || null, phone: (contact || '').trim() } });
+  } catch (error) {
+    logger.error('Error fetching Jumuiya Coordinator contact: ' + error.message);
+    res.status(500).json({ error: 'Failed to load coordinator contact' });
   }
 };

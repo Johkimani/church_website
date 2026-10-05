@@ -3,10 +3,7 @@ import { AxiosError } from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { resetEmailApi, resetPasswordApi } from "../../api/axiosInstance";
-
-interface ErrorResponse {
-  message: string;
-}
+import { validatePassword } from "../../utils/passwordPolicy";
 
 const Reset: React.FC = () => {
   const [email, setEmail] = useState<string>("");
@@ -36,6 +33,12 @@ const Reset: React.FC = () => {
       return;
     }
 
+    const policyError = validatePassword(password);
+    if (policyError) {
+      setError(policyError);
+      return;
+    }
+
     try {
       setLoading(true);
       let response;
@@ -55,7 +58,7 @@ const Reset: React.FC = () => {
       }
     } catch (err: unknown) {
       const axiosError = err as AxiosError;
-      const data = axiosError.response?.data as any;
+      const data = axiosError.response?.data as { error?: string; message?: string } | undefined;
       setError(data?.error || data?.message || "Failed to send OTP. Please try again.");
     } finally {
       setLoading(false);
@@ -69,17 +72,17 @@ const Reset: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f8f7f4] px-6 py-12 font-sans overflow-hidden relative">
       
-      {/* ══════════ Main Container ══════════ */}
       <div className="w-full max-w-md lg:max-w-5xl flex flex-col lg:flex-row lg:items-center lg:justify-between lg:gap-24 relative z-10">
 
-        {/* ══════════ LEFT — Branding (Desktop only) ══════════ */}
         <div className="hidden lg:flex flex-col justify-center w-1/2 pl-10">
           
           {/* Logo */}
           <div className="flex items-center gap-3 mb-10">
-            <div className="w-12 h-12 rounded-2xl bg-black flex items-center justify-center shadow-xl shadow-gray-200">
-              <span className="text-white font-black text-sm tracking-widest">CSA</span>
-            </div>
+            <img
+              src="/images/csa-logo.jpg"
+              alt="CSA Kirinyaga logo"
+              className="w-14 h-14 rounded-2xl object-cover shadow-xl shadow-gray-200"
+            />
             <div className="flex flex-col justify-center">
               <span className="text-gray-950 font-black text-xl tracking-tight leading-none mb-1">Catholic Students</span>
               <span className="text-amber-500 font-black text-sm tracking-tight leading-none">Association</span>
@@ -102,7 +105,6 @@ const Reset: React.FC = () => {
           </p>
         </div>
 
-        {/* ══════════ RIGHT — Form Panel ══════════ */}
         <div className="w-full lg:w-[45%] px-0 sm:px-12 lg:px-0">
           
           {/* Back button */}

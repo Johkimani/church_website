@@ -1,3 +1,5 @@
 @echo off
-cd /d "C:\Users\Kim\OneDrive\Desktop\church_website\backEnd"
+cd /d "%~dp0backEnd"
+if not exist "src\.runtime" mkdir "src\.runtime"
 start /B node src/server.js > "src\.runtime\server.log" 2>&1
+echo Server started. Check src\.runtime\server.log for output.

@@ -15,15 +15,10 @@ import verifyToken from "../../middlewares/Tokens.js";
 
 const router = Router();
 
-// ─────────────────────────────
-// Public read-only endpoints
-// ─────────────────────────────
-
 router.get("/schedule", getEffectiveWeeklySchedule);
 router.get("/weekly", getWeeklyActivities);
 router.get("/semester", getSemesterActivities);
 
-// ── Paid activities & bookings (require auth) ─────────
 router.get("/paid", getPaidActivities);
 router.post("/book", verifyToken, bookActivity);
 router.post("/pay", verifyToken, payBooking);

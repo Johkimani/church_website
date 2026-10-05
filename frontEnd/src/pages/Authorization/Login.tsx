@@ -1,13 +1,8 @@
 import React, { useState } from "react";
-import { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, ArrowRight, ChevronLeft, User } from "lucide-react";
 import { loginApi } from "../../api/axiosInstance";
 import { useAuth } from "../../context/AuthContext";
-
-interface ErrorResponse {
-  message: string;
-}
 
 const Login: React.FC = () => {
   const [userReg, setUserReg] = useState("");
@@ -26,7 +21,9 @@ const Login: React.FC = () => {
       const response = await loginApi({ userReg: normalizedUserReg, password: normalizedPassword });
       if (response.data.status === "success") {
         if (response.data.forcePasswordChange) {
-          navigate("/login/first-login-setup", { state: { loginResponse: response.data } });
+          navigate("/login/first-login-setup", {
+            state: { loginResponse: response.data, currentPassword: normalizedPassword },
+          });
         } else {
           login(response.data);
           const role = response.data.role;
@@ -45,9 +42,10 @@ const Login: React.FC = () => {
         navigate("reset", { state: { purpose: "email" } });
         return;
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Login failed:", error);
-      const errorMsg = error.response?.data?.message || "Login failed. Please check your credentials.";
+      const err = error as { response?: { data?: { message?: string } } };
+      const errorMsg = err.response?.data?.message || "Login failed. Please check your credentials.";
       alert(errorMsg);
     } finally {
       setLoading(false);
@@ -61,17 +59,17 @@ const Login: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f8f7f4] px-6 py-12">
       
-      {/* ══════════ Main Container ══════════ */}
       <div className="w-full max-w-md lg:max-w-5xl flex flex-col lg:flex-row lg:items-center lg:justify-between lg:gap-24 relative z-10">
 
-        {/* ══════════ LEFT — Branding (Desktop only) ══════════ */}
         <div className="hidden lg:flex flex-col justify-center w-1/2 pl-10">
           
           {/* Logo */}
           <div className="flex items-center gap-3 mb-10">
-            <div className="w-12 h-12 rounded-2xl bg-black flex items-center justify-center shadow-xl shadow-gray-200">
-              <span className="text-white font-black text-sm tracking-widest">CSA</span>
-            </div>
+            <img
+              src="/images/csa-logo.jpg"
+              alt="CSA Kirinyaga logo"
+              className="w-14 h-14 rounded-2xl object-cover shadow-xl shadow-gray-200"
+            />
             <div className="flex flex-col justify-center">
               <span className="text-gray-950 font-black text-xl tracking-tight leading-none mb-1">Catholic Students</span>
               <span className="text-amber-500 font-black text-sm tracking-tight leading-none">Association</span>
@@ -94,7 +92,6 @@ const Login: React.FC = () => {
           </p>
         </div>
 
-        {/* ══════════ RIGHT — Form Panel ══════════ */}
         <div className="w-full lg:w-[45%] px-0 sm:px-12 lg:px-0">
           
           {/* Back button */}
@@ -129,7 +126,7 @@ const Login: React.FC = () => {
 
             {/* Registration */}
             <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-2 pl-1">
+              <label className="block text-xs font-black text-gray-600 uppercase tracking-[0.3em] mb-2 pl-1">
                 Registration No.
               </label>
               <input
@@ -143,7 +140,7 @@ const Login: React.FC = () => {
 
             {/* Password */}
             <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-2 pl-1">
+              <label className="block text-xs font-black text-gray-600 uppercase tracking-[0.3em] mb-2 pl-1">
                 Password
               </label>
               <div className="relative flex items-center">
@@ -164,12 +161,8 @@ const Login: React.FC = () => {
               </div>
             </div>
 
-            {/* Remember + Forgot */}
-            <div className="flex items-center justify-between pt-2">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="w-3.5 h-3.5 rounded border-gray-300 accent-black cursor-pointer" />
-                <span className="text-xs font-bold text-gray-500">Remember me</span>
-              </label>
+            {/* Forgot Password */}
+            <div className="flex items-center justify-end pt-2">
               <button
                 type="button"
                 onClick={() => navigate("reset", { state: { purpose: "reset password" } })}

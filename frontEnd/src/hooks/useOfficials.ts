@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_BASE } from '../utils/officialsApi';
 import { showSuccessToast, showErrorToast } from '../utils/customToast';
 import { apiClient } from '../api/axiosInstance';
-import apiService from '../pages/Landing/services/api';
+import apiService from '../services/api';
 
 export interface Official {
   id: number;
@@ -73,7 +73,7 @@ export function useOfficials() {
 
       return { previousOfficials, photoUrl };
     },
-    onError: (error: Error, formData, context) => {
+    onError: (error: Error, _formData, context) => {
       if (context?.previousOfficials) {
         queryClient.setQueryData(['officials'], context.previousOfficials);
       }
@@ -82,14 +82,18 @@ export function useOfficials() {
       }
       showErrorToast('Failed to Add Official', error.message);
     },
-    onSuccess: (data, formData, context) => {
+    onSuccess: (data: any, _formData, context) => {
       if (context?.photoUrl) {
         URL.revokeObjectURL(context.photoUrl);
       }
       apiService.clearOfficialsCache();
       queryClient.invalidateQueries({ queryKey: ['officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
-      showSuccessToast('Official Added Successfully', 'The official has been added to the database records.');
+      if (data?.warning) {
+        showErrorToast('Official Added — Role Not Assigned', data.warning);
+      } else {
+        showSuccessToast('Official Added Successfully', 'The official has been added to the database records.');
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['officials'] });
@@ -147,7 +151,7 @@ export function useOfficials() {
 
       return { previousOfficials, photoUrl: newPhotoUrlCreated ? photoUrl : undefined };
     },
-    onError: (error: Error, variables, context) => {
+    onError: (error: Error, _variables, context) => {
       if (context?.previousOfficials) {
         queryClient.setQueryData(['officials'], context.previousOfficials);
       }
@@ -156,7 +160,7 @@ export function useOfficials() {
       }
       showErrorToast('Failed to Update Official', error.message);
     },
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data: any, _variables, context) => {
       if (context?.photoUrl) {
         URL.revokeObjectURL(context.photoUrl);
       }
@@ -164,7 +168,11 @@ export function useOfficials() {
       queryClient.invalidateQueries({ queryKey: ['officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
-      showSuccessToast('Official Updated Successfully', 'The official details have been updated.');
+      if (data?.warning) {
+        showErrorToast('Official Updated — Role Not Assigned', data.warning);
+      } else {
+        showSuccessToast('Official Updated Successfully', 'The official details have been updated.');
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['officials'] });
@@ -189,7 +197,7 @@ export function useOfficials() {
 
       return { previousOfficials };
     },
-    onError: (error: Error, id, context) => {
+    onError: (error: Error, _id, context) => {
       if (context?.previousOfficials) {
         queryClient.setQueryData(['officials'], context.previousOfficials);
       }

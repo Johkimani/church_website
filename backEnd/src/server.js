@@ -27,7 +27,40 @@ import { startKeepAliveWorker } from "./services/keep-alive.js";
 import { startImportSyncWorker } from "./services/importSyncJob.js";
 import questionsMigration from "./migrations/questionsMigration.js";
 import publishStatsMigration from "./migrations/publishStatsMigration.js";
+import weeklyChallengeMigration from "./migrations/weeklyChallengeMigration.js";
 import activityBookingMigration from "./migrations/activityBookingMigration.js";
+import { pendingPaymentsMigration } from "./migrations/pendingPaymentsMigration.js";
+import attendanceMigration from "./migrations/attendanceMigration.js";
+import jumuiyaAttendanceMigration from "./migrations/jumuiyaAttendanceMigration.js";
+import activityLogMigration from "./migrations/activityLogMigration.js";
+import loginAuditMigration from "./migrations/loginAuditMigration.js";
+import semesterConfigMigration from "./migrations/semesterConfigMigration.js";
+import whatsappLinksMigration from "./migrations/whatsappLinksMigration.js";
+import profileImageMigration from "./migrations/profileImageMigration.js";
+import practiceSchedulesMigration from "./migrations/practiceSchedulesMigration.js";
+import communityTshirtsMigration from "./migrations/communityTshirtsMigration.js";
+import communityEnrollmentMigration from "./migrations/communityEnrollmentMigration.js";
+import notificationsMigration from "./migrations/notificationsMigration.js";
+import serialConfigMigration from "./migrations/serialConfigMigration.js";
+import splitNoAndSerialNoMigration from "./migrations/splitNoAndSerialNo.js";
+import jumuiyaTshirtsMigration from "./migrations/jumuiyaTshirtsMigration.js";
+import backfillJumuiyaViceChairRole from "./migrations/backfillJumuiyaViceChairRole.js";
+import relaxOfficialContactUniqueness from "./migrations/relaxOfficialContactUniqueness.js";
+import electionTermClosingMessage from "./migrations/electionTermClosingMessage.js";
+import { fixPendingPaymentsCascade } from "./migrations/fixPendingPaymentsCascade.js";
+import { fixImportRecordsStatusConstraint } from "./migrations/fixImportRecordsStatusConstraint.js";
+import removeGeneralParishModule from "./migrations/removeGeneralParishModule.js";
+import choirMusicClassMigration from "./migrations/choirMusicClassMigration.js";
+import { refreshTokenGraceWindow } from "./migrations/refreshTokenGraceWindow.js";
+import relaxEnrollmentClassId from "./migrations/relaxEnrollmentClassId.js";
+import productReviewsMigration from "./migrations/productReviewsMigration.js";
+import jumuiyaChannelsMigration from "./migrations/jumuiyaChannelsMigration.js";
+import whatsappSyncMigration from "./migrations/whatsappSyncMigration.js";
+import heroSliderDynamicMigration from "./migrations/heroSliderDynamicMigration.js";
+import communityModuleChannelsMigration from "./migrations/communityModuleChannelsMigration.js";
+import communityModuleVideosMigration from "./migrations/communityModuleVideosMigration.js";
+import normalizeCategoryNames from "./migrations/normalizeCategoryNames.js";
+import setupPrayerPartners from "./migrations/prayerPartnersMigration.js";
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception:", err);
@@ -172,7 +205,40 @@ const initServer = async () => {
     await backfillSemRegMigration();
     await questionsMigration();
     await publishStatsMigration();
+    await weeklyChallengeMigration();
     await activityBookingMigration();
+    await pendingPaymentsMigration();
+    await fixPendingPaymentsCascade();
+    await attendanceMigration();
+    await jumuiyaAttendanceMigration();
+    await activityLogMigration();
+    await loginAuditMigration();
+    await semesterConfigMigration();
+    await whatsappLinksMigration();
+    await profileImageMigration();
+    await practiceSchedulesMigration();
+    await communityTshirtsMigration();
+    await communityEnrollmentMigration();
+    await notificationsMigration();
+    await serialConfigMigration();
+    await splitNoAndSerialNoMigration();
+    await jumuiyaTshirtsMigration();
+    await backfillJumuiyaViceChairRole();
+    await relaxOfficialContactUniqueness();
+    await electionTermClosingMessage();
+    await fixImportRecordsStatusConstraint();
+    await removeGeneralParishModule();
+    await choirMusicClassMigration();
+    await jumuiyaChannelsMigration();
+    await whatsappSyncMigration();
+    await heroSliderDynamicMigration();
+    await communityModuleChannelsMigration();
+    await communityModuleVideosMigration();
+    await refreshTokenGraceWindow();
+    await relaxEnrollmentClassId();
+    await productReviewsMigration();
+    await normalizeCategoryNames();
+    await setupPrayerPartners();
 
     httpServer.on("error", (err) => {
       if (err?.code === "EADDRINUSE") {
@@ -183,7 +249,7 @@ const initServer = async () => {
     });
 
     currentPort = await bindWithFallback({ primaryPort });
-    logger.info(`⚙️  Server is running on http://localhost:${currentPort}`);
+    logger.info(`Server is running on http://localhost:${currentPort}`);
 
     if (typeof startKeepAliveWorker === "function") {
       startKeepAliveWorker();

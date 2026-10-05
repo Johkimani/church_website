@@ -7,6 +7,12 @@
 const rawServerUri = import.meta.env.VITE_SERVER_URI || '';
 const normalizedServerUri = rawServerUri.replace(/\/$/, '');
 
+if (import.meta.env.PROD && !normalizedServerUri) {
+  throw new Error(
+    'VITE_SERVER_URI is not set. The backend API base URL is required in production - set VITE_SERVER_URI (https://church-website-q8z9.onrender.com/api/v1) in the Vercel project environment variables and redeploy.'
+  );
+}
+
 export const BASE_URL = normalizedServerUri || (import.meta.env.DEV ? "http://localhost:3001/api/v1" : "");
 export const UPLOAD_BASE = BASE_URL.split('/api')[0] || (import.meta.env.DEV ? "http://localhost:3001" : "");
 

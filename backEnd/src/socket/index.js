@@ -1,8 +1,8 @@
 import cookie from "cookie";
-import jwt from "jsonwebtoken";
 import { ChatEventEnum } from "../constant.js";
 import { ApiError } from "../utils/ApiError.js";
 import { testDb } from "../Configs/dbConfig.js";
+import { verifyAccessToken } from "../utils/jwtConfig.js";
 
 // handle join to specific jumuia based on the users jumuia
 const HandleOnSpecificJumuiJoin = (socket, user) => {
@@ -15,24 +15,11 @@ const HandleOnSpecificJumuiJoin = (socket, user) => {
   });
 };
 
-// Handle CSA notifications
-const handleNotifyCSA = (socket, io) => {
-  socket.on(ChatEventEnum.NOTIFY_CSA_ON_NEW_NOTIFICATION_EVENT, (message) => {
-    io.to("CSA_NOTIFICATIONS").emit(ChatEventEnum.NOTIFY_CSA_ON_NEW_NOTIFICATION_EVENT, message);
-    console.log(`CSA notification sent to room CSA_NOTIFICATIONS event: ${ChatEventEnum.NOTIFY_CSA_ON_NEW_NOTIFICATION_EVENT}`);
-  });
-};
-
-// Handle Jumuia notifications
-const handleNotifyJumuia = (socket, io) => {
-  socket.on(
-    ChatEventEnum.NOTIFY_SPECIFIC_JUMUIA_ON_NEW_NOTIFICATION_EVENT,
-    ({ jumuiaName, message }) => {
-      io.to(jumuiaName).emit(ChatEventEnum.NOTIFY_SPECIFIC_JUMUIA_ON_NEW_NOTIFICATION_EVENT, message);
-      console.log(`Jumuia notification sent to room ${jumuiaName} event: ${ChatEventEnum.NOTIFY_SPECIFIC_JUMUIA_ON_NEW_NOTIFICATION_EVENT}`);
-    },
-  );
-};
+// SECURITY: clients must never broadcast notifications directly. Any
+// authenticated socket could previously emit NOTIFY_CSA / NOTIFY_JUMUIA and
+// impersonate officials or spam every member room with arbitrary content.
+// All legitimate broadcasts originate server-side via emitSocketEvent() after
+// an authorized HTTP action, so these client-facing handlers were removed.
 
 const initializeSocketIO = (io) => {
   return io.on(ChatEventEnum.CONNECTED_EVENT, async (socket) => {
@@ -47,7 +34,7 @@ const initializeSocketIO = (io) => {
         throw new ApiError(401, "Un-authorized handshake. Token is missing");
       }
 
-      const { id: member_id, jumuiya_id } = jwt.verify(token, process.env.JWT_SECRET);
+      const { id: member_id, jumuiya_id } = verifyAccessToken(token);
       // // reason why we are checking the database is to really indentify 
       // // the user and also to make sure that the token is not tampered with , because if the token is tampered with it will be decoded but the user will not be found in the database thus we can reject the connection  
       // // and be able to remove the disconnected socket from the room from the disconect event handler
@@ -71,28 +58,12 @@ const initializeSocketIO = (io) => {
       // function to handle specific jumia notifications
       HandleOnSpecificJumuiJoin(socket, socket.user);
 
-      // Attach notification handlers
-      handleNotifyCSA(socket, io);
-      handleNotifyJumuia(socket, io);
-
-      // Handle quiz attempt persistence
-      socket.on("attempt", async (data) => {
-        try {
-          const { questionId, memberId, jumuiyaId, selectedOption, isCorrect } = data;
-          if (!questionId || !memberId || !jumuiyaId) return;
-          await testDb.query(
-            `INSERT INTO attempts (question_id, member_id, jumuiya_id, selected_option, is_correct)
-             VALUES ($1, $2, $3, $4, $5)`,
-            [questionId, memberId, jumuiyaId, selectedOption, isCorrect],
-          );
-        } catch (err) {
-          console.error("Failed to persist attempt:", err);
-        }
-      });
-
+      // Handle quiz attempts exclusively via the HTTP API (server-scored,
+      // identity from JWT). The socket "attempt" handler was removed because
+      // it trusted client-sent memberId/jumuiyaId/isCorrect.
       // ?this handle disconnection , incase of wifi disconnects , or the serve is unhealthy/crushes or close the browser , thus not reachable this will definetly run 
       socket.on(ChatEventEnum.DISCONNECT_EVENT, () => {
-        console.log("user has disconnected 🚫. socketId: " + socket.id);
+        console.log("user has disconnected. socketId: " + socket.id);
         // we can also do some clean up here if we have any resources that we need to clean up when the user disconnects like removing the socket from the room or 
         // something like that but in our case we are not doing anything because socket.io will automatically remove the socket from the room when it disconnects so we don't have to worry about that
       });
@@ -100,7 +71,7 @@ const initializeSocketIO = (io) => {
       socket.emit(
         ChatEventEnum.SOCKET_ERROR_EVENT,
         error?.message ||
-        "Something went wrong while connecting to the socket.",
+        "Connection lost",
       );
     }
   });

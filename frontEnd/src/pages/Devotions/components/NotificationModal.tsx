@@ -89,7 +89,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
 
         {/* Simple Close */}
         <div className="absolute top-3 right-3 sm:top-6 sm:right-6 z-50">
-          <button onClick={onClose} className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-black hover:text-white transition-all shadow-sm">
+          <button onClick={onClose} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-black hover:text-white transition-all shadow-sm">
             <FiX className="text-xl sm:text-xl" />
           </button>
         </div>

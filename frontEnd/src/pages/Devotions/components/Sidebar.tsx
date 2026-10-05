@@ -1,178 +1,413 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useAuth } from "../../../context/AuthContext";
+import { prefetchByPath } from "../../../utils/routePrefetch";
+import MarianImage from "./MarianImage";
 import {
   FaHome,
   FaBook,
   FaPrayingHands,
   FaChurch,
-  FaBed,
   FaStar,
   FaChartBar,
   FaUserGraduate,
+  FaCross,
+  FaBookOpen,
+  FaBible,
+  FaChevronDown,
 } from "react-icons/fa";
 
-// ✅ Your navigation items
-const items = [
-  { to: "/devotions", label: "Dashboard", icon: <FaHome /> },
-  { to: "readings", label: "Scripture", icon: <FaBook /> },
-  { to: "prayer", label: "Prayer", icon: <FaPrayingHands /> },
-  { to: "liturgy", label: "Liturgy", icon: <FaChurch /> },
-  { to: "rosary", label: "Rosary", icon: <FaBed /> },
-  { to: "challenge", label: "Daily Challenge", icon: <FaStar /> },
-  { to: "comparison", label: "Jumuiya Comparison", icon: <FaChartBar /> },
-  { to: "progress", label: "My Progress", icon: <FaUserGraduate /> },
+const PRAYER_SUBITEMS = [
+  { to: "readings", label: "Prayer Book", icon: <FaBook size={14} /> },
+  { to: "prayer-module", label: "Novenas & Litanies", icon: <FaBookOpen size={14} /> },
+  { to: "rosary", label: "Holy Rosary", icon: <FaPrayingHands size={14} /> },
+  { to: "seven-sorrows", label: "Seven Sorrows", icon: <FaPrayingHands size={14} /> },
+  { to: "divine-mercy", label: "Divine Mercy", icon: <FaPrayingHands size={14} /> },
+  { to: "st-michael", label: "St. Michael Chaplet", icon: <FaPrayingHands size={14} /> },
+  { to: "reparation", label: "Rosary of Reparation", icon: <FaPrayingHands size={14} /> },
 ];
 
-// ✅ Carousel content (linked to nav)
-const carouselItems = [
-  {
-    title: "Understand the Mass",
-    description: "Explore the liturgy and deepen your understanding.",
-    bgStyle: "bg-gradient-to-r from-pink-300 via-pink-200 to-transparent",
-    link: "/devotions/liturgy",
-  },
-  {
-    title: "Daily Scripture",
-    description: "Read and reflect on daily Bible readings.",
-    bgStyle: "bg-gradient-to-r from-purple-300 via-purple-200 to-transparent",
-    link: "/devotions/readings",
-  },
-  {
-    title: "Strengthen Prayer",
-    description: "Grow your spiritual life through guided prayer.",
-    bgStyle: "bg-gradient-to-r from-blue-300 via-blue-200 to-transparent",
-    link: "/devotions/prayer",
-  },
-  {
-    title: "Pray the Rosary",
-    description: "Follow along and meditate on the mysteries.",
-    bgStyle: "bg-gradient-to-r from-yellow-300 via-yellow-200 to-transparent",
-    link: "/devotions/rosary",
-  },
+const LITURGY_SUBITEMS = [
+  { to: "liturgy", label: "Liturgy Guide", icon: <FaChurch size={14} /> },
+  { to: "daily-liturgy", label: "Liturgy Session", icon: <FaChurch size={14} /> },
+  { to: "prayers-of-the-mass", label: "Prayers of the Mass", icon: <FaPrayingHands size={14} /> },
+  { to: "liturgical-seasons", label: "Liturgical Seasons", icon: <FaCross size={14} /> },
+  { to: "sacra-liturgia-page", label: "Sacra Liturgia", icon: <FaBookOpen size={14} /> },
 ];
 
+const otherItems = [
+  { to: "bible", label: "Holy Bible", icon: <FaBible size={16} /> },
+  { to: "challenge", label: "Daily Challenge", icon: <FaStar size={16} /> },
+  { to: "comparison", label: "Jumuiya Comparison", icon: <FaChartBar size={16} /> },
+  { to: "progress", label: "My Progress", icon: <FaUserGraduate size={16} /> },
+  { to: "daily-liturgy", label: "Daily Missal", icon: <FaCross size={16} /> },
+];
 
-function SidebarCarousel() {
+// Personal tabs — only visible to authenticated members.
+const PROTECTED_ITEM_TO = new Set(["challenge", "comparison", "progress"]);
+
+const quickLinks = [
+  { title: "Explore the Mass", description: "Deepen your understanding", link: "/devotions/liturgy", icon: <FaChurch size={14} /> },
+  { title: "Catholic Prayers", description: "Browse all prayers", link: "/devotions/readings", icon: <FaBook size={14} /> },
+  { title: "Pray the Rosary", description: "Meditate on the mysteries", link: "/devotions/rosary", icon: <FaPrayingHands size={14} /> },
+];
+
+// Warm the destination chunk on hover/focus so tab taps render instantly.
+const prefetchNav = (to: string) => () =>
+  prefetchByPath(to.startsWith("/") ? to : `/devotions/${to}`);
+
+function QuickLinks() {
   const [index, setIndex] = useState(0);
-  const navigate = useNavigate();
-
-  const next = () =>
-    setIndex((prev) => (prev + 1) % carouselItems.length);
-
-  const prev = () =>
-    setIndex((prev) =>
-      prev === 0 ? carouselItems.length - 1 : prev - 1
-    );
 
   useEffect(() => {
-    const interval = setInterval(next, 5000);
-    return () => clearInterval(interval);
+    const t = setInterval(() => setIndex((i) => (i + 1) % quickLinks.length), 6000);
+    return () => clearInterval(t);
   }, []);
 
-  const item = carouselItems[index];
+  const item = quickLinks[index];
 
   return (
-    <div className="mt-6 relative w-[95%] mx-auto group">
-      {/* Floating container */}
-      <div
-        onClick={() => navigate(item.link)}
-        className={`h-48 cursor-pointer flex flex-col justify-end p-6 text-gray-800 transition-all duration-500 ${item.bgStyle} relative rounded-2xl`}
+    <div className="mt-4 px-2">
+      <NavLink
+        to={item.link}
+        onMouseEnter={prefetchNav(item.link)}
+        onFocus={prefetchNav(item.link)}
+        className="block rounded-xl p-4 transition-all duration-300 group"
         style={{
-          boxShadow: "0 30px 60px rgba(0,0,0,0.25)", // far, diffuse shadow
+          background: "linear-gradient(135deg, rgba(217, 119, 6, 0.08), rgba(217, 119, 6, 0.02))",
+          border: "1px solid rgba(217, 119, 6, 0.12)",
         }}
       >
-        {/* Content */}
-        <div className="relative z-10 pb-6">
-          <h3 className="text-lg italic font-semibold">{item.title}</h3>
-          <p className="text-sm italic opacity-80">{item.description}</p>
+        <div className="flex items-center gap-3 mb-2">
+          <div
+            className="w-7 h-7 rounded-lg flex items-center justify-center"
+            style={{
+              background: "linear-gradient(135deg, rgba(217, 119, 6, 0.2), rgba(217, 119, 6, 0.08))",
+              color: "#D97706",
+            }}
+          >
+            {item.icon}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-stone-800 truncate">{item.title}</p>
+            <p className="text-[10px] text-stone-500 truncate">{item.description}</p>
+          </div>
+          <span className="text-[10px] text-amber-600/70 group-hover:text-amber-600 transition-colors">→</span>
         </div>
-
-        {/* Controls */}
-        <button
-          onClick={prev}
-          className="absolute left-3 bottom-1 bg-white/70 text-gray-700 rounded-full w-9 h-9 flex items-center justify-center hover:bg-white transition"
-        >
-          ‹
-        </button>
-
-        <button
-          onClick={next}
-          className="absolute right-3 bottom-1 bg-white/70 text-gray-700 rounded-full w-9 h-9 flex items-center justify-center hover:bg-white transition"
-        >
-          ›
-        </button>
-
-        {/* Indicators */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-          {carouselItems.map((_, i) => (
+        <div className="flex gap-1.5">
+          {quickLinks.map((_, i) => (
             <div
               key={i}
-              className={`h-2 w-2 rounded-full transition-all ${
-                i === index ? "bg-white" : "bg-white/50"
-              }`}
+              className="h-0.5 rounded-full flex-1 transition-all duration-500"
+              style={{
+                background: i === index ? "#D97706" : "rgba(217, 119, 6, 0.15)",
+              }}
             />
           ))}
         </div>
-      </div>
+      </NavLink>
     </div>
   );
 }
 
-
-
-
 export default function Sidebar() {
+  const { isAuthenticated } = useAuth();
+  const [prayersOpen, setPrayersOpen] = useState(false);
+  const [liturgyOpen, setLiturgyOpen] = useState(false);
+  const visibleOtherItems = otherItems.filter(
+    (it) => isAuthenticated || !PROTECTED_ITEM_TO.has(it.to)
+  );
+
   return (
     <>
-      {/* ✅ Desktop Sidebar */}
-      <aside className="hidden md:block w-64 bg-gray-50 h-screen border-r border-gray-200 sticky top-0 left-0 shadow-sm">
-        <div className="p-6 flex flex-col h-full">
-          {/* Navigation */}
-          <nav className="space-y-2">
-            {items.map((it) => (
-              <NavLink
-                key={it.to}
-                to={it.to}
-                end
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-300 ${
-                    isActive
-                      ? "bg-pink-100 text-pink-700 font-semibold shadow-sm"
-                      : "text-gray-700 hover:text-pink-600 hover:bg-gray-100"
-                  }`
-                }
+      {/* Sidebar - shown as fixed column on desktop (via Layout), slide-in drawer on mobile */}
+      <aside
+        className="flex flex-col w-60 h-full flex-shrink-0"
+        style={{
+          background: "rgba(255, 255, 255, 0.7)",
+          backdropFilter: "blur(24px) saturate(1.5)",
+          WebkitBackdropFilter: "blur(24px) saturate(1.5)",
+          borderRight: "1px solid rgba(28, 25, 23, 0.08)",
+        }}
+      >
+        {/* Logo */}
+        <div className="px-5 pt-6 pb-4">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center"
+              style={{
+                background: "linear-gradient(135deg, #D97706, #B45309)",
+                boxShadow: "0 4px 12px rgba(217, 119, 6, 0.3)",
+              }}
+            >
+              <FaCross size={16} className="text-white" />
+            </div>
+            <div>
+              <h1
+                className="text-sm font-bold tracking-wide text-stone-900"
+                style={{ fontFamily: "'Cinzel', 'Playfair Display', serif" }}
               >
-                <span className="text-lg">{it.icon}</span>
-                <span className="text-sm">{it.label}</span>
-              </NavLink>
-            ))}
-          </nav>
+                SPIRITUAL
+              </h1>
+              <p className="text-[10px] tracking-[0.2em] text-amber-600/80 uppercase">Dashboard</p>
+            </div>
+          </div>
+        </div>
 
-          {/* Carousel */}
-          <SidebarCarousel />
+        {/* Divider */}
+        <div className="mx-5 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(217, 119, 6, 0.15), transparent)" }} />
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1 scrollbar-hide">
+          {/* Dashboard */}
+          <NavLink
+            to="/devotions"
+            end
+            onMouseEnter={prefetchNav("/devotions")}
+            onFocus={prefetchNav("/devotions")}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 group ${
+                isActive ? "" : "text-stone-500 hover:text-stone-800"
+              }`
+            }
+            style={({ isActive }) =>
+              isActive
+                ? {
+                    background: "linear-gradient(135deg, rgba(217, 119, 6, 0.15), rgba(217, 119, 6, 0.05))",
+                    color: "#B45309",
+                    boxShadow: "inset 0 0 0 1px rgba(217, 119, 6, 0.25)",
+                  }
+                : undefined
+            }
+          >
+            <span className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200"
+              style={{ background: "rgba(217, 119, 6, 0.08)" }}
+            >
+              <FaHome size={16} />
+            </span>
+            <span>Dashboard</span>
+          </NavLink>
+
+          {/* Prayers Dropdown */}
+          <div>
+            <button
+              onClick={() => setPrayersOpen(!prayersOpen)}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 w-full text-left group"
+              style={{
+                background: prayersOpen
+                  ? "linear-gradient(135deg, rgba(217, 119, 6, 0.15), rgba(217, 119, 6, 0.05))"
+                  : "transparent",
+                color: prayersOpen ? "#B45309" : "#78716C",
+                border: "none",
+                cursor: "pointer",
+                boxShadow: prayersOpen ? "inset 0 0 0 1px rgba(217, 119, 6, 0.25)" : "none",
+              }}
+              onMouseEnter={(e) => { if (!prayersOpen) e.currentTarget.style.color = "#44403C"; }}
+              onMouseLeave={(e) => { if (!prayersOpen) e.currentTarget.style.color = "#78716C"; }}
+            >
+              <span className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200"
+                style={{ background: "rgba(217, 119, 6, 0.08)" }}
+              >
+                <FaPrayingHands size={16} />
+              </span>
+              <span className="flex-1">Prayers</span>
+              <FaChevronDown
+                size={10}
+                style={{
+                  transition: "transform 0.2s",
+                  transform: prayersOpen ? "rotate(180deg)" : "rotate(0)",
+                  opacity: 0.5,
+                }}
+              />
+            </button>
+
+            {/* Sub-items */}
+            {prayersOpen && (
+              <div className="ml-4 mt-1 space-y-0.5" style={{ animation: "fadeIn 0.2s ease" }}>
+                {PRAYER_SUBITEMS.map((sub) => (
+                  <NavLink
+                    key={sub.to}
+                    to={sub.to}
+                    onMouseEnter={prefetchNav(sub.to)}
+                    onFocus={prefetchNav(sub.to)}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-3 py-2 rounded-lg text-[12px] font-medium transition-all duration-200 ${
+                        isActive ? "" : "text-stone-500 hover:text-stone-800"
+                      }`
+                    }
+                    style={({ isActive }) =>
+                      isActive
+                        ? {
+                            background: "rgba(217, 119, 6, 0.1)",
+                            color: "#B45309",
+                          }
+                        : undefined
+                    }
+                  >
+                    <span className="w-6 h-6 rounded-md flex items-center justify-center"
+                      style={{ background: "rgba(217, 119, 6, 0.06)" }}
+                    >
+                      {sub.icon}
+                    </span>
+                    <span>{sub.label}</span>
+                  </NavLink>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Liturgy Dropdown */}
+          <div>
+            <button
+              onClick={() => setLiturgyOpen(!liturgyOpen)}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 w-full text-left group"
+              style={{
+                background: liturgyOpen
+                  ? "linear-gradient(135deg, rgba(217, 119, 6, 0.15), rgba(217, 119, 6, 0.05))"
+                  : "transparent",
+                color: liturgyOpen ? "#B45309" : "#78716C",
+                border: "none",
+                cursor: "pointer",
+                boxShadow: liturgyOpen ? "inset 0 0 0 1px rgba(217, 119, 6, 0.25)" : "none",
+              }}
+              onMouseEnter={(e) => { if (!liturgyOpen) e.currentTarget.style.color = "#44403C"; }}
+              onMouseLeave={(e) => { if (!liturgyOpen) e.currentTarget.style.color = "#78716C"; }}
+            >
+              <span className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200"
+                style={{ background: "rgba(217, 119, 6, 0.08)" }}
+              >
+                <FaChurch size={16} />
+              </span>
+              <span className="flex-1">Liturgy</span>
+              <FaChevronDown
+                size={10}
+                style={{
+                  transition: "transform 0.2s",
+                  transform: liturgyOpen ? "rotate(180deg)" : "rotate(0)",
+                  opacity: 0.5,
+                }}
+              />
+            </button>
+
+            {/* Sub-items */}
+            {liturgyOpen && (
+              <div className="ml-4 mt-1 space-y-0.5" style={{ animation: "fadeIn 0.2s ease" }}>
+                {LITURGY_SUBITEMS.map((sub) => (
+                  <NavLink
+                    key={sub.to}
+                    to={sub.to}
+                    onMouseEnter={prefetchNav(sub.to)}
+                    onFocus={prefetchNav(sub.to)}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-3 py-2 rounded-lg text-[12px] font-medium transition-all duration-200 ${
+                        isActive ? "" : "text-stone-500 hover:text-stone-800"
+                      }`
+                    }
+                    style={({ isActive }) =>
+                      isActive
+                        ? {
+                            background: "rgba(217, 119, 6, 0.1)",
+                            color: "#B45309",
+                          }
+                        : undefined
+                    }
+                  >
+                    <span className="w-6 h-6 rounded-md flex items-center justify-center"
+                      style={{ background: "rgba(217, 119, 6, 0.06)" }}
+                    >
+                      {sub.icon}
+                    </span>
+                    <span>{sub.label}</span>
+                  </NavLink>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Other items */}
+          {visibleOtherItems.map((it) => (
+            <NavLink
+              key={it.to}
+              to={it.to}
+              onMouseEnter={prefetchNav(it.to)}
+              onFocus={prefetchNav(it.to)}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 group ${
+                  isActive ? "" : "text-stone-500 hover:text-stone-800"
+                }`
+              }
+              style={({ isActive }) =>
+                isActive
+                  ? {
+                      background: "linear-gradient(135deg, rgba(217, 119, 6, 0.15), rgba(217, 119, 6, 0.05))",
+                      color: "#B45309",
+                      boxShadow: "inset 0 0 0 1px rgba(217, 119, 6, 0.25)",
+                    }
+                  : undefined
+              }
+            >
+              <span className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200"
+                style={{ background: "rgba(217, 119, 6, 0.08)" }}
+              >
+                {it.icon}
+              </span>
+              <span>{it.label}</span>
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* Quick Links */}
+        <QuickLinks />
+
+        {/* Bottom Accent */}
+        <div className="px-5 py-4 mt-auto">
+          <div className="h-px mb-3" style={{ background: "linear-gradient(90deg, transparent, rgba(217, 119, 6, 0.15), transparent)" }} />
+          <NavLink
+            to="/devotions"
+            end
+            onMouseEnter={prefetchNav("/devotions")}
+            onFocus={prefetchNav("/devotions")}
+            className="flex items-center justify-between px-3 py-2 rounded-xl transition-all duration-200 hover:scale-[1.02] group"
+            style={{
+              background: "linear-gradient(135deg, rgba(217, 119, 6, 0.12), rgba(217, 119, 6, 0.04))",
+              border: "1px solid rgba(217, 119, 6, 0.15)",
+            }}
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{
+                background: "linear-gradient(135deg, rgba(217, 119, 6, 0.25), rgba(217, 119, 6, 0.1))",
+              }}>
+                <FaHome size={12} className="text-amber-600" />
+              </div>
+              <span className="text-[11px] font-bold text-amber-700" style={{ fontFamily: "'Cinzel', serif" }}>
+                Dashboard
+              </span>
+            </div>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-50 group-hover:opacity-100 transition-opacity">
+              <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
+            </svg>
+          </NavLink>
+          <p className="text-[10px] text-center text-stone-400 tracking-wider mt-3">
+            DEVS: SACRED SPACE
+          </p>
+          <div className="mt-3 flex justify-center">
+            <NavLink
+              to="/devotions/rosary"
+              onMouseEnter={prefetchNav("/devotions/rosary")}
+              onFocus={prefetchNav("/devotions/rosary")}
+              className="hover:scale-105 transition-transform duration-200 inline-flex"
+              aria-label="Pray the Holy Rosary with Our Lady"
+            >
+              <MarianImage src="/images/mary-rosary.jpg" alt="Our Lady of the Rosary" size={64} />
+            </NavLink>
+          </div>
         </div>
       </aside>
 
-      {/* ✅ Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-200 md:hidden flex justify-around py-3 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-        {items.map((it) => (
-          <NavLink
-            key={it.to}
-            to={it.to}
-            end
-            className={({ isActive }) =>
-              `flex flex-col items-center text-xs transition-colors ${
-                isActive
-                  ? "text-pink-600"
-                  : "text-gray-700 hover:text-pink-600"
-              }`
-            }
-          >
-            <span className="text-2xl">{it.icon}</span>
-            <span className="sr-only">{it.label}</span>
-          </NavLink>
-        ))}
-      </nav>
+       {/* Mobile Bottom Navigation is provided by Layout's left rail on mobile.
+           The desktop sidebar wrapper is hidden below md, so this nav is removed to avoid duplicate navigation. */}
+
+      <style>{`@keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }`}</style>
     </>
   );
 }

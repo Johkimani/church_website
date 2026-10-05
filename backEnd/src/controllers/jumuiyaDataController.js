@@ -28,37 +28,40 @@ export const getAllJumuiyaData = async (req, res) => {
     const [
         schedulesRes,
         officialsRes,
-        termsRes,
-        formerOfficialsRes,
+        archivedOfficialsRes,
+        currentTermRes,
         socialMediaRes,
         albumsRes,
         imagesRes,
         notificationsRes,
-        tshirtOrdersRes,
-        membersRes
+        tshirtOrdersRes
     ] = await Promise.all([
         pool.query("SELECT * FROM jumuiya_meeting_schedule WHERE jumuiya_id = ANY($1)", [jumuiyaIds]),
         pool.query("SELECT * FROM jumuiya_officials WHERE category = ANY($1) AND status = 'active'", [jumuiyaNames]),
-        pool.query("SELECT * FROM jumuiya_term_of_office WHERE jumuiya_id = ANY($1)", [jumuiyaIds]),
-        pool.query("SELECT * FROM jumuiya_former_officials WHERE jumuiya_id = ANY($1)", [jumuiyaIds]),
+        pool.query(`SELECT jo.id, jo.name, jo.category, jo.position, jo.contact, jo.photo, jo.term_of_service, et.year
+                    FROM jumuiya_officials jo
+                    LEFT JOIN election_terms et ON jo.election_term_id = et.id
+                    WHERE jo.status = 'archived' AND jo.category = ANY($1)`, [jumuiyaNames]),
+        pool.query("SELECT et.year FROM election_terms et WHERE is_current = TRUE ORDER BY et.id DESC LIMIT 1"),
         pool.query("SELECT * FROM jumuiya_social_media WHERE jumuiya_id = ANY($1)", [jumuiyaIds]),
         pool.query("SELECT * FROM jumuiya_gallery_albums WHERE jumuiya_id = ANY($1)", [jumuiyaIds]),
         pool.query("SELECT * FROM jumuiya_gallery_images ORDER BY sort_order ASC"), // images have album_id
         pool.query("SELECT * FROM jumuiya_notifications WHERE jumuiya_id = ANY($1) ORDER BY posted_at DESC", [jumuiyaIds]),
-        pool.query("SELECT * FROM jumuiya_tshirt_orders WHERE jumuiya_id = ANY($1) ORDER BY submitted_at DESC", [jumuiyaIds]),
-        pool.query("SELECT * FROM members WHERE jumuiya_id = ANY($1)", [jumuiyaIds])
+        pool.query("SELECT * FROM jumuiya_tshirt_orders WHERE jumuiya_id = ANY($1) ORDER BY submitted_at DESC", [jumuiyaIds])
     ]);
 
     // Fast lookups
     const groupedSchedules = groupById(schedulesRes.rows, 'jumuiya_id');
     const groupedOfficials = groupBy(officialsRes.rows, 'category'); // Custom grouping by name
-    const groupedTerms = groupById(termsRes.rows, 'jumuiya_id');
-    const groupedFormer = groupById(formerOfficialsRes.rows, 'jumuiya_id');
+    const groupedArchived = groupBy(archivedOfficialsRes.rows, 'category');
+    const currentTermYear = currentTermRes.rows.length ? currentTermRes.rows[0].year : null;
     const groupedSocial = groupById(socialMediaRes.rows, 'jumuiya_id');
     const groupedNotifications = groupById(notificationsRes.rows, 'jumuiya_id');
     const groupedSocial_v2 = groupById(socialMediaRes.rows, 'jumuiya_id'); // Re-using just in case
     const groupedTshirts = groupById(tshirtOrdersRes.rows, 'jumuiya_id');
-    const groupedMembers = groupById(membersRes.rows, 'jumuiya_id'); // Reverted to jumuiya_id
+    
+    // Note: member PII is intentionally NOT included in this public payload.
+    // Member directories are served by the authenticated /jumuiya-members routes.
     
     // Group albums map and then attach images
     const imagesByAlbum = groupBy(imagesRes.rows, 'album_id');
@@ -87,21 +90,22 @@ export const getAllJumuiyaData = async (req, res) => {
             venue: sched.venue || ''
         } : { day: '', time: '', venue: '' };
 
-        // Form term of office
-        const term = groupedTerms[jId] ? groupedTerms[jId][0] : null;
-        const termOfOffice = term ? {
-            startYear: term.start_year || '',
-            endYear: term.end_year || ''
+        // Form term of office (from global current election term)
+        const termOfOffice = currentTermYear ? {
+            startYear: (currentTermYear || '').split('-')[0] || '',
+            endYear: (currentTermYear || '').split('-')[1] || ''
         } : undefined;
 
-        // Form former officials
-        const formerOfficials = (groupedFormer[jId] || []).map(fo => ({
-            id: fo.id.toString(),
-            name: fo.name,
-            position: fo.position,
-            image: fo.photo || undefined,
-            yearsServed: fo.years_served || ''
-        }));
+        // Form former officials (from archived jumuiya_officials grouped by term)
+        const formerOfficials = (groupedArchived[jName] || [])
+            .sort((a, b) => ((b.year || '') > (a.year || '') ? 1 : (b.year || '') < (a.year || '') ? -1 : 0))
+            .map(fo => ({
+                id: fo.id.toString(),
+                name: fo.name,
+                position: fo.position,
+                image: fo.photo || undefined,
+                yearsServed: fo.year || fo.term_of_service || ''
+            }));
 
         // Form social media
         const socialMedia = (groupedSocial[jId] || []).map(sm => ({
@@ -138,18 +142,16 @@ export const getAllJumuiyaData = async (req, res) => {
             phone: ts.phone || '',
             size: ts.size || 'M',
             quantity: ts.quantity || 1,
+            status: ts.status || 'pending_confirmation',
+            mpesaCode: ts.mpesa_code || '',
+            unitPrice: ts.unit_price ? parseFloat(ts.unit_price) : 1200,
+            totalAmount: ts.total_amount ? parseFloat(ts.total_amount) : (ts.quantity || 1) * 1200,
             submittedAt: ts.submitted_at ? new Date(ts.submitted_at).toISOString() : new Date().toISOString()
         }));
 
-        // Form members
-        const members = (groupedMembers[jId] || []).map(m => ({
-            id: m.member_id,
-            name: `${m.first_name} ${m.last_name}`,
-            year: m.year_of_study || '',
-            email: m.email || '',
-            phone: m.phone || '',
-            isRegistered: !!m.jumuiya_id
-        }));
+        // Form members (aggregate count only — full member records carry PII and
+        // are intentionally excluded from this public endpoint)
+        const members = [];
 
         return {
             id: sg.slug,
@@ -205,3 +207,175 @@ function groupBy(arr, key) {
       return acc;
     }, {});
   }
+
+export const updateJumuiyaSaintImage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { saint_image } = req.body;
+
+    if (!saint_image) {
+      return res.status(400).json({ success: false, error: 'saint_image URL is required' });
+    }
+
+    const result = await pool.query(
+      `UPDATE sub_groups 
+       SET saint_image = $1 
+       WHERE group_id = $2 OR slug = $2 OR LOWER(name) = LOWER($2) OR LOWER(slug) = LOWER($2)
+       RETURNING *`,
+      [saint_image, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Jumuiya not found' });
+    }
+
+    logger.info(`Updated saint_image for Jumuiya ${id}: ${saint_image}`);
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    logger.error('Error updating Jumuiya saint image: ' + error.message);
+    res.status(500).json({ success: false, error: 'Failed to update patron saint image' });
+  }
+};
+
+/**
+ * PATCH /jumuiya-data/:id/channels
+ * Replace the social/contact channels (platform + url rows in
+ * jumuiya_social_media) for a single jumuiya.
+ * Body: { channels: [{ platform: string, url: string }] }
+ */
+export const updateJumuiyaChannels = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { channels } = req.body;
+
+    if (!Array.isArray(channels)) {
+      return res.status(400).json({ success: false, error: 'channels must be an array of { platform, url }' });
+    }
+
+    // Resolve the jumuiya to its group_id (matches the pattern used elsewhere)
+    const sgResult = await pool.query(
+      `SELECT group_id, slug FROM sub_groups
+       WHERE slug = $1 OR group_id::text = $1 OR LOWER(name) = LOWER($1)`,
+      [id]
+    );
+    if (sgResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Jumuiya not found' });
+    }
+    const groupId = sgResult.rows[0].group_id;
+
+    // Serialize inserts inside a transaction so the list is always consistent
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('DELETE FROM jumuiya_social_media WHERE jumuiya_id = $1', [groupId]);
+
+      if (channels.length > 0) {
+        for (const ch of channels) {
+          const platform = String(ch.platform || '').trim();
+          const url = String(ch.url || '').trim();
+          if (!platform || !url) continue;
+          await client.query(
+            'INSERT INTO jumuiya_social_media (jumuiya_id, platform, url) VALUES ($1, $2, $3)',
+            [groupId, platform, url]
+          );
+        }
+      }
+
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    // Mirror any WhatsApp channel into the green-button store so the Channels
+    // tab and the WhatsApp widget always point at the same group link.
+    await syncWhatsAppToSettings(groupId, sgResult.rows[0].slug, channels);
+
+    logger.info(`Updated channels for Jumuiya ${id} (${channels.length} channels)`);
+    res.json({ success: true, data: { jumuiya_id: groupId, channels } });
+  } catch (error) {
+    logger.error('Error updating Jumuiya channels: ' + error.message);
+    res.status(500).json({ success: false, error: 'Failed to update jumuiya channels' });
+  }
+};
+
+/**
+ * PATCH /jumuiya-data/:id
+ * Update description, fullName, about, color, and/or meetingSchedule for a jumuiya.
+ */
+export const updateJumuiyaData = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { description, fullName, about, color, meetingSchedule } = req.body;
+
+    const sgResult = await pool.query(
+      `UPDATE sub_groups SET
+         description = COALESCE($1, description),
+         full_name   = COALESCE($2, full_name),
+         about       = COALESCE($3, about),
+         color       = COALESCE($4, color)
+       WHERE slug = $5 OR group_id::text = $5 OR LOWER(name) = LOWER($5)
+       RETURNING *`,
+      [description, fullName, about, color, id]
+    );
+
+    if (sgResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Jumuiya not found' });
+    }
+
+    const groupId = sgResult.rows[0].group_id;
+
+    if (meetingSchedule) {
+      const existing = await pool.query(
+        'SELECT id FROM jumuiya_meeting_schedule WHERE jumuiya_id = $1',
+        [groupId]
+      );
+      if (existing.rows.length) {
+        await pool.query(
+          `UPDATE jumuiya_meeting_schedule
+           SET day = COALESCE($1, day), time = COALESCE($2, time), venue = COALESCE($3, venue)
+           WHERE jumuiya_id = $4`,
+          [meetingSchedule.day, meetingSchedule.time, meetingSchedule.venue, groupId]
+        );
+      } else {
+        await pool.query(
+          `INSERT INTO jumuiya_meeting_schedule (jumuiya_id, day, time, venue)
+           VALUES ($1, $2, $3, $4)`,
+          [groupId, meetingSchedule.day || '', meetingSchedule.time || '', meetingSchedule.venue || '']
+        );
+      }
+    }
+
+    logger.info(`Updated jumuiya data for ${id}`);
+    res.json({ success: true, data: sgResult.rows[0] });
+  } catch (error) {
+    logger.error('Error updating jumuiya data: ' + error.message);
+    res.status(500).json({ success: false, error: 'Failed to update jumuiya data' });
+  }
+};
+
+/**
+ * Mirror a jumuiya's WhatsApp channel into the green-button store
+ * (system_settings -> whatsapp_jumuiya_<slug>_link), so both surfaces share
+ * the same group link. An empty/missing WhatsApp channel clears the link.
+ */
+const syncWhatsAppToSettings = async (groupId, slug, channels) => {
+  try {
+    if (!slug) return;
+    const whatsapp = (channels || []).find((ch) =>
+      String(ch.platform || '').toLowerCase().includes('whatsapp')
+    );
+    const url = whatsapp ? String(whatsapp.url || '').trim() : '';
+    await pool.query(
+      `INSERT INTO system_settings (key, value, updated_at)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = NOW()`,
+      [`whatsapp_jumuiya_${slug}_link`, url]
+    );
+  } catch (error) {
+    // Non-fatal: the jumuiya_social_media write already succeeded
+    logger.warn(`syncWhatsAppToSettings failed (non-fatal): ${error.message}`);
+  }
+};

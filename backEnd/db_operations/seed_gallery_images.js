@@ -56,7 +56,7 @@ async function seed() {
     
     // Clear existing gallery data to avoid duplicates if re-seeding
     await client.query('DELETE FROM hub_gallery');
-    console.log("✔ Cleared existing gallery data.");
+    console.log("Cleared existing gallery data.");
 
     for (let i = 0; i < images.length; i++) {
       const modId = modules[i % modules.length];
@@ -70,10 +70,10 @@ async function seed() {
       `, [modId, imageUrl, description, eventName]);
     }
 
-    console.log(`✔ Successfully seeded ${images.length} images across ${modules.length} modules.`);
+    console.log(`Successfully seeded ${images.length} images across ${modules.length} modules.`);
     console.log("--- SEEDING COMPLETED ---");
   } catch (err) {
-    console.error("❌ SEEDING FAILED:", err.message);
+    console.error("SEEDING FAILED:", err.message);
   } finally {
     client.release();
     await pool.end();

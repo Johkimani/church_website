@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_JUMUIYA_BASE } from '../utils/officialsApi';
 import { showSuccessToast, showErrorToast } from '../utils/customToast';
 import { apiClient } from '../api/axiosInstance';
-import apiService from '../pages/Landing/services/api';
+import apiService from '../services/api';
 
 export interface JumuiyaOfficial {
   id: number;
@@ -88,7 +88,7 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
 
       return { snapshots, photoUrl };
     },
-    onError: (error: Error, formData, context) => {
+    onError: (error: Error, _formData, context) => {
       if (context?.snapshots) {
         context.snapshots.forEach(snapshot => {
           queryClient.setQueryData(snapshot.queryKey, snapshot.data);
@@ -99,7 +99,7 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
       }
       showErrorToast('Failed to Add Jumuiya Official', error.message);
     },
-    onSuccess: (data, formData, context) => {
+    onSuccess: (data: any, _formData, context) => {
       if (context?.photoUrl) {
         URL.revokeObjectURL(context.photoUrl);
       }
@@ -107,7 +107,11 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
       queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
-      showSuccessToast('Jumuiya Official Added Successfully', 'The Jumuiya official has been registered.');
+      if (data?.warning) {
+        showErrorToast('Jumuiya Official Added — Role Not Assigned', data.warning);
+      } else {
+        showSuccessToast('Jumuiya Official Added Successfully', 'The Jumuiya official has been registered.');
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });
@@ -176,7 +180,7 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
 
       return { snapshots, photoUrl: newPhotoUrlCreated ? photoUrl : undefined };
     },
-    onError: (error: Error, variables, context) => {
+    onError: (error: Error, _variables, context) => {
       if (context?.snapshots) {
         context.snapshots.forEach(snapshot => {
           queryClient.setQueryData(snapshot.queryKey, snapshot.data);
@@ -187,7 +191,7 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
       }
       showErrorToast('Failed to Update Jumuiya Official', error.message);
     },
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data: any, _variables, context) => {
       if (context?.photoUrl) {
         URL.revokeObjectURL(context.photoUrl);
       }
@@ -195,7 +199,11 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
       queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
-      showSuccessToast('Jumuiya Official Updated Successfully', 'The Jumuiya official details have been updated.');
+      if (data?.warning) {
+        showErrorToast('Jumuiya Official Updated — Role Not Assigned', data.warning);
+      } else {
+        showSuccessToast('Jumuiya Official Updated Successfully', 'The Jumuiya official details have been updated.');
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });
@@ -228,7 +236,7 @@ export function useJumuiyaOfficials(filters: { termId?: number | string; categor
 
       return { snapshots };
     },
-    onError: (error: Error, id, context) => {
+    onError: (error: Error, _id, context) => {
       if (context?.snapshots) {
         context.snapshots.forEach(snapshot => {
           queryClient.setQueryData(snapshot.queryKey, snapshot.data);

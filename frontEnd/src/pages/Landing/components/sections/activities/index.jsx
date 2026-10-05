@@ -3,23 +3,22 @@
 // same loading/error states, same card design system (white bg, slate text, blue accents)
 import { useState, useEffect, useRef } from "react";
 import { useCachedData } from "../../../../../hooks/useCachedData";
-import { Clock, MapPin, Calendar, Plus, Trash2, RefreshCw, Activity, Zap, X, Smartphone, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-import apiService from "../../../services/api";
+import { Clock, MapPin, Calendar, Plus, Trash2, RefreshCw, Activity, X, Smartphone, Loader2, CheckCircle2, AlertCircle, Users } from "lucide-react";
+import apiService from "../../../../../services/api";
+import PageLoader from "../../../../../assets/Layouts/PageLoader";
 import toast from "react-hot-toast";
 import useCountdown from "../../../../../hooks/useCountdown";
 import { useAuth } from "../../../../../context/AuthContext";
 import { bookingService } from "../../../../../api/activitiesServices";
 import { useNavigate } from "react-router-dom";
 
-// ── Activity icons — matches repo's emoji/icon style ──────────────
 const ACTIVITY_ICONS = {
-  "Rosary":         "📿",
-  "Choir Practice": "🎵",
-  "Bible Study":    "📖",
-  "Mass":           "⛪",
+  "Rosary":         "",
+  "Choir Practice": "",
+  "Bible Study":    "",
+  "Mass":           "",
 };
 
-// ── Day accent colours — slate palette matching repo's design system ─
 const DAY_COLORS = {
   Monday:    "border-l-blue-400   bg-blue-50/40",
   Tuesday:   "border-l-purple-400 bg-purple-50/40",
@@ -35,15 +34,17 @@ const ACTIVITY_IMAGES = {
   Wednesday: "/images/biblestudy.webp",
   Thursday: "/images/rosary_prayers.jpg",
   Friday: "/images/mass.webp",
-  Saturday: "/images/sta-choir.png",
+  Saturday: "/images/sta choir.png",
 };
 
-// ── Image mapping for Weekly Activities ───────────────────────────
-const DEFAULT_ACTIVITY_IMAGE = "/images/church.png";
+const DEFAULT_ACTIVITY_IMAGE = "/images/church.jpg";
 
 const getWeeklyActivityImage = (activity) => {
   const title = String(activity?.activity || "").trim();
   const day = String(activity?.day || "").trim();
+
+  // Admin-uploaded image takes priority over the default mapping
+  if (activity?.image_url) return activity.image_url;
 
   // Requirements mapping
   if (title === "Saturday Choir Practice") return "/images/sta choir.png";
@@ -66,29 +67,36 @@ const getWeeklyActivityImage = (activity) => {
   return null;
 };
 
-// ── Weekly Activity Card ───────────────────────────────────────────
 function WeeklyCard({ activity, onBook, bookingState }) {
   const { user } = useAuth();
   const colorClass = DAY_COLORS[activity.day] || "border-l-gray-300 bg-gray-50/40";
-  const icon = ACTIVITY_ICONS[activity.activity] || "✝";
+  const icon = ACTIVITY_ICONS[activity.activity] || "";
 
   const mappedImage = getWeeklyActivityImage(activity);
   const imgSrc = mappedImage || DEFAULT_ACTIVITY_IMAGE;
 
   const getNextWeeklyOccurrence = () => {
     const dayToIndex = {
-      Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6,
+      sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6,
+      sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6,
     };
-    const targetDayIndex = dayToIndex[(activity.day || "").trim()];
+    const key = String(activity?.day || "").trim().toLowerCase();
+    const targetDayIndex = dayToIndex[key];
     if (targetDayIndex === undefined) return null;
-    const timeStr = String(activity.time || "").trim();
+    const timeStr = String(activity?.time || "").trim();
     const now = new Date();
-    let hours = 0; let minutes = 0;
-    const m24 = timeStr.match(/^(\d{1,2}):(\d{2})$/);
-    if (m24) { hours = Number(m24[1]); minutes = Number(m24[2]); } else {
-      const m12 = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-      if (m12) { hours = Number(m12[1]); minutes = Number(m12[2]); const ampm = m12[3].toUpperCase(); if (ampm === "PM" && hours < 12) hours += 12; if (ampm === "AM" && hours === 12) hours = 0; }
+    let hours = 0;
+    let minutes = 0;
+
+    const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if (match) {
+      hours = Number(match[1]);
+      minutes = Number(match[2]);
+      const ampm = match[3]?.toUpperCase();
+      if (ampm === "PM" && hours < 12) hours += 12;
+      if (ampm === "AM" && hours === 12) hours = 0;
     }
+
     const daysUntil = (targetDayIndex - now.getDay() + 7) % 7;
     const target = new Date(now);
     target.setDate(now.getDate() + daysUntil);
@@ -130,51 +138,68 @@ function WeeklyCard({ activity, onBook, bookingState }) {
 
   return (
     <div
-      className={`bg-white rounded-2xl border-l-4 ${colorClass} border border-slate-100 p-5
+      className={`bg-white rounded-2xl border-l-4 ${colorClass} border border-slate-100 p-4 sm:p-5
         hover:shadow-[0_8px_30px_-8px_rgba(0,0,0,0.08)] transition-all duration-500
-        hover:-translate-y-0.5 cursor-default group`}
+        hover:-translate-y-0.5 cursor-default group overflow-hidden min-w-0 break-words flex flex-col justify-between`}
     >
-      <img
-        src={imgSrc}
-        alt={activity.activity}
-        className="w-full h-56 object-cover rounded-xl mb-4"
-        loading="lazy"
-      />
-      <div className="flex items-start justify-between mb-3">
-        <div>
-          <p className="text-[10px] font-black text-slate-400 tracking-[0.25em] uppercase mb-1">{activity.day}</p>
-          <h4 className="text-base font-black text-slate-800 group-hover:text-primary transition-colors duration-300">
-            {icon} {activity.activity}
-          </h4>
-        </div>
-      </div>
-      <div className="space-y-1.5 text-xs font-medium text-slate-500">
-        <p className="flex items-center gap-2">
-          <Clock size={12} className="text-primary/60" />{activity.time}
-        </p>
-        <p className="text-[11px] text-slate-600 font-semibold">⏳ {timerText}</p>
-        <p className="flex items-center gap-2">
-          <MapPin size={12} className="text-primary/60" />{activity.venue}
-        </p>
-        {activity.fare && Number(activity.fare) > 0 && (
-          <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100">
-            <span className="font-bold text-emerald-600">KES {Number(activity.fare).toLocaleString()}</span>
-            {renderBookButton()}
+      <div>
+        {imgSrc && (
+          <div className="w-full aspect-video sm:aspect-[16/9] max-h-56 overflow-hidden rounded-xl mb-4 bg-slate-100">
+            <img
+              src={imgSrc}
+              alt={activity.activity}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
+              onError={(e) => { e.currentTarget.parentElement?.style && (e.currentTarget.parentElement.style.display = 'none'); }}
+            />
           </div>
         )}
+        <div className="flex items-start justify-between mb-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-black text-slate-400 tracking-[0.25em] uppercase mb-1">{activity.day}</p>
+            <h4 className="text-base font-black text-slate-800 group-hover:text-primary transition-colors duration-300 break-words">
+              {icon} {activity.activity}
+            </h4>
+          </div>
+        </div>
+        <div className="space-y-1.5 text-xs font-medium text-slate-500">
+          {activity.time && (
+            <p className="flex items-center gap-2">
+              <Clock size={12} className="text-primary/60 shrink-0" /><span className="truncate">{activity.time}</span>
+            </p>
+          )}
+          <p className="text-[11px] text-slate-600 font-semibold">{timerText}</p>
+          {activity.venue && (
+            <p className="flex items-center gap-2">
+              <MapPin size={12} className="text-primary/60 shrink-0" /><span className="break-words">{activity.venue}</span>
+            </p>
+          )}
+        </div>
       </div>
+
+      {!activity.jumuiya_id && activity.fare && Number(activity.fare) > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-3 mt-3 border-t border-slate-100">
+          <span className="font-bold text-emerald-600 text-xs sm:text-sm">KES {Number(activity.fare).toLocaleString()}</span>
+          {renderBookButton()}
+        </div>
+      )}
     </div>
   );
 }
 
-// ── Semester Event Card ────────────────────────────────────────────
-function SemesterCard({ event, onBook, bookingState }) {
+function SemesterCard({ event, onBook, bookingState, defaultImage = null }) {
   const { user } = useAuth();
-  const dt = new Date(event.date_time);
-  const isPast = dt < new Date();
+  const rawDate = event?.date_time ? String(event.date_time).replace(" ", "T") : null;
+  const dt = rawDate ? new Date(rawDate) : null;
+  const isDateValid = dt && !isNaN(dt.getTime());
+  const isPast = isDateValid ? dt < new Date() : false;
 
-  const { isValid, days, hours, minutes, seconds } = useCountdown(event.date_time ?? null);
-  const timerText = !isValid ? "No date set" : days > 0 ? `Starts in ${days}d ${hours}h ${minutes}m` : `Starts in ${hours}h ${minutes}m ${seconds}s`;
+  const { isValid, days, hours, minutes, seconds } = useCountdown(isDateValid ? dt : null);
+  const timerText = !isValid ? "Date TBA" : isPast ? "Event Concluded" : days > 0 ? `Starts in ${days}d ${hours}h ${minutes}m` : `Starts in ${hours}h ${minutes}m ${seconds}s`;
+
+  // Use event's custom image, or fall back to admin-chosen default (if set)
+  const displayImage = event.image_url || defaultImage || null;
+
 
   const renderBookButton = () => {
     if (!user) return <span className="text-[9px] text-slate-400 italic">Login to book</span>;
@@ -205,55 +230,74 @@ function SemesterCard({ event, onBook, bookingState }) {
 
   return (
     <div
-      className={`group bg-white rounded-[1.5rem] border border-slate-100
-        hover:border-slate-200 hover:shadow-[0_20px_50px_-15px_rgba(0,0,0,0.08)]
-        transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] p-6 cursor-default
-        ${isPast ? "opacity-60" : ""}`}
+      className={`group bg-white rounded-2xl border border-slate-200/80
+        hover:border-slate-300 hover:shadow-[0_12px_35px_-10px_rgba(0,0,0,0.08)]
+        transition-all duration-500 p-4 sm:p-5 cursor-default overflow-hidden min-w-0 break-words flex flex-col justify-between`}
     >
-      <div className="flex items-start justify-between gap-3 mb-4">
-        <div className="flex-1">
-          {isPast && (
-            <span className="inline-block text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full tracking-widest uppercase mb-2">
-              Past Event
-            </span>
-          )}
-          <h3 className="text-lg font-black text-slate-900 mb-1 group-hover:text-primary transition-colors duration-300">
-            {event.title}
-          </h3>
-          <p className="text-slate-500 text-sm font-medium leading-relaxed">
-            {event.description}
+      <div>
+        {/* Display image: event custom image, or admin-set default if configured */}
+        {displayImage && (
+          <div className="w-full aspect-video sm:aspect-[16/9] max-h-48 overflow-hidden rounded-xl mb-4 bg-slate-100">
+            <img
+              src={displayImage}
+              alt={event.title}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
+              onError={(e) => { e.currentTarget.parentElement?.style && (e.currentTarget.parentElement.style.display = 'none'); }}
+            />
+          </div>
+        )}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            {isPast && (
+              <span className="inline-block text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full tracking-widest uppercase mb-1.5">
+                Past Event
+              </span>
+            )}
+            <h3 className="text-base font-black text-slate-800 group-hover:text-primary transition-colors duration-300 break-words">
+              {event.title}
+            </h3>
+            {event.description && (
+              <p className="text-slate-500 text-xs sm:text-sm font-medium leading-relaxed break-words mt-1 line-clamp-3">
+                {event.description}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="h-px w-full bg-slate-100 my-3" />
+
+        <div className="space-y-1.5 text-xs font-medium text-slate-500">
+          <p className="flex items-center gap-2">
+            <Calendar size={12} className="text-primary/60 shrink-0" />
+            <span>{isDateValid ? dt.toLocaleDateString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric" }) : String(event.date_time || "Date TBA")}</span>
           </p>
+          {isDateValid && (
+            <p className="flex items-center gap-2">
+              <Clock size={12} className="text-primary/60 shrink-0" />
+              <span>{dt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</span>
+            </p>
+          )}
+          <p className="text-[11px] text-slate-600 font-semibold">{timerText}</p>
+          {event.venue && (
+            <p className="flex items-center gap-2">
+              <MapPin size={12} className="text-primary/60 shrink-0" /><span className="break-words">{event.venue}</span>
+            </p>
+          )}
         </div>
       </div>
 
-      <div className="h-px w-full bg-slate-100 mb-4" />
-
-      <div className="space-y-2 text-xs font-medium text-slate-500">
-        <p className="flex items-center gap-2">
-          <Calendar size={12} className="text-primary/60" />
-          {dt.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-        </p>
-        <p className="flex items-center gap-2">
-          <Clock size={12} className="text-primary/60" />
-          {dt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
-        </p>
-        <p className="text-[11px] text-slate-600 font-semibold">⏳ {timerText}</p>
-        <p className="flex items-center gap-2">
-          <MapPin size={12} className="text-primary/60" />
-          {event.venue}
-        </p>
-        {event.fare && Number(event.fare) > 0 && (
-          <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100">
-            <span className="font-bold text-emerald-600">KES {Number(event.fare).toLocaleString()}</span>
-            {renderBookButton()}
-          </div>
-        )}
-      </div>
+      {!event.jumuiya_id && event.fare && Number(event.fare) > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-3 mt-3 border-t border-slate-100">
+          <span className="font-bold text-emerald-600 text-xs sm:text-sm">KES {Number(event.fare).toLocaleString()}</span>
+          {renderBookButton()}
+        </div>
+      )}
     </div>
   );
 }
 
-// ── Booking Modal ──────────────────────────────────────────────────
+
 function BookingModal({ activity, activityType, onClose, existingBooking, onPaymentComplete }) {
   const [step, setStep] = useState(existingBooking?.id ? "paying" : "book");
   const [phone, setPhone] = useState("");
@@ -380,17 +424,17 @@ function BookingModal({ activity, activityType, onClose, existingBooking, onPaym
               </p>
               {message && <div className="text-sm text-red-600 bg-red-50 p-4 rounded-2xl border border-red-100">{message}</div>}
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-wider ml-1 mb-1">Amount (KES)</label>
-                <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
+                <label htmlFor="activity-amount" className="block text-xs font-black text-gray-400 uppercase tracking-wider ml-1 mb-1">Amount (KES)</label>
+                <input type="number" id="activity-amount" name="activity-amount" autoComplete="off" value={amount} onChange={(e) => setAmount(e.target.value)}
                   min="1" max={remaining}
                   className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all text-lg font-bold text-gray-900" />
                 <p className="text-[10px] text-slate-400 mt-1 ml-1">Enter any amount between 1 and {remaining.toLocaleString()} (you can pay later)</p>
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-wider ml-1 mb-1">M-Pesa Number</label>
+                <label htmlFor="activity-phone" className="block text-xs font-black text-gray-400 uppercase tracking-wider ml-1 mb-1">M-Pesa Number</label>
                 <div className="relative">
                   <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                  <input type="text" value={phone} onChange={(e) => {
+                  <input type="text" id="activity-phone" name="activity-phone" autoComplete="tel-national" value={phone} onChange={(e) => {
                     let val = e.target.value.replace(/\D/g, '');
                     if (val.startsWith('254')) val = val.substring(3);
                     else if (val.startsWith('0')) val = val.substring(1);
@@ -436,7 +480,7 @@ function BookingModal({ activity, activityType, onClose, existingBooking, onPaym
               <div className="mx-auto w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center"><AlertCircle size={40} /></div>
               <div>
                 <h3 className="text-2xl font-black text-gray-900">Error</h3>
-                <p className="text-slate-500 mt-2">{message || "Something went wrong. Please try again."}</p>
+                <p className="text-slate-500 mt-2">{message || "Booking failed. Please try again."}</p>
               </div>
               <button onClick={() => { setStep("book"); setMessage(""); }} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black hover:bg-indigo-700 transition-all">Try Again</button>
             </div>
@@ -450,14 +494,15 @@ function BookingModal({ activity, activityType, onClose, existingBooking, onPaym
   );
 }
 
-// ── Main Section ───────────────────────────────────────────────────
 const ActivitiesSection = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [bookingTarget, setBookingTarget] = useState(null); // { activity, type, existingBooking }
   const [userBookings, setUserBookings] = useState([]);
+  const [semesterDefaultImage, setSemesterDefaultImage] = useState(null);
+
   const { data: activitiesData, loading, error, refetch: loadActivities } = useCachedData(
-    'csa_cache_public_activities',
+    'csa_cache_public_activities_v4',
     async () => {
       const [weeklyData, semesterData] = await Promise.all([
         apiService.getWeeklyActivities(),
@@ -470,6 +515,15 @@ const ActivitiesSection = () => {
 
   const weekly = activitiesData.weekly || [];
   const semester = activitiesData.semester || [];
+
+  // Fetch the admin-chosen default image for semester events
+  useEffect(() => {
+    apiService.getPublicSettings().then((settings) => {
+      if (settings?.semester_default_image) {
+        setSemesterDefaultImage(settings.semester_default_image);
+      }
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     refreshBookings();
@@ -496,9 +550,7 @@ const ActivitiesSection = () => {
   if (loading) {
     return (
       <div id="activities" className="py-8 md:py-16 bg-gray-50">
-        <div className="container mx-auto px-3 md:px-4 text-center">
-          <p className="text-gray-500">Loading activities...</p>
-        </div>
+        <PageLoader message="Loading activities" />
       </div>
     );
   }
@@ -518,19 +570,15 @@ const ActivitiesSection = () => {
   }
 
   return (
-    <div id="activities" className="py-12 md:py-20 bg-slate-50 relative">
+    <div id="activities" className="py-12 md:py-20 bg-slate-50 relative overflow-hidden">
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl -mr-48 -mt-48 opacity-60 pointer-events-none" />
 
       <div className="container mx-auto px-4 md:px-6 relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white text-slate-400 text-[10px] font-black tracking-[0.3em] uppercase mb-8 shadow-sm border border-slate-100">
-            <Zap size={12} className="text-primary/40" />
-            Our Schedule
-          </div>
-          <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4 tracking-tight">
-            CSA <span className="text-primary/80">Activities</span>
+          <h2 className="text-[clamp(2.5rem,8vw,4.5rem)] leading-tight tracking-[-0.03em] mb-6 bg-gradient-to-br from-slate-900 to-blue-800 bg-clip-text text-transparent pb-1">
+            CSA Activities
           </h2>
-          <p className="text-slate-500 font-medium text-base leading-relaxed max-w-xl mx-auto">
+          <p className="text-slate-600 text-xl leading-[1.6] max-w-[650px] mx-auto">
             Join us throughout the week and semester for prayer, worship, fellowship, and service.
           </p>
         </div>
@@ -556,7 +604,7 @@ const ActivitiesSection = () => {
               <p className="text-slate-400 font-medium text-sm">No weekly activities yet.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {weekly.map((a) => (
                 <WeeklyCard
                   key={a.id}
@@ -584,11 +632,12 @@ const ActivitiesSection = () => {
               <p className="text-slate-400 font-medium text-sm">No semester events yet.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {semester.map((e) => (
                 <SemesterCard
                   key={e.id}
                   event={e}
+                  defaultImage={semesterDefaultImage}
                   bookingState={bookingMap[`semester:${e.id}`]}
                   onBook={(act, type, existing) => setBookingTarget({ activity: act, type, existingBooking: existing })}
                 />
@@ -597,6 +646,7 @@ const ActivitiesSection = () => {
           )}
         </div>
       </div>
+
 
       {bookingTarget && (
         <BookingModal

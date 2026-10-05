@@ -1,13 +1,16 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import { Users, Search, X, Edit2, Save, ChevronLeft, ChevronRight, RefreshCw, Flag, Ban } from "lucide-react";
+import { SkeletonTable } from "../../../components/Skeleton";
+import { getYearOfStudy, genderCode } from "../../../utils/memberYear";
+
 
 interface Props {
   jumuiyaId: string;
   jumuiyaName: string;
 }
 
-const MemberReview: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
+const MemberReview: React.FC<Props> = ({ jumuiyaId }) => {
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +52,7 @@ const MemberReview: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
     setEditForm({
       first_name: m.first_name || "",
       last_name: m.last_name || "",
+      email: m.email || "",
       gender: m.gender || "",
       course: m.course || "",
       phone: m.phone || "",
@@ -109,9 +113,12 @@ const MemberReview: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
 
   if (loading) {
     return (
-      <div className="space-y-3 animate-pulse">
-        <div className="h-8 bg-slate-200 rounded-lg w-1/4" />
-        <div className="h-48 bg-slate-100 rounded-xl" />
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <div className="skeleton-shimmer h-6 w-36 rounded-lg" />
+          <div className="skeleton-shimmer h-8 w-48 rounded-lg" />
+        </div>
+        <SkeletonTable rows={8} cols={6} />
       </div>
     );
   }
@@ -169,8 +176,10 @@ const MemberReview: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider w-10">No.</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Reg #</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Name</th>
+                  <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Email</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Source</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Gender</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Course</th>
@@ -180,21 +189,30 @@ const MemberReview: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
                 </tr>
               </thead>
               <tbody>
-                {paginatedMembers.map((m) => {
+                {paginatedMembers.map((m, idx) => {
                   const isEditing = editingId === m.member_id;
                   return (
                     <tr key={m.member_id} className={`border-b border-slate-100 hover:bg-slate-50 transition-colors ${m.flagged_inactive ? "bg-red-50/40" : ""}`}>
+                      <td className="py-3 px-4 text-slate-400 text-xs">{(currentPage - 1) * itemsPerPage + idx + 1}</td>
                       <td className="py-3 px-4 font-medium text-slate-800">{m.member_id}</td>
                       <td className="py-3 px-4">
                         {isEditing ? (
                           <div className="flex gap-1">
-                            <input value={editForm.first_name} onChange={e => setEditForm(p => ({ ...p, first_name: e.target.value }))}
+                            <input value={editForm.first_name} onChange={e => setEditForm((p: any) => ({ ...p, first_name: e.target.value }))}
                               placeholder="First" className="text-xs border border-slate-200 rounded px-1.5 py-1 w-20" />
-                            <input value={editForm.last_name} onChange={e => setEditForm(p => ({ ...p, last_name: e.target.value }))}
+                            <input value={editForm.last_name} onChange={e => setEditForm((p: any) => ({ ...p, last_name: e.target.value }))}
                               placeholder="Last" className="text-xs border border-slate-200 rounded px-1.5 py-1 w-20" />
                           </div>
                         ) : (
                           <span className="text-slate-700 font-medium">{m.first_name} {m.last_name}</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        {isEditing ? (
+                          <input value={editForm.email} onChange={e => setEditForm((p: any) => ({ ...p, email: e.target.value }))}
+                            placeholder="email" className="text-xs border border-slate-200 rounded px-1.5 py-1 w-28" />
+                        ) : (
+                          <span className="text-slate-500">{m.email || "—"}</span>
                         )}
                       </td>
                       <td className="py-3 px-4">
@@ -208,25 +226,25 @@ const MemberReview: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
                       </td>
                       <td className="py-3 px-4">
                         {isEditing ? (
-                          <select value={editForm.gender} onChange={e => setEditForm(p => ({ ...p, gender: e.target.value }))}
+                          <select value={editForm.gender} onChange={e => setEditForm((p: any) => ({ ...p, gender: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1">
                             <option value="">—</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
+                            <option value="gent">Gent</option>
+                            <option value="lady">Lady</option>
                           </select>
                         ) : (
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                            m.gender === "male" ? "bg-blue-50 text-blue-700" :
-                            m.gender === "female" ? "bg-pink-50 text-pink-700" :
+                            genderCode(m.gender) === "M" ? "bg-blue-50 text-blue-700" :
+                            genderCode(m.gender) === "L" ? "bg-pink-50 text-pink-700" :
                             "bg-slate-50 text-slate-500"
                           }`}>
-                            {m.gender === "male" ? "M" : m.gender === "female" ? "W" : "—"}
+                            {genderCode(m.gender)}
                           </span>
                         )}
                       </td>
                       <td className="py-3 px-4">
                         {isEditing ? (
-                          <input value={editForm.course} onChange={e => setEditForm(p => ({ ...p, course: e.target.value }))}
+                          <input value={editForm.course} onChange={e => setEditForm((p: any) => ({ ...p, course: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-24" />
                         ) : (
                           <span className="text-slate-500">{m.course || "—"}</span>
@@ -234,7 +252,7 @@ const MemberReview: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
                       </td>
                       <td className="py-3 px-4">
                         {isEditing ? (
-                          <input value={editForm.phone} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))}
+                          <input value={editForm.phone} onChange={e => setEditForm((p: any) => ({ ...p, phone: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-24" />
                         ) : (
                           <span className="text-slate-500">{m.phone || "—"}</span>
@@ -242,10 +260,10 @@ const MemberReview: React.FC<Props> = ({ jumuiyaId, jumuiyaName }) => {
                       </td>
                       <td className="py-3 px-4">
                         {isEditing ? (
-                          <input value={editForm.year_of_study} onChange={e => setEditForm(p => ({ ...p, year_of_study: e.target.value }))}
+                          <input value={editForm.year_of_study} onChange={e => setEditForm((p: any) => ({ ...p, year_of_study: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-16" />
                         ) : (
-                          <span className="text-slate-500">{m.year_of_study || "—"}</span>
+                          <span className="text-slate-500">{getYearOfStudy(m.member_id || "") || m.year_of_study || "—"}</span>
                         )}
                       </td>
                       <td className="py-3 px-4">

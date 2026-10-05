@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useData } from './context/DataContext';
 import AboutTab from './components/AboutTab';
 import OfficialsTab from './components/OfficialsTab';
@@ -11,34 +11,97 @@ import ChannelsTab from './components/ChannelsTab';
 import NotificationsTab from './components/NotificationsTab';
 import TshirtsTab from './components/TshirtsTab';
 import SettingsTab from './components/SettingsTab';
-import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaUserPlus, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaCog, FaKey, FaStamp } from "react-icons/fa";
+import PrayerPartnersTab from './components/PrayerPartnersTab';
+import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaUserPlus, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaKey, FaStamp, FaPrayingHands } from "react-icons/fa";
 import { useAuth } from '../../context/AuthContext';
 import { useJumuiyaOfficials } from '../../hooks/useJumuiyaOfficials';
 import { useTerms } from '../../hooks/useTerms';
 import './JumuiyaDetail.css';
-import AdminPanelEmbed from './admin/AdminPanelEmbed';
 import { FaTimes } from 'react-icons/fa';
 
-type TabType = 'about' | 'officials' | 'registration' | 'channels' | 'members' | 'activities' | 'tshirts' | 'allocations' | 'admin' | 'settings' | 'stampcard';
+type TabType = 'about' | 'officials' | 'registration' | 'channels' | 'members' | 'activities' | 'tshirts' | 'allocations' | 'settings' | 'stampcard' | 'prayerpartners';
 
 const JumuiyaDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
     const [activeTab, setActiveTab] = useState<TabType>('about');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const { getJumuiyaById } = useData();
     const { user } = useAuth();
     const [isNotifOpen, setIsNotifOpen] = useState(false);
     const [hasNewNotif, setHasNewNotif] = useState(true); // Initial state for demo
-    const isAdmin = user?.role === 'admin';
 
     const jumuiyaId = id ? id.toLowerCase().replace(/[^a-z0-9]/g, '-') : '';
     const jumuiya = getJumuiyaById(jumuiyaId);
     const isMemberOfThisJumuiya = !!(user?.jumuiya_id && jumuiya?.group_id && user.jumuiya_id === jumuiya.group_id);
 
+    const isAdmin = user?.role === 'admin' || (Array.isArray(user?.role) && user.role.includes('admin'));
+    const userRoles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
+    const isJumuiyaOfficial = isMemberOfThisJumuiya && userRoles.some(r => ['jumuiya_os', 'jumuiya_chairperson', 'jumuiya_secretary', 'admin'].includes(r));
+    const canManageActivities = isAdmin || isJumuiyaOfficial;
+    // Liturgist role (covers assistant liturgist) sees only the membership +
+    // posted prayer partners on the public page unless they also hold a
+    // management role.
+    const isPureLiturgist = isMemberOfThisJumuiya &&
+        userRoles.some(r => String(r).toLowerCase() === 'liturgist') &&
+        !userRoles.some(r => ['jumuiya_os', 'jumuiya_chairperson', 'jumuiya_secretary', 'admin'].includes(String(r).toLowerCase()));
+    // Every member of the jumuiya can view the posted prayer partner list.
+    const isPrayerPartnersAllowed = isMemberOfThisJumuiya;
+
+    const setTabWithUrl = (tab: TabType) => {
+        setActiveTab(tab);
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+
+        const params = new URLSearchParams(location.search);
+        params.set('tab', tab);
+
+        navigate({
+            pathname: location.pathname,
+            search: params.toString() ? `?${params.toString()}` : '',
+        }, { replace: false });
+    };
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const tabFromUrl = params.get('tab') as TabType | null;
+        const validTab = tabFromUrl && [
+            'about',
+            'officials',
+            'registration',
+            'channels',
+            'members',
+            'activities',
+            'tshirts',
+            'allocations',
+            'admin',
+            'settings',
+            'stampcard',
+            'prayerpartners'
+        ].includes(tabFromUrl);
+
+        if (validTab) {
+            setActiveTab(tabFromUrl);
+        }
+
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }, [location.search]);
+
     // Fetch dynamic officials from backend
     const { officials: dynamicOfficials } = useJumuiyaOfficials({ category: jumuiya?.name });
     const { currentTerm } = useTerms();
+
+    // Lock background page scroll when mobile menu is open
+    useEffect(() => {
+        if (isSidebarOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isSidebarOpen]);
 
     // Derive term info dynamically
     const dynamicTerm = (() => {
@@ -126,53 +189,62 @@ const JumuiyaDetail: React.FC = () => {
         { id: 'officials' as TabType, label: 'Officials', icon: <FaUserTie /> },
         ...(isMemberOfThisJumuiya ? [
           { id: 'members' as TabType, label: 'Members', icon: <FaUsers /> },
-          { id: 'registration' as TabType, label: 'Registration', icon: <FaUserPlus /> },
-          { id: 'stampcard' as TabType, label: 'Stamp Card', icon: <FaStamp /> },
+          ...(isPureLiturgist ? [] : [
+            { id: 'registration' as TabType, label: 'Registration', icon: <FaUserPlus /> },
+            { id: 'stampcard' as TabType, label: 'Stamp Card', icon: <FaStamp /> },
+          ]),
         ] : []),
+        ...(isPrayerPartnersAllowed ? [{ id: 'prayerpartners' as TabType, label: 'Prayer Partners', icon: <FaPrayingHands /> }] : []),
         { id: 'activities' as TabType, label: 'Activities', icon: <FaCalendarAlt /> },
-        { id: 'channels' as TabType, label: 'Channels', icon: <FaShareAlt /> },
+        { id: 'channels' as TabType, label: 'Channels & Gallery', icon: <FaShareAlt /> },
         { id: 'tshirts' as TabType, label: 'T-Shirts', icon: <FaTshirt /> },
-        ...(isAdmin ? [{ id: 'admin' as TabType, label: 'Admin', icon: <FaCog className="animate-spin-slow" /> }] : []),
-        ...(user ? [{ id: 'settings' as TabType, label: 'Settings', icon: <FaKey /> }] : []),
+        ...(isMemberOfThisJumuiya && !isPureLiturgist ? [{ id: 'settings' as TabType, label: 'Settings', icon: <FaKey /> }] : []),
     ];
 
     const renderTabContent = () => {
         switch (activeTab) {
             case 'about':
-                return <AboutTab jumuiya={jumuiya} onNavigateBack={() => navigate('/jumuiya')} />;
+                return <AboutTab
+                    jumuiya={jumuiya}
+                    onNavigateBack={() => navigate('/jumuiya')}
+                    onQuickLink={(tab) => setTabWithUrl(tab)}
+                />;
             case 'officials':
                 return <OfficialsTab
                     officials={displayedOfficials}
                     termOfOffice={dynamicTerm}
-                    formerOfficials={jumuiya.formerOfficials}
                     jumuiyaColor={detailColor}
-                    isAdmin={isAdmin} jumuiyaName={''}                />;
+                    isAdmin={isAdmin} jumuiyaName={jumuiya.name}                />;
             case 'members':
-                return <MembersTab jumuiyaName={jumuiya.name} jumuiyaColor={detailColor} jumuiyaId={jumuiya.group_id || jumuiya.id} />
+                return <MembersTab jumuiyaName={jumuiya.name} jumuiyaColor={detailColor} jumuiyaId={jumuiya.group_id || jumuiya.id} officials={jumuiya.officials || []} />
             case 'registration':
                 return <RegistrationTab jumuiyaName={jumuiya.name} jumuiyaId={jumuiya.group_id || jumuiya.id} jumuiyaColor={detailColor} />;
             case 'activities':
-                return <ActivitiesTab jumuiyaColor={detailColor} />;
+                return <ActivitiesTab jumuiyaColor={detailColor} jumuiyaId={jumuiya.group_id || jumuiya.id} />;
             case 'channels':
-                return <ChannelsTab socialMedia={jumuiya.socialMedia || []} gallery={jumuiya.gallery} />;
+                return <ChannelsTab socialMedia={jumuiya.socialMedia || []} jumuiyaId={jumuiya.group_id || jumuiya.id} isMember={isMemberOfThisJumuiya} />;
             case 'tshirts':
-                return <TshirtsTab jumuiyaId={jumuiya.id} jumuiyaColor={detailColor} orders={jumuiya.tshirtOrders || []} jumuiyaName={''} />;
+                return <TshirtsTab jumuiyaId={jumuiya.id} jumuiyaColor={detailColor} orders={jumuiya.tshirtOrders || []} jumuiyaName={jumuiya.name} />;
             case 'settings':
                 return <SettingsTab jumuiyaColor={detailColor} />;
             case 'stampcard':
-                return <StampCard jumuiyaId={jumuiya.group_id || jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={detailColor} />;
-            case 'admin':
-                return <AdminPanelEmbed jumuiya={jumuiya} />;
+                return <StampCard jumuiyaId={jumuiya.group_id || jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={detailColor} saintImage={jumuiya.saintImage} />;
+case 'prayerpartners':
+            return <PrayerPartnersTab jumuiyaId={jumuiya.group_id || jumuiya.id} jumuiyaName={jumuiya.name} jumuiyaColor={detailColor} currentMemberId={user?.member_id} />;
             default:
                 return null;
         }
     };
 
     useEffect(() => {
-      if (!isMemberOfThisJumuiya && (activeTab === 'members' || activeTab === 'registration' || activeTab === 'stampcard')) {
+      if (!isMemberOfThisJumuiya && (activeTab === 'members' || activeTab === 'registration' || activeTab === 'stampcard' || activeTab === 'settings')) {
+        setActiveTab('about');
+      } else if (isPureLiturgist && (activeTab === 'registration' || activeTab === 'stampcard' || activeTab === 'settings')) {
+        setActiveTab('about');
+      } else if (activeTab === 'prayerpartners' && !isPrayerPartnersAllowed) {
         setActiveTab('about');
       }
-    }, [isMemberOfThisJumuiya]);
+    }, [isMemberOfThisJumuiya, isPrayerPartnersAllowed, isPureLiturgist, activeTab]);
 
     const detailColor = jumuiya.color || '#2c3e50';
 
@@ -218,7 +290,7 @@ const JumuiyaDetail: React.FC = () => {
                             key={tab.id}
                             className={`nav-item ${activeTab === tab.id ? 'active' : ''}`}
                             onClick={() => {
-                                setActiveTab(tab.id);
+                                setTabWithUrl(tab.id);
                                 setIsSidebarOpen(false);
                             }}
                             style={activeTab === tab.id ? {
@@ -252,34 +324,36 @@ const JumuiyaDetail: React.FC = () => {
             </main>
 
             {/* Notification FAB */}
-            <div className="notif-fab-container">
-                <button 
-                    className={`notif-fab ${isNotifOpen ? 'active' : ''}`}
-                    onClick={() => {
-                        setIsNotifOpen(!isNotifOpen);
-                        setHasNewNotif(false);
-                    }}
-                    style={{ backgroundColor: jumuiya.color }}
-                    aria-label="Notifications"
-                >
-                    {isNotifOpen ? <FaTimes /> : <FaBell />}
-                    {!isNotifOpen && hasNewNotif && <span className="notif-badge-pulsing" />}
-                </button>
+            {!isNotifOpen && (
+                <div className="notif-fab-container">
+                    <button 
+                        className="notif-fab"
+                        onClick={() => {
+                            setIsNotifOpen(true);
+                            setHasNewNotif(false);
+                        }}
+                        style={{ backgroundColor: jumuiya.color }}
+                        aria-label="Notifications"
+                    >
+                        <FaBell />
+                        {hasNewNotif && <span className="notif-badge-pulsing" />}
+                    </button>
+                </div>
+            )}
 
-                {isNotifOpen && (
-                    <div className="notif-panel-floating animate-slide-up">
-                        <div className="notif-panel-header" style={{ borderBottomColor: jumuiya.color }}>
-                            <h3>Community Updates</h3>
-                            <button className="close-panel" onClick={() => setIsNotifOpen(false)}>
-                                <FaTimes />
-                            </button>
-                        </div>
-                        <div className="notif-panel-content">
-                            <NotificationsTab notifications={jumuiya.notifications || []} jumuiyaColor={detailColor} />
-                        </div>
+            {isNotifOpen && (
+                <div className="notif-panel-floating animate-slide-up">
+                    <div className="notif-panel-header" style={{ borderBottomColor: jumuiya.color }}>
+                        <h3>Community Updates</h3>
+                        <button className="close-panel" onClick={() => setIsNotifOpen(false)}>
+                            <FaTimes />
+                        </button>
                     </div>
-                )}
-            </div>
+                    <div className="notif-panel-content">
+                        <NotificationsTab notifications={jumuiya.notifications || []} jumuiyaColor={detailColor} />
+                    </div>
+                </div>
+            )}
 
             {/* Overlay for mobile */}
             {(isSidebarOpen || (isNotifOpen && window.innerWidth < 768)) && (

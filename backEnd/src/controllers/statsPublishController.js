@@ -1,5 +1,5 @@
 import { testDb as pool } from "../Configs/dbConfig.js";
-import { getComparisonAll, getAllMemberSummaries, getAllMemberProgress } from "../model/attemptSchema.js";
+import { getComparisonAll, getComparisonByRange, getAllMemberSummaries, getAllMemberProgress } from "../model/attemptSchema.js";
 import logger from "../logger/winston.js";
 
 /*
@@ -14,7 +14,7 @@ export const publishStats = async (req, res) => {
     const comparison = await getComparisonAll();
 
     await pool.query(
-      `DELETE FROM published_stats WHERE stat_type = 'comparison'`
+      `DELETE FROM published_stats WHERE stat_type = 'comparison' AND week_start IS NULL`
     );
     for (const row of comparison) {
       await pool.query(
@@ -33,7 +33,7 @@ export const publishStats = async (req, res) => {
     const memberSummaries = await getAllMemberSummaries();
 
     await pool.query(
-      `DELETE FROM published_stats WHERE stat_type = 'member_summary'`
+      `DELETE FROM published_stats WHERE stat_type = 'member_summary' AND week_start IS NULL`
     );
     for (const row of memberSummaries) {
       await pool.query(
@@ -51,7 +51,7 @@ export const publishStats = async (req, res) => {
 
     // 3. Per-member weekly progress (last 3 weeks)
     await pool.query(
-      `DELETE FROM published_stats WHERE stat_type = 'member_progress'`
+      `DELETE FROM published_stats WHERE stat_type = 'member_progress' AND week_start IS NULL`
     );
     const memberProgress = await getAllMemberProgress();
 
@@ -85,39 +85,185 @@ export const publishStats = async (req, res) => {
   }
 };
 
-// GET /published/comparison — user-facing, reads from snapshot
+// GET /published/comparison — user-facing, reads from snapshot.
+// Prefers the latest published week snapshot; falls back to the legacy
+// (week-less) snapshot, then to live attempts. When `from`/`to` are supplied,
+// returns a live per-jumuiya aggregate over that exact date range instead.
 export const getPublishedComparison = async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT stat_data, published_at FROM published_stats WHERE stat_type = 'comparison' ORDER BY published_at DESC`
+    const { from, to } = req.query;
+
+    if (from || to) {
+      if (!from || !to) {
+        return res.status(400).json({ status: false, message: "Both from and to are required" });
+      }
+      const data = await getComparisonByRange(from, to);
+      return res.json({ data, publishedAt: null, weekStart: null, range: { from, to } });
+    }
+
+    let weekStart = req.query.week || null;
+
+    if (!weekStart) {
+      const latest = await pool.query(
+        `SELECT MAX(week_start) AS week_start
+         FROM published_stats
+         WHERE stat_type = 'comparison' AND week_start IS NOT NULL`
+      );
+      weekStart = latest.rows[0]?.week_start || null;
+    }
+
+    if (weekStart) {
+      const monday = await pool.query(
+        `SELECT to_char((date_trunc('week', $1::date))::date, 'YYYY-MM-DD') AS m`,
+        [weekStart]
+      );
+      const m = monday.rows[0]?.m;
+      if (!m) return res.status(400).json({ status: false, message: "Invalid week" });
+      const snap = await pool.query(
+        `SELECT stat_data, published_at FROM published_stats
+         WHERE stat_type = 'comparison' AND week_start = $1
+         ORDER BY published_at DESC`,
+        [m]
+      );
+      if (snap.rows.length > 0) {
+        return res.json({
+          data: snap.rows.map((r) => r.stat_data),
+          publishedAt: snap.rows[0].published_at,
+          weekStart: m,
+        });
+      }
+    }
+
+    // Fallback to legacy snapshot (no week), then to live attempts
+    const legacy = await pool.query(
+      `SELECT stat_data, published_at FROM published_stats
+       WHERE stat_type = 'comparison' AND week_start IS NULL
+       ORDER BY published_at DESC`
     );
-    const data = result.rows.map((r) => r.stat_data);
-    const publishedAt = result.rows[0]?.published_at || null;
-    res.json({ data, publishedAt });
+    let data = legacy.rows.map((r) => r.stat_data);
+    let publishedAt = legacy.rows[0]?.published_at || null;
+
+    if (data.length === 0) {
+      data = await getComparisonAll();
+    }
+
+    res.json({ data, publishedAt, weekStart: null });
   } catch (err) {
     logger.error("Failed to fetch published comparison:", err);
     res.status(500).json({ status: false, message: "Failed to fetch comparison" });
   }
 };
 
-// GET /published/member-progress — user-facing, reads from snapshot
+// GET /published/comparison/options — filter options (weeks, semesters,
+// academic years) for the Accuracy Comparison filter module.
+export const getComparisonOptions = async (req, res) => {
+  try {
+    const weeksRes = await pool.query(
+      `SELECT DISTINCT
+         to_char((date_trunc('week', attempted_at))::date, 'YYYY-MM-DD') AS week_start,
+         to_char(((date_trunc('week', attempted_at))::date + 6), 'YYYY-MM-DD') AS week_end
+       FROM attempts
+       WHERE attempted_at IS NOT NULL
+       ORDER BY week_start DESC`
+    );
+    const weeks = weeksRes.rows.map((r) => ({
+      weekStart: r.week_start,
+      weekEnd: r.week_end,
+    }));
+
+    const semestersRes = await pool.query(
+      `SELECT id,
+              label,
+              to_char(start_date, 'YYYY-MM-DD') AS start_date,
+              to_char(end_date, 'YYYY-MM-DD') AS end_date,
+              is_current
+       FROM semester_configs
+       ORDER BY start_date DESC`
+    );
+    const semesters = semestersRes.rows.map((r) => ({
+      id: r.id,
+      label: r.label,
+      startDate: r.start_date,
+      endDate: r.end_date,
+      isCurrent: r.is_current,
+    }));
+
+    // Academic years grouped from the semester rows (calendar-year window,
+    // matching how semesters 1 & 2 are numbered in this app).
+    const years = [...new Set(
+      semestersRes.rows.map((r) => new Date(r.start_date + "T00:00:00").getUTCFullYear())
+    )];
+    const academicYears = years.sort((a, b) => b - a).map((y) => ({
+      year: `${y}/${y + 1}`,
+      startDate: `${y}-01-01`,
+      endDate: `${y}-12-31`,
+    }));
+
+    res.json({ weeks, semesters, academicYears });
+  } catch (err) {
+    logger.error("Failed to fetch comparison options:", err);
+    res.status(500).json({ status: false, message: "Failed to fetch comparison options" });
+  }
+};
+
+// GET /published/member-progress — user-facing, reads from snapshot.
+// Prefers the latest published week; falls back to legacy, then live.
 export const getPublishedMemberProgress = async (req, res) => {
   try {
-    const memberId = req.user.memberId;
+    const memberId = req.user?.memberId || req.user?.id;
 
-    const summary = await pool.query(
-      `SELECT stat_data FROM published_stats WHERE stat_type = 'member_summary' AND member_id = $1 ORDER BY published_at DESC LIMIT 1`,
-      [memberId]
+    const latest = await pool.query(
+      `SELECT MAX(week_start) AS week_start FROM published_stats WHERE week_start IS NOT NULL`
     );
+    const weekStart = latest.rows[0]?.week_start || null;
 
-    const weeks = await pool.query(
-      `SELECT stat_data FROM published_stats WHERE stat_type = 'member_progress' AND member_id = $1 ORDER BY stat_data->>'week' ASC`,
-      [memberId]
-    );
+    let summary = null;
+    let weeks = [];
+
+    if (weekStart) {
+      const summaryRes = await pool.query(
+        `SELECT stat_data FROM published_stats
+         WHERE stat_type = 'member_summary' AND member_id = $1 AND week_start = $2
+         ORDER BY published_at DESC LIMIT 1`,
+        [memberId, weekStart]
+      );
+      const weeksRes = await pool.query(
+        `SELECT stat_data FROM published_stats
+         WHERE stat_type = 'member_progress' AND member_id = $1 AND week_start = $2
+         ORDER BY stat_data->>'week' ASC`,
+        [memberId, weekStart]
+      );
+      summary = summaryRes.rows[0]?.stat_data || null;
+      weeks = weeksRes.rows.map((r) => r.stat_data);
+    }
+
+    if (!summary || weeks.length === 0) {
+      const legacySummary = await pool.query(
+        `SELECT stat_data FROM published_stats
+         WHERE stat_type = 'member_summary' AND member_id = $1 AND week_start IS NULL
+         ORDER BY published_at DESC LIMIT 1`,
+        [memberId]
+      );
+      const legacyWeeks = await pool.query(
+        `SELECT stat_data FROM published_stats
+         WHERE stat_type = 'member_progress' AND member_id = $1 AND week_start IS NULL
+         ORDER BY stat_data->>'week' ASC`,
+        [memberId]
+      );
+      if (legacySummary.rows[0]?.stat_data) summary = legacySummary.rows[0].stat_data;
+      if (legacyWeeks.rows.length > 0) weeks = legacyWeeks.rows.map((r) => r.stat_data);
+    }
+
+    if (!summary || weeks.length === 0) {
+      // Import live queries fallback
+      const { getMemberSummary, getMemberProgress } = await import("../model/attemptSchema.js");
+      summary = await getMemberSummary(memberId);
+      weeks = await getMemberProgress(memberId);
+    }
 
     res.json({
-      summary: summary.rows[0]?.stat_data || { totalAttempts: 0, correctAttempts: 0 },
-      weeks: weeks.rows.map((r) => r.stat_data),
+      summary: summary || { totalAttempts: 0, correctAttempts: 0 },
+      weeks,
     });
   } catch (err) {
     logger.error("Failed to fetch published member progress:", err);
@@ -133,9 +279,32 @@ export const getPublishedJumuiyaDashboard = async (req, res) => {
       `SELECT stat_data FROM published_stats WHERE stat_type = 'comparison' AND jumuiya_id = $1 ORDER BY published_at DESC LIMIT 1`,
       [jumuiyaId]
     );
-    res.json(result.rows[0]?.stat_data || { totalAttempts: 0, correctAttempts: 0, accuracy: 0 });
+    let data = result.rows[0]?.stat_data;
+
+    if (!data) {
+      // Fallback to live attempts query for this jumuiya
+      const { rows } = await pool.query(
+        `SELECT
+           COUNT(*) AS total_attempts,
+           COUNT(*) FILTER (WHERE is_correct) AS correct_attempts,
+           CASE WHEN COUNT(*) = 0 THEN 0
+             ELSE ROUND(COUNT(*) FILTER (WHERE is_correct) * 100.0 / COUNT(*), 2)
+           END AS accuracy
+         FROM attempts
+         WHERE jumuiya_id = $1`,
+        [jumuiyaId]
+      );
+      data = {
+        totalAttempts: Number(rows[0]?.total_attempts || 0),
+        correctAttempts: Number(rows[0]?.correct_attempts || 0),
+        accuracy: Number(rows[0]?.accuracy || 0),
+      };
+    }
+
+    res.json(data);
   } catch (err) {
     logger.error("Failed to fetch published jumuiya dashboard:", err);
     res.status(500).json({ status: false, message: "Failed to fetch dashboard" });
   }
 };
+

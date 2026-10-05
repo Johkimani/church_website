@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Image, Plus, Trash2, GripVertical, Upload, Eye, Edit2, Save, X, Loader2, Link as LinkIcon, FileImage, RefreshCw } from 'lucide-react';
-import apiService from '../../Landing/services/api';
+import { Image, Plus, Trash2, GripVertical, Upload, Eye, Edit2, Save, X, Loader2, Link as LinkIcon, FileImage } from 'lucide-react';
+import apiService from '../../../services/api';
 import { uploadFile } from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 
@@ -17,10 +17,10 @@ interface SliderImage {
 interface Props { sectionFilter?: string[] }
 
 const ALL_SECTIONS = [
-  { id: 'sacramentals', label: 'Sacramentals', icon: '✝️' },
-  { id: 'tshirts', label: 'T-Shirts', icon: '👕' },
-  { id: 'chairs', label: 'Chairs', icon: '🪑' },
-  { id: 'instruments', label: 'Instruments', icon: '🎸' },
+  { id: 'sacramentals', label: 'Sacramentals', icon: '' },
+  { id: 'tshirts', label: 'T-Shirts', icon: '' },
+  { id: 'chairs', label: 'Chairs', icon: '' },
+  { id: 'instruments', label: 'Instruments', icon: '' },
 ];
 
 export default function SliderManager({ sectionFilter }: Props) {

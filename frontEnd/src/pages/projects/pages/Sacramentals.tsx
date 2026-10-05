@@ -5,137 +5,50 @@ import { motion } from 'framer-motion';
 import { SACRAMENTAL_CATEGORIES } from '../pages/data';
 import type { SacramentalCategory } from '../pages/data';
 import {
-    FaSearch, FaStar, FaShoppingCart, FaFilter,
-    FaChevronLeft, FaChevronRight, FaTrash, FaCheckCircle
+    FaSearch, FaShoppingCart, FaFilter, FaCheckCircle, FaHeart
 } from 'react-icons/fa';
-import apiService from '../../Landing/services/api';
+import { toggleWishlist, isInWishlist } from './Wishlist';
+import { HeroSlider, useSliderImages, type SliderImg } from '../components/HeroSlider';
 import TestimonialsSection from '../components/TestimonialsSection';
 import ProjectHero from '../components/ProjectHero';
 import ProjectPageHeader from '../components/ProjectPageHeader';
 
-/* ───────────────────────────────────────────────
-   SACRAMENTAL SUBCATEGORIES that exist in the DB
-   These are the `category` column values stored
-   for products that belong to the sacramentals
-   section. The admin can also set category =
-   "sacramentals" so we accept both.
-─────────────────────────────────────────────── */
 const SACRAMENTAL_SUBCATS = new Set([
     'rosaries', 'bibles', 'chains', 'crucifixes', 'statues', 'candles', 'sacramentals'
 ]);
 
-/* ───────────────────────────────────────────────
-   HERO SLIDER
-─────────────────────────────────────────────── */
-interface SliderImg { url: string; message?: string; title?: string; id?: number | string }
+const SPECIFIC_SUBCATS = new Set([
+    'rosaries', 'bibles', 'chains', 'crucifixes', 'statues', 'candles'
+]);
 
-const HeroSlider: React.FC<{
-    images: SliderImg[];
-    isAdmin?: boolean;
-    onDelete?: (id: number | string) => void;
-}> = ({ images, isAdmin, onDelete }) => {
-    const [idx, setIdx] = React.useState(0);
-    const len = images.length;
+// Products in the DB only carry a top-level category (e.g. 'sacramentals'), so the
+// shop infers the subcategory from explicit tags, the category, or name/description
+// keywords so the filter bars actually group the items.
+const SUBCATEGORY_KEYWORDS: [RegExp, string][] = [
+    [/\brosar(y|ies)\b|\bholy beads\b/, 'rosaries'],
+    [/\bbibles?\b|\bnew testament\b|\bold testament\b|\bgospel(s)?\b|\bmissal(ette)?s?\b|\bprayer book(s)?\b|\bnovena(?: booklets?|s)?\b/, 'bibles'],
+    [/\bchains?\b|\bmedals?\b|\bpendants?\b|\bscapulars?\b/, 'chains'],
+    [/\bcrucifix(es)?\b/, 'crucifixes'],
+    [/\bstatues?\b|\bfigurines?\b/, 'statues'],
+    [/\bcandles?\b|\bvotives?\b/, 'candles'],
+];
 
-    const next = React.useCallback(() => setIdx(p => (p + 1) % len), [len]);
-    const prev = React.useCallback(() => setIdx(p => (p - 1 + len) % len), [len]);
-
-    React.useEffect(() => {
-        if (len <= 1) return;
-        const t = setInterval(next, 5500);
-        return () => clearInterval(t);
-    }, [len, next]);
-
-    if (!len) return null;
-
-    return (
-        <div className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl shadow-2xl">
-            {images.map((img, i) => (
-                <div
-                    key={i}
-                    className={`absolute inset-0 transition-all duration-700 ease-in-out ${i === idx ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
-                >
-                    <img
-                        src={img.url}
-                        alt={img.title || img.message || 'slide'}
-                        className="w-full h-full object-cover"
-                    />
-                    {/* Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/25 to-transparent" />
-
-                    {/* Text */}
-                    <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8 md:p-12">
-                        {img.title && (
-                            <p className="text-white/70 text-xs sm:text-sm font-semibold uppercase tracking-widest mb-1">
-                                {img.title}
-                            </p>
-                        )}
-                        {img.message && (
-                            <h2 className="text-white text-lg sm:text-2xl md:text-4xl font-black leading-tight drop-shadow-lg max-w-2xl">
-                                {img.message}
-                            </h2>
-                        )}
-                        <div className="mt-4 h-1 w-10 sm:w-16 bg-blue-400 rounded-full" />
-                        <a
-                            href="#sacramentals"
-                            className="mt-4 inline-block px-6 py-2.5 bg-white text-blue-700 font-bold text-sm rounded-xl shadow-lg hover:bg-blue-50 transition-colors"
-                        >
-                            Shop Now
-                        </a>
-                    </div>
-
-                    {/* Admin delete */}
-                    {isAdmin && img.id && onDelete && (
-                        <button
-                            onClick={() => onDelete(img.id!)}
-                            className="absolute top-3 right-3 z-20 bg-rose-600/90 hover:bg-rose-700 text-white rounded-xl px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 shadow-lg transition"
-                        >
-                            <FaTrash size={10} /> Delete Image
-                        </button>
-                    )}
-                </div>
-            ))}
-
-            {/* Nav Arrows */}
-            {len > 1 && (
-                <>
-                    <button
-                        onClick={prev}
-                        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 bg-white/20 backdrop-blur-sm hover:bg-white/40 text-white rounded-full p-2 sm:p-3 shadow-lg transition-all hover:scale-110"
-                    >
-                        <FaChevronLeft size={14} />
-                    </button>
-                    <button
-                        onClick={next}
-                        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 bg-white/20 backdrop-blur-sm hover:bg-white/40 text-white rounded-full p-2 sm:p-3 shadow-lg transition-all hover:scale-110"
-                    >
-                        <FaChevronRight size={14} />
-                    </button>
-
-                    {/* Dots */}
-                    <div className="absolute bottom-3 sm:bottom-5 right-4 sm:right-8 z-20 flex gap-1.5">
-                        {images.map((_, i) => (
-                            <button
-                                key={i}
-                                onClick={() => setIdx(i)}
-                                className={`h-1.5 rounded-full transition-all duration-300 ${i === idx ? 'w-6 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/70'}`}
-                            />
-                        ))}
-                    </div>
-                </>
-            )}
-        </div>
-    );
+const inferSacramentalSubcategory = (name: string, desc: string): string | null => {
+    const text = `${name} ${desc || ''}`.toLowerCase();
+    for (const [re, id] of SUBCATEGORY_KEYWORDS) {
+        if (re.test(text)) return id;
+    }
+    return null;
 };
 
-/* ───────────────────────────────────────────────
-   TRUST STRIP
-─────────────────────────────────────────────── */
-const TrustStrip: React.FC = () => null;
+const resolveSubcategory = (p: Product): string => {
+    const explicit = (p.subcategory || '').toLowerCase();
+    if (SACRAMENTAL_SUBCATS.has(explicit)) return explicit;
+    const category = (p.category || '').toLowerCase();
+    if (SPECIFIC_SUBCATS.has(category)) return category;
+    return inferSacramentalSubcategory(p.name, p.description || p.desc || '') || 'sacramentals';
+};
 
-/* ───────────────────────────────────────────────
-   CATEGORY FILTER BAR
-─────────────────────────────────────────────── */
 const CategoryFilterBar: React.FC<{
     selected: SacramentalCategory;
     onChange: (c: SacramentalCategory) => void;
@@ -157,7 +70,7 @@ const CategoryFilterBar: React.FC<{
                         className={`
                             flex items-center gap-1.5 whitespace-nowrap px-4 sm:px-5 py-3 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex-shrink-0 min-h-[44px]
                             ${active
-                                ? 'bg-blue-600 text-white shadow-md shadow-blue-200 scale-105'
+                                ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
                                 : 'bg-white text-slate-600 border border-slate-200 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50'
                             }
                         `}
@@ -165,7 +78,7 @@ const CategoryFilterBar: React.FC<{
                         {cat.icon && <span>{cat.icon}</span>}
                         <span className="hidden sm:inline">{cat.label}</span>
                         <span className="sm:hidden">{cat.label.split(' ')[0]}</span>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${active ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${active ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'}`}>
                             {count}
                         </span>
                     </button>
@@ -175,9 +88,6 @@ const CategoryFilterBar: React.FC<{
     );
 };
 
-/* ───────────────────────────────────────────────
-   PREMIUM PRODUCT CARD
-─────────────────────────────────────────────── */
 interface Product {
     id?: any;
     name: string;
@@ -194,8 +104,8 @@ interface Product {
 const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ product, onAdd }) => {
     const navigate = useNavigate();
     const [adding, setAdding] = React.useState(false);
+    const [wishlisted, setWishlisted] = React.useState(isInWishlist(String(product.id || product.name)));
     const image = product.image_url || product.img;
-    const desc = product.description || product.desc || '';
     const inStock = product.stock == null || Number(product.stock) > 0;
 
     const handleAdd = () => {
@@ -212,6 +122,26 @@ const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ produc
         >
             {/* Image */}
             <div className="relative aspect-square bg-gradient-to-br from-blue-50 to-slate-50 overflow-hidden">
+                {image && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            const added = toggleWishlist({
+                                id: String(product.id || product.name),
+                                name: product.name,
+                                price: Number(product.price),
+                                image: image || '',
+                                category: product.category || 'sacramentals',
+                            });
+                            setWishlisted(added);
+                        }}
+                        className={`absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm ${
+                            wishlisted ? 'bg-rose-500 text-white' : 'bg-white/90 backdrop-blur-sm text-slate-400 hover:text-rose-500'
+                        }`}
+                    >
+                        <FaHeart size={12} className={wishlisted ? 'fill-current' : ''} />
+                    </button>
+                )}
                 {image ? (
                     <img
                         src={image}
@@ -228,14 +158,14 @@ const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ produc
                 )}
                 {/* Subcategory badge */}
                 {product.subcategory && product.subcategory !== 'sacramentals' && (
-                    <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-white/90 backdrop-blur-sm text-blue-700 text-[8px] font-black uppercase tracking-wider rounded-md shadow-sm">
+                    <span className="absolute top-2 left-2 px-2 py-1 bg-white/90 backdrop-blur-sm text-blue-700 text-[10px] font-bold uppercase tracking-wider rounded-md shadow-sm">
                         {product.subcategory}
                     </span>
                 )}
                 {/* Out of stock overlay */}
                 {!inStock && (
                     <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
-                        <span className="text-rose-600 font-black text-[10px] bg-white px-2 py-0.5 rounded-full shadow-md border border-rose-100">
+                        <span className="text-rose-600 font-bold text-xs bg-white px-2.5 py-1 rounded-full shadow-md border border-rose-100">
                             Out of Stock
                         </span>
                     </div>
@@ -243,22 +173,14 @@ const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ produc
             </div>
 
             {/* Content */}
-            <div className="flex flex-col flex-1 p-2.5 sm:p-3 gap-1">
-                <h3 className="font-bold text-slate-800 text-[11px] sm:text-xs leading-tight line-clamp-2 min-h-[28px]">
+            <div className="flex flex-col flex-1 p-3 sm:p-3.5 gap-1.5">
+                <h3 className="font-bold text-slate-800 text-sm leading-snug line-clamp-2 min-h-[40px]">
                     {product.name}
                 </h3>
 
-                {/* Stars + rating count */}
-                <div className="flex items-center gap-1">
-                    <div className="flex gap-px">
-                        {[1,2,3,4,5].map(s => <FaStar key={s} size={8} className="text-amber-400" />)}
-                    </div>
-                    <span className="text-[9px] text-slate-400 font-medium">(128)</span>
-                </div>
-
                 {/* Price */}
                 <div className="mt-auto pt-1">
-                    <span className="text-sm sm:text-base font-black text-slate-900">
+                    <span className="block text-sm sm:text-base font-bold text-slate-900 truncate">
                         KSh {Number(product.price).toLocaleString()}
                     </span>
                 </div>
@@ -269,8 +191,8 @@ const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ produc
                     onClick={(e) => { e.stopPropagation(); handleAdd(); }}
                     disabled={adding || !inStock}
                     className={`
-                        w-full mt-1 py-2 flex items-center justify-center gap-1.5 min-h-[36px]
-                        text-[10px] sm:text-xs font-bold rounded-lg transition-all duration-300 select-none
+                        w-full mt-1 py-2.5 flex items-center justify-center gap-1.5 min-h-[40px]
+                        text-xs sm:text-sm font-bold rounded-lg transition-all duration-300 select-none
                         ${adding
                             ? 'bg-emerald-500 text-white scale-95'
                             : inStock
@@ -280,7 +202,7 @@ const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ produc
                     `}
                 >
                     {adding ? (
-                        <><FaCheckCircle size={10} /> Added!</>
+                        <><FaCheckCircle size={12} /> Added!</>
                     ) : (
                         <>Add to Cart</>
                     )}
@@ -290,16 +212,6 @@ const ProductCard: React.FC<{ product: Product; onAdd: () => void }> = ({ produc
     );
 };
 
-/* ───────────────────────────────────────────────
-   PROCESS GUIDE
-─────────────────────────────────────────────── */
-
-const ProcessGuide: React.FC = () => null;
-
-
-/* ───────────────────────────────────────────────
-   SKELETON LOADER
-─────────────────────────────────────────────── */
 const SkeletonCard = () => (
     <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden animate-pulse">
         <div className="aspect-square bg-slate-200" />
@@ -312,18 +224,14 @@ const SkeletonCard = () => (
     </div>
 );
 
-/* ───────────────────────────────────────────────
-   MAIN SACRAMENTALS PAGE
-─────────────────────────────────────────────── */
 export const Sacramentals = () => {
     const { products: dbProducts, addToCart, sacCategory, setSacCategory, setIsCartOpen, isAdmin, isLoading } = useApp();
-    const navigate = useNavigate();
     const [search, setSearch] = React.useState('');
     const [debouncedSearch, setDebouncedSearch] = React.useState('');
     const [sortBy, setSortBy] = React.useState<'none' | 'price-asc' | 'price-desc' | 'name'>('none');
+    const [page, setPage] = React.useState(1);
+    const PAGE_SIZE = 12;
     const productsRef = React.useRef<HTMLDivElement>(null);
-    const [sliderImgs, setSliderImgs] = React.useState<SliderImg[]>([]);
-    const [sliderLoading, setSliderLoading] = React.useState(true);
 
     // Debounce search (300ms)
     React.useEffect(() => {
@@ -333,42 +241,19 @@ export const Sacramentals = () => {
 
     // Auto-scroll to products when filtering
     React.useEffect(() => {
+        setPage(1);
         if ((debouncedSearch || sacCategory !== 'all' || sortBy !== 'none') && productsRef.current) {
             productsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }, [debouncedSearch, sacCategory, sortBy]);
 
-    /* ── Load admin-uploaded slider images from API ── */
-    React.useEffect(() => {
-        let mounted = true;
-        setSliderLoading(true);
-        apiService.getSacramentalsSliderImages('sacramentals')
-            .then(data => {
-                if (!mounted) return;
-                if (Array.isArray(data) && data.length > 0) {
-                    setSliderImgs(data.map(d => ({
-                        id: d.id,
-                        url: d.url || d.image_url,
-                        title: d.title,
-                        message: d.message,
-                    })));
-                } else {
-                    setSliderImgs([]);
-                }
-            })
-            .catch(() => { if (mounted) setSliderImgs([]); })
-            .finally(() => { if (mounted) setSliderLoading(false); });
-        return () => { mounted = false; };
-    }, []);
+    const { sliderImgs, deleteSlide } = useSliderImages('sacramentals');
 
-    /* ── Delete slider image (admin only) ── */
     const handleDeleteSliderImage = async (id: number | string) => {
         if (!window.confirm('Delete this slide image?')) return;
-        await apiService.deleteSacramentalsSliderImage(id);
-        setSliderImgs(prev => prev.filter(img => img.id !== id));
+        await deleteSlide(id);
     };
 
-    /* ── Filter DB products ── */
     const sourceProducts = React.useMemo(() => {
         return (dbProducts || [])
             .filter(p => {
@@ -381,13 +266,12 @@ export const Sacramentals = () => {
                 price: Number(p.price) || 0,
                 description: p.description || p.desc || '',
                 image_url: p.image_url || p.img || '',
-                subcategory: (p.subcategory || p.category || 'sacramentals').toLowerCase(),
+                subcategory: resolveSubcategory(p),
                 category: (p.category || 'sacramentals').toLowerCase(),
                 stock: p.stock ?? 50,
             }));
     }, [dbProducts]);
 
-    /* ── Category counts ── */
     const categoryCounts = React.useMemo(() => {
         const c: Record<string, number> = {};
         SACRAMENTAL_CATEGORIES.forEach(cat => { if (cat.id !== 'all') c[cat.id] = 0; });
@@ -398,7 +282,6 @@ export const Sacramentals = () => {
         return c;
     }, [sourceProducts]);
 
-    /* ── Final filtered + sorted list ── */
     const filtered = React.useMemo(() => {
         let result = sourceProducts.filter(p => {
             const sub = p.subcategory || p.category || '';
@@ -418,7 +301,12 @@ export const Sacramentals = () => {
         return result;
     }, [sourceProducts, sacCategory, debouncedSearch, sortBy]);
 
-    /* ── Add to cart ── */
+    const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+    const paginatedProducts = React.useMemo(() => {
+        const start = (page - 1) * PAGE_SIZE;
+        return filtered.slice(start, start + PAGE_SIZE);
+    }, [filtered, page]);
+
     const handleAddToCart = (product: typeof sourceProducts[0]) => {
         addToCart({
             item: { ...product, img: product.image_url },
@@ -433,38 +321,34 @@ export const Sacramentals = () => {
     return (
         <div className="w-full bg-slate-50 min-h-screen pb-20 text-slate-800 font-sans">
 
-            {/* ══════════ HERO ── Dark Premium Grid Design ══════════ */}
             <ProjectHero>
                 <div className="px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
-                    {sliderLoading ? (
-                        <div className="w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] rounded-2xl md:rounded-3xl bg-slate-800 animate-pulse" />
-                    ) : (
-                        <HeroSlider
-                            images={sliderImgs}
-                            isAdmin={isAdmin}
-                            onDelete={handleDeleteSliderImage}
-                        />
-                    )}
+                    <HeroSlider
+                        images={sliderImgs}
+                        isAdmin={isAdmin}
+                        onDelete={handleDeleteSliderImage}
+                        shopAnchor="#sacramentals"
+                        buttonLabel="Shop Now"
+                        static
+                    />
                 </div>
 
                 <ProjectPageHeader
-                    badge="✦ Holy Items ✦"
-                    title={<>Sacramentals &amp;{' '}<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Devotionals</span></>}
+                    badge="Holy Items"
+                    title="Sacramentals & Devotionals"
                     subtitle="Sacred items handpicked to aid your spiritual journey and daily devotion."
-                >
-                </ProjectPageHeader>
+                />
             </ProjectHero>
 
-            {/* ══════════ SEARCH + FILTER PANEL ══════════ */}
             <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 -mt-6 relative z-20">
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 0 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.3 }}
-                    className="bg-white/90 backdrop-blur-md rounded-2xl shadow-md border border-blue-50 p-3 sm:p-4 space-y-3"
+                    className="bg-white/90 backdrop-blur-md rounded-2xl shadow-md border border-slate-100 p-3 sm:p-4 space-y-3"
                 >
                     {/* Search + Sort row */}
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                         <div className="relative flex-1">
                             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs sm:text-sm" />
                             <input
@@ -485,7 +369,7 @@ export const Sacramentals = () => {
                         <select
                             value={sortBy}
                             onChange={e => setSortBy(e.target.value as typeof sortBy)}
-                            className="px-3 py-2.5 sm:py-3 rounded-xl border border-slate-200 bg-slate-50 text-xs sm:text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer"
+                            className="w-full sm:w-auto px-3 py-2.5 sm:py-3 rounded-xl border border-slate-200 bg-slate-50 text-xs sm:text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer"
                         >
                             <option value="none">Sort</option>
                             <option value="price-asc">Price: Low → High</option>
@@ -506,7 +390,6 @@ export const Sacramentals = () => {
                 </motion.div>
             </div>
 
-            {/* ══════════ PRODUCT SECTION ══════════ */}
             <motion.section
                 ref={productsRef}
                 id="sacramentals"
@@ -541,21 +424,50 @@ export const Sacramentals = () => {
                         {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
                     </div>
                 ) : filtered.length > 0 ? (
-                    <div className="grid gap-2.5 sm:gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                        {filtered.map(product => (
-                            <ProductCard
-                                key={product.id || product.name}
-                                product={product}
-                                onAdd={() => handleAddToCart(product)}
-                            />
-                        ))}
-                    </div>
+                    <>
+                        <div className="grid gap-2.5 sm:gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                            {paginatedProducts.map(product => (
+                                <ProductCard
+                                    key={product.id || product.name}
+                                    product={product}
+                                    onAdd={() => handleAddToCart(product)}
+                                />
+                            ))}
+                        </div>
+                        {totalPages > 1 && (
+                            <div className="flex items-center justify-center gap-2 mt-6">
+                                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                                    className="px-3 py-2 text-xs font-bold rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                                    Prev
+                                </button>
+                                {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                                    let pageNum: number;
+                                    if (totalPages <= 7) pageNum = i + 1;
+                                    else if (page <= 4) pageNum = i + 1;
+                                    else if (page >= totalPages - 3) pageNum = totalPages - 6 + i;
+                                    else pageNum = page - 3 + i;
+                                    return (
+                                        <button key={pageNum} onClick={() => setPage(pageNum)}
+                                            className={`w-8 h-8 text-xs font-bold rounded-lg transition-all ${
+                                                page === pageNum ? 'bg-blue-600 text-white shadow-md' : 'border border-slate-200 hover:bg-slate-50 text-slate-700'
+                                            }`}>
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+                                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                                    className="px-3 py-2 text-xs font-bold rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                                    Next
+                                </button>
+                            </div>
+                        )}
+                    </>
                 ) : (
                     <div className="flex flex-col items-center justify-center py-16 sm:py-24 text-center">
-                        <div className="w-16 sm:w-20 h-16 sm:h-20 bg-blue-50 rounded-full flex items-center justify-center text-3xl sm:text-4xl mb-4 shadow-inner">
-                            🔍
+                        <div className="w-16 sm:w-20 h-16 sm:h-20 bg-blue-50 rounded-full flex items-center justify-center mb-4 shadow-inner">
+                            <FaSearch size={26} className="text-blue-500" />
                         </div>
-                        <p className="text-slate-700 font-black text-base sm:text-lg mb-1">No items found</p>
+                        <p className="text-slate-700 font-bold text-base sm:text-lg mb-1">No items found</p>
                         <p className="text-slate-400 text-xs sm:text-sm max-w-xs">
                             {debouncedSearch
                                 ? `No results for "${debouncedSearch}"`
@@ -572,7 +484,6 @@ export const Sacramentals = () => {
                 )}
             </motion.section>
 
-            {/* ── VIEW CART LINK ── */}
             <div className="flex justify-center pb-4 px-4">
                 <button
                     onClick={() => setIsCartOpen(true)}
@@ -582,7 +493,6 @@ export const Sacramentals = () => {
                 </button>
             </div>
 
-            {/* ── TESTIMONIALS ── */}
             <TestimonialsSection variant="blue" />
 
         </div>
@@ -593,7 +503,7 @@ export const Sacramentals = () => {
 export const CategoryHero: React.FC<{
     category: 'sacramentals' | 'tshirts' | 'chairs' | 'instruments' | 'other';
     overrideBanner?: { img: string; title: string; subtitle: string };
-}> = ({ category, overrideBanner }) => {
+}> = ({ overrideBanner }) => {
     const banner = overrideBanner;
     if (!banner?.img) return null;
     return (

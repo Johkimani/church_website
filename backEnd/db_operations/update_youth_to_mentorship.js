@@ -32,7 +32,7 @@ async function run() {
       WHERE id = 'youth'
     `;
     const res = await pool.query(query);
-    console.log("✅ Mentorship Program updated in DB successfully! Rows affected:", res.rowCount);
+    console.log("Mentorship Program updated in DB successfully! Rows affected:", res.rowCount);
     
     // Also let's double check if it exists or insert if missing
     if (res.rowCount === 0) {
@@ -48,12 +48,12 @@ async function run() {
           'Parish Hall'
         )
       `);
-      console.log("✅ Mentorship Program inserted in DB successfully!");
+      console.log("Mentorship Program inserted in DB successfully!");
     }
     
     process.exit(0);
   } catch (err) {
-    console.error("❌ Error updating database:", err);
+    console.error("Error updating database:", err);
     process.exit(1);
   }
 }

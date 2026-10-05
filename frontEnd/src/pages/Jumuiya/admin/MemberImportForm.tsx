@@ -1,11 +1,14 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
-import { Upload, Plus, Trash2, FileSpreadsheet, CheckCircle, AlertTriangle, X } from "lucide-react";
+import { Upload, Plus, Trash2, FileSpreadsheet, CheckCircle, AlertTriangle, ClipboardList } from "lucide-react";
+import CopyWhatsAppButton from "../components/CopyWhatsAppButton";
 import * as XLSX from "xlsx";
+
 
 interface Props {
   jumuiyaId: string;
   seasonId?: number;
+  onSuccess?: () => void;
 }
 
 const JUMUIYA_NAME_MAP: Record<string, string> = {
@@ -75,7 +78,7 @@ const ACADEMIC_YEARS = Array.from({ length: 10 }, (_, i) => {
   return s >= 2018 && s <= currentYear + 1;
 });
 
-const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId }) => {
+const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId, onSuccess }) => {
   const jumuiyaName = JUMUIYA_NAME_MAP[jumuiyaId] || jumuiyaId;
 
   const [mode, setMode] = useState<"manual" | "upload">("manual");
@@ -85,7 +88,29 @@ const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId }) => {
   const [importResult, setImportResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [importYear, setImportYear] = useState(ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1] || "");
+  const [pendingCount, setPendingCount] = useState(0);
   const tableScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    memberService.getPendingSelfRegistrations(jumuiyaId).then((res: any) => {
+      if (cancelled) return;
+      const rows = res?.data || [];
+      if (rows.length > 0) {
+        const mapped = rows.map((r: any) => ({
+          name: r.cleaned_name || r.raw_name || "",
+          regNumber: r.cleaned_reg_number || r.raw_reg_number || "",
+          gender: r.cleaned_gender || r.raw_gender || "",
+          phone: r.cleaned_phone || r.raw_phone || "",
+          email: r.cleaned_email || r.raw_email || "",
+          jumuiya: jumuiyaName,
+        }));
+        setMembers([...mapped, { ...emptyRow, jumuiya: jumuiyaName }]);
+        setPendingCount(mapped.length);
+      }
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [jumuiyaId, jumuiyaName]);
 
   const fillJumuiya = (data: any[]) => data.map((m) => ({ ...m, jumuiya: m.jumuiya || jumuiyaName }));
 
@@ -201,8 +226,14 @@ const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId }) => {
       });
       setImportResult(res.data);
       setValidationResults(null);
+      window.dispatchEvent(new CustomEvent("csa_members_updated"));
+      if (onSuccess) onSuccess();
     } catch (err: any) {
-      setError(err?.response?.data?.error || err?.message || "Import failed");
+      const raw = err?.response?.data?.error || err?.message || "Import failed";
+      const friendly = raw.includes("check constraint")
+        ? "Import failed due to a data issue. Please refresh the page and try again."
+        : raw;
+      setError(friendly);
     } finally {
       setImporting(false);
     }
@@ -213,23 +244,35 @@ const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId }) => {
     setValidationResults(null);
     setImportResult(null);
     setError(null);
+    setPendingCount(0);
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h3 className="text-lg font-bold text-slate-800">Import Members</h3>
           <p className="text-xs text-slate-500">
             Adding members to <span className="font-semibold text-indigo-600">{jumuiyaName}</span>
           </p>
         </div>
+        <CopyWhatsAppButton jumuiyaSlug={jumuiyaId} jumuiyaName={jumuiyaName} variant="compact" />
       </div>
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 flex items-start gap-2">
           <AlertTriangle size={16} className="shrink-0 mt-0.5" />
           <span>{error}</span>
+        </div>
+      )}
+
+      {pendingCount > 0 && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-700 text-sm rounded-lg px-4 py-3 flex items-start gap-2">
+          <ClipboardList size={16} className="shrink-0 mt-0.5" />
+          <span>
+            <strong>{pendingCount}</strong> pending self-registration{pendingCount !== 1 ? "s" : ""} loaded below.
+            Review, edit, then validate and import.
+          </span>
         </div>
       )}
 
@@ -305,8 +348,8 @@ const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId }) => {
                     <select value={m.gender} onChange={(e) => handleMemberChange(i, "gender", e.target.value)}
                       className="w-24 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
                       <option value="">Select</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
+<option value="Gent">Gent</option>
+                       <option value="Lady">Lady</option>
                     </select>
                   </td>
                   <td className="py-2 px-3">
@@ -391,7 +434,12 @@ const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId }) => {
             <CheckCircle size={18} /> Import Complete
           </div>
           <div className="text-sm text-emerald-700 space-y-1">
-            <p>Total: <strong>{importResult.summary.total}</strong> | Valid: <strong>{importResult.summary.valid}</strong> | Errors: <strong>{importResult.summary.errors}</strong></p>
+            {importResult.summary?.valid > 0 && (
+              <p>{importResult.summary.valid} member{importResult.summary.valid !== 1 ? "s" : ""} have been added to All Members and are ready to log in.</p>
+            )}
+            {importResult.summary?.errors > 0 && (
+              <p>{importResult.summary.errors} row{importResult.summary.errors !== 1 ? "s" : ""} had errors and were not imported.</p>
+            )}
             {importResult.import?.id && <p className="text-xs opacity-75">Import ID: #{importResult.import.id}</p>}
           </div>
         </div>

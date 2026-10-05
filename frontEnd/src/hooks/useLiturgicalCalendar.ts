@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { BASE_URL } from '../api/config';
 
 export interface LiturgicalData {
   season: string;
@@ -19,7 +20,7 @@ export const useLiturgicalCalendar = () => {
   useEffect(() => {
     const fetchCalendar = async () => {
       try {
-        const response = await axios.get('http://calapi.inadiutorium.cz/api/v0/en/calendars/default/today');
+        const response = await axios.get(`${BASE_URL}/liturgical-calendar`);
         setData(response.data);
       } catch (error) {
         console.error("Failed to fetch liturgical calendar", error);

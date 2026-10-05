@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useCachedData } from '../../../hooks/useCachedData';
-import apiService from '../../Landing/services/api';
+import apiService from '../../../services/api';
 import { 
   Heart, 
   Search, 
@@ -17,7 +17,7 @@ export default function DonationMonitor() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
 
-  const { data: donations = [], loading, refetch: fetchDonations, setData: setDonations } = useCachedData<any[]>(
+  const { data: donations = [], loading, refetch: fetchDonations } = useCachedData<any[]>(
     'csa_cache_donation_monitor',
     async () => {
       const [mpesaData, membersData] = await Promise.all([
@@ -105,7 +105,7 @@ export default function DonationMonitor() {
         </div>
         <div className="flex items-center gap-3">
           <button 
-            onClick={fetchDonations}
+            onClick={() => fetchDonations()}
             disabled={loading}
             className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-all disabled:opacity-50"
             title="Refresh Data"
@@ -137,7 +137,7 @@ export default function DonationMonitor() {
         </div>
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Successful</p>
-          <h3 className="text-2xl font-black text-emerald-600">{stats.count}</h3>
+          <h3 className="text-2xl font-black text-emerald-500">{stats.count}</h3>
           <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase">Completed TRANSACTIONS</p>
         </div>
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">

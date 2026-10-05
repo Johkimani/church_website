@@ -1,0 +1,277 @@
+import { useState, useMemo } from 'react';
+import type { Prayer } from '../data/prayerCategories';
+import { PRAYERS } from '../data/prayerCategories';
+import { NOVENAS, type Novena } from '../data/novenas';
+import { getNovenaCalendar } from '../data/novenaCalendar';
+import { usePrayerFilter, type PrayerFilters } from '../hooks/usePrayerFilter';
+import PrayerFilter from '../components/PrayerFilter';
+import PrayerList from '../components/PrayerList';
+import PrayerReader from '../components/PrayerReader';
+import NovenaTracker from '../components/NovenaTracker';
+import NovenaCalendar from '../components/NovenaCalendar';
+
+const CATEGORIES = {
+  novenas: { label: 'Novenas', icon: '9', color: 'bg-purple-500/10 text-purple-600' },
+  litanies: { label: 'Litanies', icon: 'L', color: 'bg-blue-500/10 text-blue-600' },
+  saints: { label: 'Saints', icon: 'S', color: 'bg-amber-500/10 text-amber-700' },
+  healing: { label: 'Healing', icon: '+', color: 'bg-emerald-500/10 text-emerald-600' },
+  daily: { label: 'Daily', icon: '/', color: 'bg-amber-500/10 text-amber-700' },
+};
+
+type TabKey = 'prayers' | 'calendar';
+
+export default function PrayerModule() {
+  const [activeTab, setActiveTab] = useState<TabKey>('prayers');
+  const [selectedPrayer, setSelectedPrayer] = useState<Prayer | null>(null);
+  const [activeNovena, setActiveNovena] = useState<Novena | null>(null);
+
+  const {
+    filters,
+    updateFilter,
+    clearFilters,
+    filteredItems,
+    categoryCounts,
+    uniqueIntentions,
+    hasActiveFilters,
+  } = usePrayerFilter(PRAYERS);
+
+  // Filter novenas based on search/category
+  const filteredNovenas = useMemo(() => {
+    return NOVENAS.filter((n) => {
+      if (filters.selectedCategory !== 'all' && filters.selectedCategory !== 'novenas') return false;
+      if (filters.searchQuery.trim()) {
+        const q = filters.searchQuery.toLowerCase();
+        if (
+          !n.title.toLowerCase().includes(q) &&
+          !n.description.toLowerCase().includes(q) &&
+          !n.days.some((d) => d.prayer.text.toLowerCase().includes(q) || d.prayer.intention?.toLowerCase().includes(q))
+        ) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [filters]);
+
+  const nonNovenaPrayers = filteredItems.filter((p) => p.category !== 'novenas');
+
+  // Count prayers matching each intention
+  const intentionCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const prayer of PRAYERS) {
+      if (prayer.intention) {
+        counts[prayer.intention] = (counts[prayer.intention] || 0) + 1;
+      }
+    }
+    // Also count from novena days
+    for (const novena of NOVENAS) {
+      for (const day of novena.days) {
+        if (day.prayer.intention) {
+          counts[day.prayer.intention] = (counts[day.prayer.intention] || 0) + 1;
+        }
+      }
+    }
+    return counts;
+  }, []);
+
+  const handleStartNovenaFromCalendar = (novenaId: string) => {
+    const novena = NOVENAS.find((n) => n.id === novenaId);
+    if (novena) {
+      setActiveNovena(novena);
+      setActiveTab('prayers');
+    }
+  };
+
+  // Compute current/next novena for CTA banner
+  const currentNovena = useMemo(() => {
+    const year = new Date().getFullYear();
+    const calendar = getNovenaCalendar(year);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Find active novena first
+    const active = calendar.find((e) => {
+      const startMs = e.startDate.getTime();
+      const endMs = e.endDate.getTime();
+      return today.getTime() >= startMs && today.getTime() <= endMs;
+    });
+    if (active) {
+      const novena = NOVENAS.find((n) => n.id === active.novenaId);
+      if (novena) return { novena, status: 'active' as const, event: active };
+    }
+
+    // Find next upcoming novena
+    const upcoming = calendar
+      .filter((e) => e.startDate.getTime() > today.getTime())
+      .sort((a, b) => a.startDate.getTime() - b.startDate.getTime())[0];
+    if (upcoming) {
+      const novena = NOVENAS.find((n) => n.id === upcoming.novenaId);
+      if (novena) return { novena, status: 'upcoming' as const, event: upcoming };
+    }
+
+    // Fallback to first novena
+    return { novena: NOVENAS[0], status: 'fallback' as const, event: null };
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-transparent pb-12">
+      <div className="max-w-6xl mx-auto px-4 py-8">
+
+
+        <div className="relative rounded-3xl overflow-hidden mb-8 p-6 sm:p-8"
+          style={{
+            background: "linear-gradient(135deg, rgba(217,119,6,0.1), rgba(217,119,6,0.03))",
+            border: "1px solid rgba(217,119,6,0.2)",
+          }}
+        >
+          <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: "linear-gradient(90deg, transparent, #D97706, transparent)" }} />
+          <div className="absolute right-6 sm:right-10 top-1/2 -translate-y-1/2 hidden md:block w-36 lg:w-44" style={{ filter: "drop-shadow(0 12px 24px rgba(217,119,6,0.3))" }}>
+            <div className="rounded-2xl overflow-hidden relative" style={{ border: "4px solid rgba(255,255,255,0.9)", boxShadow: "0 8px 24px rgba(28,25,23,0.2)" }}>
+              <img
+                src="/images/mary-madonna.jpg"
+                alt="The Madonna and Child"
+                loading="lazy"
+                className="w-full h-auto object-cover block"
+                style={{ aspectRatio: "3 / 4" }}
+              />
+            </div>
+          </div>
+          <div className="md:pr-52 lg:pr-60">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4" style={{ background: "rgba(217,119,6,0.12)", border: "1px solid rgba(217,119,6,0.25)" }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
+              <span className="text-[11px] font-bold tracking-[0.15em] text-amber-700 uppercase">Intercessory Prayer</span>
+            </div>
+            <h1
+              className="text-3xl sm:text-4xl font-bold text-stone-900 tracking-tight"
+              style={{ fontFamily: "'Cinzel', 'Playfair Display', Georgia, serif" }}
+            >
+              Novenas &amp; Litanies
+            </h1>
+            <p className="text-sm text-stone-500 mt-2 font-medium">
+              Catholic prayers, devotions, and spiritual practices
+            </p>
+          </div>
+        </div>
+
+
+        <div
+          className="inline-flex rounded-xl p-1 mb-8 w-fit"
+          style={{
+            background: "#FFFFFF",
+            border: "1px solid #E7E5E4",
+          }}
+        >
+          {([
+            { key: 'prayers' as TabKey, label: 'Prayers' },
+            { key: 'calendar' as TabKey, label: 'Novenas by Date' },
+          ]).map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className="relative px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300"
+              style={
+                activeTab === tab.key
+                  ? {
+                      background: "linear-gradient(135deg, #D97706, #B45309)",
+                      color: "#FFFFFF",
+                      boxShadow: "0 2px 8px rgba(217, 119, 6, 0.12)",
+                    }
+                  : {
+                      color: "#78716C",
+                      background: "transparent",
+                    }
+              }
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === 'prayers' ? (
+          <>
+            {/* Filters */}
+            <PrayerFilter
+              filters={filters}
+              onFilterChange={(key, value) => updateFilter(key as keyof PrayerFilters, value)}
+              onClearFilters={clearFilters}
+              categories={CATEGORIES}
+              categoryCounts={categoryCounts}
+              intentions={uniqueIntentions}
+              intentionCounts={intentionCounts}
+              className="mb-8"
+            />
+
+            {/* Prayer list */}
+            <PrayerList
+              prayers={nonNovenaPrayers}
+              novenas={filteredNovenas}
+              onPrayerClick={setSelectedPrayer}
+              onStartNovena={setActiveNovena}
+            />
+
+            {/* CTA banner */}
+            {!hasActiveFilters && (
+              <div className="mt-12 bg-gradient-to-r from-amber-600 via-amber-700 to-amber-800 rounded-2xl p-8 text-white text-center">
+                <div className="relative z-10">
+                  <h2 className="text-2xl font-bold mb-3">
+                    {currentNovena.status === 'active' 
+                      ? 'Pray Today\'s Novena' 
+                      : currentNovena.status === 'upcoming'
+                        ? 'Coming Soon'
+                        : 'Begin Your Prayer Journey'}
+                  </h2>
+                  <p className="text-amber-100 mb-6 max-w-xl mx-auto text-sm">
+                    {currentNovena.status === 'active' ? (
+                      <>The <strong>{currentNovena.event?.title}</strong> is currently active. Join thousands of faithful praying together.</>
+                    ) : currentNovena.status === 'upcoming' ? (
+                      <>The <strong>{currentNovena.event?.title}</strong> starts soon. Prepare your heart for nine days of focused prayer.</>
+                    ) : (
+                      <>Start a novena to grow closer to God through nine days of focused prayer, or explore our collection of traditional Catholic litanies and daily prayers.</>
+                    )}
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-3">
+                    <button
+                      onClick={() => setActiveNovena(currentNovena.novena)}
+                      className="bg-white text-amber-700 px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-amber-50 transition-colors shadow-lg"
+                    >
+                      {currentNovena.status === 'active' 
+                        ? 'Pray Now' 
+                        : currentNovena.status === 'upcoming'
+                          ? `Start ${currentNovena.event?.title.replace('Novena to ', '').replace('Novena for ', '')}`
+                          : `Start the ${currentNovena.novena.title}`}
+                    </button>
+                    <button
+                      onClick={() => {
+                        updateFilter('selectedCategory', 'litanies');
+                      }}
+                      className="bg-stone-100 text-stone-700 px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-stone-200 transition-colors border border-stone-200"
+                    >
+                      Browse Litanies
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          /* Calendar tab */
+          <NovenaCalendar onStartNovena={handleStartNovenaFromCalendar} />
+        )}
+      </div>
+
+      {/* Novena Tracker Modal */}
+      {activeNovena && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="w-full max-w-3xl max-h-[95vh] overflow-auto rounded-2xl">
+            <NovenaTracker novena={activeNovena} onClose={() => setActiveNovena(null)} />
+          </div>
+        </div>
+      )}
+
+      {/* Prayer Reader Modal */}
+      {selectedPrayer && (
+        <PrayerReader prayer={selectedPrayer} onClose={() => setSelectedPrayer(null)} />
+      )}
+    </div>
+  );
+}

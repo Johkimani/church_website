@@ -6,13 +6,14 @@ import {
   deleteSliderImage,
   getConfig,
 } from "../../controllers/sliderController.js";
+import verifyToken from "../../middlewares/Tokens.js";
 
 const router = express.Router();
 
 router.get("/config", getConfig);
 router.get("/slider-images", getSliderImages);
-router.post("/slider-images", createSliderImage);
-router.patch("/slider-images/:id", updateSliderImage);
-router.delete("/slider-images/:id", deleteSliderImage);
+router.post("/slider-images", verifyToken, createSliderImage);
+router.patch("/slider-images/:id", verifyToken, updateSliderImage);
+router.delete("/slider-images/:id", verifyToken, deleteSliderImage);
 
 export default router;

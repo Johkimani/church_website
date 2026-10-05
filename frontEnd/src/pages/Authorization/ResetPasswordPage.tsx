@@ -9,6 +9,9 @@ const ResetPasswordPage = () => {
   const email = useParams().reg || "";
   const [countdown, setCountdown] = useState<number>(0);
   const [resending, setResending] = useState<boolean>(false);
+  const [notice, setNotice] = useState<string>(
+    `A 6-digit verification code has been sent to ${email}. Please check your inbox and spam folder, then enter the code below. This message will stay here while you complete the reset.`
+  );
 
   useEffect(() => {
     if (countdown > 0) {
@@ -22,7 +25,7 @@ const ResetPasswordPage = () => {
     try {
       setResending(true);
       await apiClient.post(`/authentication/resend-otp/${email}`);
-      alert("A new OTP has been sent to your email.");
+      setNotice(`A new 6-digit verification code has been sent to ${email}. Please check your inbox and spam folder, then enter the newest code below.`);
       setCountdown(60); // 60 seconds cooldown
     } catch (err: any) {
       console.error(err);
@@ -52,10 +55,8 @@ const ResetPasswordPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f8f7f4] px-6 py-12 font-sans overflow-hidden relative">
       
-      {/* ══════════ Main Container ══════════ */}
       <div className="w-full max-w-md lg:max-w-5xl flex flex-col lg:flex-row lg:items-center lg:justify-between lg:gap-24 relative z-10">
 
-        {/* ══════════ LEFT — Branding (Desktop only) ══════════ */}
         <div className="hidden lg:flex flex-col justify-center w-1/2 pl-10">
           
           <div className="flex items-center gap-3 mb-10">
@@ -83,7 +84,6 @@ const ResetPasswordPage = () => {
           </p>
         </div>
 
-        {/* ══════════ RIGHT — Form Panel ══════════ */}
         <div className="w-full lg:w-[45%] px-0 sm:px-12 lg:px-0">
           
           {/* Back button */}
@@ -109,10 +109,18 @@ const ResetPasswordPage = () => {
             </p>
           </div>
 
+          <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm font-semibold leading-relaxed text-emerald-800" role="status">
+            {notice}
+          </div>
+
           {/* OTP Component */}
           <div className="flex justify-center lg:justify-start w-full mb-6 mt-4">
             <OTPInput length={6} onComplete={handleOTPComplete} />
           </div>
+
+          <p className="text-xs text-gray-400 font-medium text-center lg:text-left -mt-3">
+            Tip: you can copy the code from your email and paste it directly into the boxes.
+          </p>
 
           {/* Resend OTP */}
           <div className="text-center lg:text-left mt-6">

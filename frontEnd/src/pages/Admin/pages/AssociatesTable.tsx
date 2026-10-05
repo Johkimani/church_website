@@ -1,19 +1,13 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
-import { Users, Search, X, RefreshCw, GraduationCap, Download, Undo2 } from "lucide-react";
+import { Search, X, RefreshCw, GraduationCap, Download, Undo2 } from "lucide-react";
 import * as XLSX from "xlsx";
+import { SkeletonTable, SkeletonSummaryBar } from "../../../components/Skeleton";
+import { genderCode } from "../../../utils/memberYear";
 
-const JUMUIYAS = [
-  { id: "st-anthony", name: "St. Anthony" },
-  { id: "st-augustine", name: "St. Augustine" },
-  { id: "st-catherine", name: "St. Catherine" },
-  { id: "st-dominic", name: "St. Dominic" },
-  { id: "st-elizabeth", name: "St. Elizabeth" },
-  { id: "st-maria-goretti", name: "St. Maria Goretti" },
-  { id: "st-monica", name: "St. Monica" },
-];
 
-export default function AssociatesTable({ refreshKey = 0 }: { refreshKey?: number }) {
+
+export default function AssociatesTable({ refreshKey = 0, jumuiyaId, moduleId }: { refreshKey?: number; jumuiyaId?: string; moduleId?: string }) {
   const [associates, setAssociates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,12 +15,12 @@ export default function AssociatesTable({ refreshKey = 0 }: { refreshKey?: numbe
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [graduationFilter, setGraduationFilter] = useState<Record<string, boolean>>({});
   const [showExportModal, setShowExportModal] = useState(false);
-  const [exportColumns, setExportColumns] = useState({
+  const [exportColumns, setExportColumns] = useState<Record<string, boolean>>({
     RegNo: true, Name: true, Gender: true, Email: true,
     Phone: true, Jumuiya: true, AdmissionYear: true,
     GraduationYear: true, Source: true, MigratedAt: true,
   });
-  const [genderFilter, setGenderFilter] = useState({ Male: true, Female: true });
+  const [genderFilter, setGenderFilter] = useState<Record<string, boolean>>({ Gent: true, Lady: true });
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -39,7 +33,10 @@ export default function AssociatesTable({ refreshKey = 0 }: { refreshKey?: numbe
     setLoading(true);
     setError(null);
     try {
-      const res = await memberService.getAssociatesList();
+      const params: any = {};
+      if (jumuiyaId) params.jumuiya_id = jumuiyaId;
+      if (moduleId) params.module_id = moduleId;
+      const res = await memberService.getAssociatesList(params);
       setAssociates(res.data || []);
       const years: Record<string, boolean> = {};
       (res.data || []).forEach((a: any) => {
@@ -51,7 +48,7 @@ export default function AssociatesTable({ refreshKey = 0 }: { refreshKey?: numbe
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [jumuiyaId, moduleId]);
 
   useEffect(() => { fetchAssociates(); }, [refreshKey]);
 
@@ -73,8 +70,8 @@ export default function AssociatesTable({ refreshKey = 0 }: { refreshKey?: numbe
       }
       if (activeYears.length > 0 && !activeYears.includes(a.graduation_year)) return false;
       const g = (a.gender || "").toLowerCase();
-      if (!((g === "male" || g === "Male") && activeGenders.includes("Male")) &&
-          !((g === "female" || g === "Female") && activeGenders.includes("Female")) &&
+      if (!((g === "male" || g === "gent") && activeGenders.includes("Gent")) &&
+          !((g === "female" || g === "lady") && activeGenders.includes("Lady")) &&
           !(!g && activeGenders.length > 0)) return false;
       return true;
     });
@@ -87,8 +84,8 @@ export default function AssociatesTable({ refreshKey = 0 }: { refreshKey?: numbe
       const activeYears = Object.entries(graduationFilter).filter(([, v]) => v).map(([k]) => parseInt(k));
       const rows = associates.filter(a => {
         const g = (a.gender || "").toLowerCase();
-        if (!((g === "male" || g === "Male") && activeGenders.includes("Male")) &&
-            !((g === "female" || g === "Female") && activeGenders.includes("Female")) &&
+        if (!((g === "male" || g === "gent") && activeGenders.includes("Gent")) &&
+            !((g === "female" || g === "lady") && activeGenders.includes("Lady")) &&
             !(!g && activeGenders.length > 0)) return false;
         if (activeYears.length > 0 && !activeYears.includes(a.graduation_year)) return false;
         return true;
@@ -136,10 +133,12 @@ export default function AssociatesTable({ refreshKey = 0 }: { refreshKey?: numbe
   };
 
   if (loading) {
-    return <div className="space-y-3 animate-pulse">
-      <div className="h-8 bg-slate-200 rounded-lg w-1/4" />
-      <div className="h-48 bg-slate-100 rounded-xl" />
-    </div>;
+    return (
+      <div className="space-y-6">
+        <SkeletonSummaryBar count={2} />
+        <SkeletonTable rows={8} cols={7} />
+      </div>
+    );
   }
 
   return (
@@ -227,7 +226,7 @@ export default function AssociatesTable({ refreshKey = 0 }: { refreshKey?: numbe
                       <input type="checkbox" checked={v}
                         onChange={() => setGenderFilter(prev => ({ ...prev, [g]: !prev[g] }))}
                         className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-                      <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium">{g === "Male" ? "Male" : "Female"}</span>
+                      <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium">{g === "Gent" ? "Gents" : "Ladies"}</span>
                     </label>
                   ))}
                 </div>
@@ -241,6 +240,7 @@ export default function AssociatesTable({ refreshKey = 0 }: { refreshKey?: numbe
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase w-10">No.</th>
                   <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase">Reg #</th>
                   <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase">Name</th>
                   <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase">Gender</th>
@@ -252,13 +252,14 @@ export default function AssociatesTable({ refreshKey = 0 }: { refreshKey?: numbe
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((a) => (
+                {filtered.map((a, idx) => (
                   <tr key={a.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                    <td className="py-2.5 px-3 text-slate-400 text-xs">{idx + 1}</td>
                     <td className="py-2.5 px-3 font-medium text-slate-800 text-xs">{a.member_id}</td>
                     <td className="py-2.5 px-3 text-slate-700 font-medium text-xs">{a.name}</td>
                     <td className="py-2.5 px-3">
-                      <span className={`text-xs font-semibold ${a.gender === "Male" ? "text-blue-600" : a.gender === "Female" ? "text-pink-600" : "text-slate-400"}`}>
-                        {a.gender === "Male" ? "M" : a.gender === "Female" ? "W" : "—"}
+                      <span className={`text-xs font-semibold ${genderCode(a.gender) === "M" ? "text-blue-600" : genderCode(a.gender) === "L" ? "text-pink-600" : "text-slate-400"}`}>
+                        {genderCode(a.gender)}
                       </span>
                     </td>
                     <td className="py-2.5 px-3 text-slate-500 text-xs">{a.jumuiya_name || "—"}</td>
@@ -307,7 +308,7 @@ export default function AssociatesTable({ refreshKey = 0 }: { refreshKey?: numbe
                     <input type="checkbox" checked={v}
                       onChange={() => setGenderFilter(prev => ({ ...prev, [g]: !prev[g] }))}
                       className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-                    <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium">{g === "Male" ? "Male" : "Female"}</span>
+                    <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium">{g === "Gent" ? "Gents" : "Ladies"}</span>
                   </label>
                 ))}
               </div>

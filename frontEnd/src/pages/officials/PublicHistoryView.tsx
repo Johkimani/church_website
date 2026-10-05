@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageLoader from '../../assets/Layouts/PageLoader';
 import { 
-  ChevronLeft, Calendar, Award as AwardIcon, Image as ImageIcon, 
-  Filter, GraduationCap
+  ChevronLeft, Image as ImageIcon, 
+  Filter, GraduationCap, Heart
 } from 'lucide-react';
+import { DEFAULT_CLOSING_TRIBUTE } from './constants/adminConstants';
 import { useHistory } from '../../hooks/useHistory';
 import { useTerms } from '../../hooks/useTerms';
 
@@ -16,9 +17,11 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Jumuiya Coordinators': 'from-blue-600 to-blue-700',
   'Bible Coordinators': 'from-green-600 to-green-700',
   'Rosary': 'from-pink-600 to-pink-700',
+  'Rosary Coordinators': 'from-pink-600 to-pink-700',
   'Pamphlet Managers': 'from-orange-600 to-orange-700',
   'Project Managers': 'from-indigo-600 to-indigo-700',
   'Liturgist': 'from-cyan-600 to-cyan-700',
+  'Liturgists': 'from-cyan-600 to-cyan-700',
   'Choir Officials': 'from-red-600 to-red-700',
   'Instrument Managers': 'from-blue-600 to-blue-700',
   'Liturgical Dancers': 'from-blue-600 to-blue-700',
@@ -28,14 +31,13 @@ const CATEGORY_COLORS: Record<string, string> = {
 export default function PublicHistoryView() {
   const navigate = useNavigate();
   const [termFilter, setTermFilter] = useState('all');
-  const [page, setPage] = useState(1);
-  const limit = 20;
+  // Single-page view: fetch every record for the selected term at once
+  const limit = 60;
 
   const { terms } = useTerms();
   const { history, meta, isLoading } = useHistory({ 
     termId: termFilter === 'all' ? undefined : termFilter,
     onlyArchived: true,
-    page,
     limit,
     mode: 'csa'
   });
@@ -84,7 +86,7 @@ export default function PublicHistoryView() {
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <select 
                 value={termFilter} 
-                onChange={e => { setTermFilter(e.target.value); setPage(1); }}
+                onChange={e => setTermFilter(e.target.value)}
                 className="pl-10 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none hover:bg-white transition-all text-sm font-bold text-gray-800 min-w-[200px]"
               >
                 <option value="all">All Election Terms</option>
@@ -131,91 +133,79 @@ export default function PublicHistoryView() {
              </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-12">
-            {history.map((off) => (
-              <article key={off.id} className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100">
-                {/* Photo Container */}
-                <div className="relative h-48 sm:h-56 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
-                  <img
-                    src={getPhotoUrl(off.photo)}
-                    alt={off.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                  />
-                  <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-[10px] font-black text-white bg-gradient-to-r ${CATEGORY_COLORS[off.category] || 'from-gray-700 to-gray-800'} shadow-lg backdrop-blur-sm`}>
-                    {off.category}
-                  </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                     <span className="text-white text-xs font-bold flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5" />
-                        {off.term_year || off.term_of_service}
-                     </span>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="p-5 text-center">
-                  <h3 className="font-bold text-lg text-gray-900 group-hover:text-indigo-600 transition-colors truncate">{off.name}</h3>
-                  <div className="flex flex-col gap-1 mt-2">
-                    <span className="text-xs font-black uppercase tracking-tighter text-indigo-500/80">
-                      {off.position}
-                    </span>
-                    <div className="flex items-center justify-center gap-1 text-[11px] font-bold text-gray-400 mt-1">
-                       <AwardIcon className="w-3 h-3" />
-                       {off.term_year || off.term_of_service}
+          <>
+            {/* Mobile: compact 2-col grid with overlaid badges */}
+            <div className="grid grid-cols-2 gap-3.5 sm:hidden mb-12">
+              {history.map((off) => (
+                <article key={`m-${off.id}`} className="group bg-white border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col">
+                  <div className="relative aspect-[4/5] bg-slate-100 overflow-hidden">
+                    <img
+                      src={getPhotoUrl(off.photo)}
+                      alt={off.name}
+                      className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ease-out"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent opacity-80" />
+                    <div className="absolute bottom-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none">
+                      <span className="truncate max-w-[85%] text-[0.68rem] font-bold text-white/95 bg-slate-950/70 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 shadow-sm">
+                        {off.position || off.category}
+                      </span>
                     </div>
                   </div>
-                </div>
-              </article>
-            ))}
-          </div>
+                  <div className="p-3 text-center bg-white">
+                    <h3 className="font-bold text-slate-950 text-sm line-clamp-1">{off.name}</h3>
+                    <span className={`inline-block mt-1.5 px-2 py-0.5 rounded-full text-[9px] font-black text-white bg-gradient-to-r ${CATEGORY_COLORS[off.category] || 'from-gray-600 to-gray-700'}`}>
+                      {off.category}
+                    </span>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            {/* Desktop: larger cards with progressive columns */}
+            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-12">
+              {history.map((off) => (
+                <article key={`d-${off.id}`} className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100">
+                  <div className="relative h-64 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+                    <img
+                      src={getPhotoUrl(off.photo)}
+                      alt={off.name}
+                      className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="p-5 text-center">
+                    <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-black text-white bg-gradient-to-r ${CATEGORY_COLORS[off.category] || 'from-gray-700 to-gray-800'} shadow-sm mb-2`}>
+                      {off.category}
+                    </span>
+                    <h3 className="font-bold text-lg text-gray-900 group-hover:text-indigo-600 transition-colors truncate">{off.name}</h3>
+                    <div className="flex flex-col gap-1 mt-2">
+                      <span className="text-xs font-black uppercase tracking-tighter text-indigo-500/80">
+                        {off.position}
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </>
         )}
 
-        {/* Pagination Toolbar */}
-        {meta && meta.totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-            <div className="text-sm font-bold text-gray-500">
-              Showing <span className="text-gray-900">{history.length}</span> of <span className="text-gray-900">{meta.total}</span> records
+        {/* Closing Note */}
+        {!isLoading && history.length > 0 && (() => {
+          const tribute = (termFilter !== 'all' && (history[0] as any)?.closing_message) || DEFAULT_CLOSING_TRIBUTE;
+          return (
+            <div className="text-center pb-6">
+              <div className="w-16 h-1 bg-indigo-200 mx-auto rounded-full mb-5"></div>
+              <p className="text-sm sm:text-base text-gray-500 max-w-xl mx-auto font-medium italic leading-relaxed flex flex-col items-center gap-2">
+                <Heart className="w-4 h-4 text-indigo-400 fill-indigo-100" />
+                {tribute}
+              </p>
             </div>
-            
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                disabled={page === 1}
-                className="w-12 h-12 flex items-center justify-center border border-gray-100 rounded-xl hover:bg-gray-50 disabled:opacity-20 transition-all shadow-sm bg-white"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              
-              <div className="flex items-center gap-2">
-                {[...Array(meta.totalPages)].map((_, i) => (
-                  <button
-                    key={i + 1}
-                    onClick={() => { setPage(i + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                    className={`w-12 h-12 rounded-xl text-sm font-black transition-all ${page === i + 1 ? 'bg-indigo-600 text-white shadow-lg scale-110' : 'bg-white text-gray-400 hover:text-gray-900 hover:bg-gray-50 border border-gray-100 shadow-sm'}`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-              </div>
-              
-              <button 
-                onClick={() => { setPage(p => Math.min(meta.totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                disabled={page === meta.totalPages}
-                className="w-12 h-12 flex items-center justify-center border border-gray-100 rounded-xl hover:bg-gray-50 disabled:opacity-20 transition-all shadow-sm bg-white"
-              >
-                <ChevronLeft className="w-6 h-6 rotate-180" />
-              </button>
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
-        {/* Footer Info */}
-        <div className="mt-16 text-center border-t border-gray-100 pt-8 pb-12">
-           <p className="text-sm text-gray-400 font-medium">
-             &copy; {new Date().getFullYear()} Church Symbols Association. All rights reserved.
-           </p>
-        </div>
+
       </div>
     </div>
   );

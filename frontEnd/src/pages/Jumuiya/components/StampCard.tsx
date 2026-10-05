@@ -1,11 +1,11 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { FaDownload, FaCheckCircle, FaStamp, FaUniversity, FaIdCard, FaEnvelope, FaSpinner, FaCheck } from 'react-icons/fa';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
+import { FaDownload, FaCheckCircle, FaStamp, FaIdCard, FaEnvelope, FaSpinner, FaCheck } from 'react-icons/fa';
 import { useAuth } from '../../../context/AuthContext';
-import { useJumuiyaMembers } from '../../../hooks/useJumuiyaMembers';
+import { memberService, JumuiyaRosterMember } from '../../../api/jumuiyaMemberService';
 import PageLoader from '../../../assets/Layouts/PageLoader';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { memberService } from '../../../api/jumuiyaMemberService';
+import { jumuiyaList } from '../data/jumuiyaData';
 
 interface StampCardProps {
     jumuiyaId: string;
@@ -13,16 +13,35 @@ interface StampCardProps {
     jumuiyaColor: string;
     latestSemester?: number;
     onClose?: () => void;
+    saintImage?: string;
 }
 
 const SEMESTER_LABELS = ["1.1", "1.2", "2.1", "2.2", "3.1", "3.2", "4.1", "4.2"];
 
-const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaColor, latestSemester, onClose }) => {
+const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaColor, latestSemester, onClose, saintImage }) => {
     const { user } = useAuth();
-    const { members, isLoading } = useJumuiyaMembers();
+    const [members, setMembers] = useState<JumuiyaRosterMember[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const cardRef = useRef<HTMLDivElement>(null);
     const [sendingEmail, setSendingEmail] = useState(false);
     const [emailSent, setEmailSent] = useState(false);
+
+    const localJumuiya = jumuiyaList.find(j => j.id === jumuiyaId || j.name === jumuiyaName);
+    const resolvedSaintImage = saintImage || localJumuiya?.saintImage || '';
+
+    useEffect(() => {
+        let cancelled = false;
+        if (jumuiyaId) {
+            (async () => {
+                try {
+                    const res = await memberService.getJumuiyaRoster(jumuiyaId);
+                    if (!cancelled && res?.success) setMembers(res.data || []);
+                } catch { /* falls back to demo record below */ }
+                if (!cancelled) setIsLoading(false);
+            })();
+        }
+        return () => { cancelled = true; };
+    }, [jumuiyaId]);
 
     const memberRecord = members.find(m => m.id === user?.member_id && m.jumuiya_id === jumuiyaId);
     const isDemo = !memberRecord;
@@ -32,6 +51,7 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
         id: user?.member_id || "CSA-DEMO-001",
         year: user?.year || "Year 3",
         joined_at: new Date().toISOString(),
+        serial_no: undefined,
         sem_1_reg: true,
         sem_2_reg: true,
         sem_3_reg: true,
@@ -149,6 +169,8 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
         );
     }
 
+    const _c = (s: string) => jumuiyaColor.length > 7 ? jumuiyaColor.slice(0, 7) + s : jumuiyaColor + s;
+
     return (
         <div style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
             {/* Toolbar */}
@@ -159,7 +181,7 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                 <div>
                     <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#1e293b' }}>
                         <FaStamp style={{ marginRight: '8px', color: jumuiyaColor }} />
-                        Semester Stamp Card
+                        Membership Card
                     </h2>
                     <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: '#64748b' }}>
                         Track your registration progress across 8 semesters
@@ -171,7 +193,7 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                             display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px',
                             borderRadius: '12px', background: jumuiyaColor, border: 'none',
                             color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem',
-                            boxShadow: `0 4px 14px ${jumuiyaColor}55`
+                            boxShadow: `0 4px 14px ${_c('55')}`
                         }}>
                         <FaDownload size={12} /> Download PDF
                     </button>
@@ -207,7 +229,7 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                 borderRadius: '28px',
                 overflow: 'hidden',
                 boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-                border: `1px solid ${jumuiyaColor}20`,
+                border: `1px solid ${_c('20')}`,
                 position: 'relative',
             }}>
                 {/* Glossy overlay */}
@@ -217,55 +239,77 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                     pointerEvents: 'none', zIndex: 1
                 }} />
 
-                {/* ── Header ── */}
                 <div style={{
-                    background: `linear-gradient(135deg, ${jumuiyaColor} 0%, ${jumuiyaColor}DD 100%)`,
+                    background: `linear-gradient(135deg, ${jumuiyaColor} 0%, ${_c('DD')} 100%)`,
                     padding: '24px 28px', color: 'white', position: 'relative', overflow: 'hidden'
                 }}>
-                    <div style={{ position: 'absolute', right: '-20px', top: '-20px', fontSize: '8rem', opacity: 0.08 }}>
-                        <FaUniversity />
+                    {/* University Header */}
+                    <div style={{ textAlign: 'center', marginBottom: '16px', position: 'relative', zIndex: 2 }}>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', opacity: 0.9, lineHeight: 1.4 }}>
+                            KIRINYAGA UNIVERSITY CATHOLIC STUDENTS' ASSOCIATION
+                        </div>
+                        <div style={{ fontSize: '0.55rem', fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', opacity: 0.7, marginTop: '2px' }}>
+                            DIOCESE OF MURANG'A
+                        </div>
                     </div>
-                    <div style={{ position: 'absolute', left: '-15px', bottom: '-30px', fontSize: '6rem', opacity: 0.06 }}>
-                        <FaStamp />
-                    </div>
+
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                             <div style={{
-                                width: '48px', height: '48px', borderRadius: '14px',
+                                width: '52px', height: '52px', borderRadius: '50%',
                                 background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '1.4rem', fontWeight: 900,
-                                border: '1px solid rgba(255,255,255,0.3)'
+                                border: '2px solid rgba(255,255,255,0.4)',
+                                overflow: 'hidden', flexShrink: 0
                             }}>
-                                {getInitials(displayRecord.jumuiya_name || jumuiyaName)}
+                                {resolvedSaintImage ? (
+                                    <img src={resolvedSaintImage} alt="Patron Saint" style={{
+                                        width: '100%', height: '100%', objectFit: 'cover'
+                                    }} />
+                                ) : (
+                                    <span style={{ fontSize: '1.2rem', fontWeight: 900 }}>
+                                        {getInitials(displayRecord.jumuiya_name || jumuiyaName)}
+                                    </span>
+                                )}
                             </div>
                             <div>
                                 <div style={{ fontSize: '0.7rem', fontWeight: 600, opacity: 0.85, letterSpacing: '1px' }}>
-                                    SEMESTER STAMP CARD
+                                    MEMBERSHIP CARD
                                 </div>
                                 <div style={{ fontSize: '1.1rem', fontWeight: 800, marginTop: '2px' }}>
                                     {displayRecord.jumuiya_name || jumuiyaName}
                                 </div>
                             </div>
                         </div>
-                        <div style={{
-                            background: 'rgba(255,255,255,0.15)', padding: '5px 10px',
-                            borderRadius: '20px', fontSize: '0.65rem', fontWeight: 700,
-                            letterSpacing: '0.5px', backdropFilter: 'blur(5px)'
-                        }}>
-                            {registeredCount}/8
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{
+                                width: '36px', height: '36px', borderRadius: '10px',
+                                background: 'white', overflow: 'hidden',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                                flexShrink: 0
+                            }}>
+                                <img src="/images/csa-logo.jpg" alt="CSA" style={{
+                                    width: '100%', height: '100%', objectFit: 'cover'
+                                }} />
+                            </div>
+                            <div style={{
+                                background: 'rgba(255,255,255,0.15)', padding: '5px 10px',
+                                borderRadius: '20px', fontSize: '0.65rem', fontWeight: 700,
+                                letterSpacing: '0.5px', backdropFilter: 'blur(5px)'
+                            }}>
+                                {registeredCount}/8
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* ── Body ── */}
                 <div style={{ padding: '24px 28px 28px' }}>
                     {/* Member Info */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
                         <div style={{
                             width: '56px', height: '56px', borderRadius: '16px',
-                            background: `linear-gradient(135deg, ${jumuiyaColor}15, ${jumuiyaColor}05)`,
-                            border: `2px solid ${jumuiyaColor}30`,
+                            background: `linear-gradient(135deg, ${_c('15')}, ${_c('05')})`,
+                            border: `2px solid ${_c('30')}`,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: '1.5rem', color: jumuiyaColor
                         }}>
@@ -287,6 +331,16 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                                 </div>
                             )}
                         </div>
+                        {((displayRecord as JumuiyaRosterMember).serial_no != null) && (
+                            <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                                <div style={{ fontSize: '0.55rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    Serial No
+                                </div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', fontFamily: 'monospace' }}>
+                                    #{(displayRecord as JumuiyaRosterMember).serial_no}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Semester Stamp Grid */}
@@ -317,11 +371,11 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                                         textAlign: 'center',
                                         padding: '14px 6px 12px',
                                         background: isStamped
-                                            ? `linear-gradient(135deg, ${jumuiyaColor}12, ${jumuiyaColor}08)`
+                                            ? `linear-gradient(135deg, ${_c('12')}, ${_c('08')})`
                                             : '#f8fafc',
                                         borderRadius: '14px',
                                         border: isStamped
-                                            ? `1.5px solid ${jumuiyaColor}40`
+                                            ? `1.5px solid ${_c('40')}`
                                             : '1.5px dashed #d1d5db',
                                         position: 'relative',
                                     }}>
@@ -340,10 +394,10 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                                             borderRadius: '50%',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                                             background: isStamped
-                                                ? `linear-gradient(135deg, ${jumuiyaColor}, ${jumuiyaColor}BB)`
+                                                ? `linear-gradient(135deg, ${jumuiyaColor}, ${_c('BB')})`
                                                 : 'transparent',
                                             border: isStamped ? 'none' : '2px solid #d1d5db',
-                                            boxShadow: isStamped ? `0 2px 8px ${jumuiyaColor}44` : 'none',
+                                            boxShadow: isStamped ? `0 2px 8px ${_c('44')}` : 'none',
                                         }}>
                                             {isStamped ? (
                                                 <FaCheckCircle style={{ color: 'white', fontSize: '0.9rem' }} />
@@ -358,7 +412,7 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                                             <div style={{
                                                 fontSize: '0.45rem', fontWeight: 800, color: jumuiyaColor,
                                                 textTransform: 'uppercase', letterSpacing: '0.5px',
-                                                background: `${jumuiyaColor}15`,
+                                                background: `${_c('15')}`,
                                                 padding: '1px 4px', borderRadius: '4px',
                                                 display: 'inline-block'
                                             }}>
@@ -387,7 +441,7 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                     {/* Summary */}
                     <div style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        paddingTop: '16px', borderTop: `2px solid ${jumuiyaColor}12`
+                        paddingTop: '16px', borderTop: `2px solid ${_c('12')}`
                     }}>
                         <div>
                             <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
@@ -410,12 +464,30 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
                                 Issue Date
                             </div>
                             <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569' }}>
-                                {new Date(displayRecord.joined_at || new Date()).toLocaleDateString('en-US', {
+                                {new Date((displayRecord as JumuiyaRosterMember & { joined_at?: string }).joined_at || new Date()).toLocaleDateString('en-US', {
                                     year: 'numeric', month: 'short', day: 'numeric'
                                 })}
                             </div>
                         </div>
                     </div>
+                </div>
+
+                {/* Disclaimer */}
+                <div style={{
+                    padding: '14px 28px',
+                    borderTop: `1px solid ${_c('15')}`,
+                }}>
+                    <p style={{
+                        margin: 0,
+                        fontSize: '0.55rem',
+                        fontWeight: 500,
+                        color: '#94a3b8',
+                        textAlign: 'center',
+                        lineHeight: 1.5,
+                        fontStyle: 'italic',
+                    }}>
+                        No entries or alterations may be made on this card except by the person duly authorized for this purpose.
+                    </p>
                 </div>
 
                 {/* Security footer */}
@@ -429,8 +501,8 @@ const StampCard: React.FC<StampCardProps> = ({ jumuiyaId, jumuiyaName, jumuiyaCo
             {isDemo && (
                 <div style={{
                     maxWidth: '580px', margin: '20px auto 0', padding: '16px 20px',
-                    borderRadius: '16px', background: `${jumuiyaColor}08`,
-                    border: `1px solid ${jumuiyaColor}20`, textAlign: 'center'
+                    borderRadius: '16px', background: `${_c('08')}`,
+                    border: `1px solid ${_c('20')}`, textAlign: 'center'
                 }}>
                     <p style={{ color: '#475569', fontSize: '0.85rem', fontWeight: 500, margin: 0 }}>
                         This is a preview. Register for a semester to get your stamp card!

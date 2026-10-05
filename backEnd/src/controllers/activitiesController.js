@@ -1,10 +1,6 @@
 // src/controllers/activitiesController.js
 import { db } from "../Configs/dbConfig.js";
 
-// ─────────────────────────────────────────────
-// WEEKLY ACTIVITIES
-// ─────────────────────────────────────────────
-
 export const getWeeklyActivities = async (req, res) => {
   try {
     const result = await db.query(
@@ -13,14 +9,197 @@ export const getWeeklyActivities = async (req, res) => {
 
     res.json({ success: true, data: result.rows });
   } catch (error) {
-    console.error("Error fetching weekly activities:", error.message);
+    await db.query("ROLLBACK").catch(() => {});
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────
+// JUMUIYA-SCOPED WEEKLY ACTIVITIES
+// ─────────────────────────────────────────────
+
+export const getJumuiyaWeeklyActivities = async (req, res) => {
+  const { jumuiyaId } = req.params;
+  const { all } = req.query;
+
+  try {
+    let query = `SELECT * FROM weekly_activities WHERE jumuiya_id = $1`;
+    if (all !== 'true') {
+      query += ` AND is_active = true`;
+    }
+    query += ` ORDER BY sort_order ASC, id ASC`;
+
+    const result = await db.query(query, [jumuiyaId]);
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const createJumuiyaWeeklyActivity = async (req, res) => {
+  const { jumuiyaId } = req.params;
+  const { day, time, activity, venue, fare } = req.body;
+
+  if (!day || !activity) {
+    return res.status(400).json({ success: false, error: "day and activity are required" });
+  }
+
+  try {
+    const maxOrder = await db.query(
+      `SELECT COALESCE(MAX(sort_order), 0) + 1 AS next FROM weekly_activities WHERE jumuiya_id = $1`,
+      [jumuiyaId]
+    );
+
+    const result = await db.query(
+      `INSERT INTO weekly_activities (jumuiya_id, day, time, activity, venue, fare, sort_order)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [jumuiyaId, day, time || null, activity, venue || null, fare || null, maxOrder.rows[0].next]
+    );
+
+    res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const updateJumuiyaWeeklyActivity = async (req, res) => {
+  const { id } = req.params;
+  const { day, time, activity, venue, fare, is_active } = req.body;
+
+  try {
+    const result = await db.query(
+      `UPDATE weekly_activities
+       SET day = COALESCE($1, day),
+           time = COALESCE($2, time),
+           activity = COALESCE($3, activity),
+           venue = COALESCE($4, venue),
+           fare = COALESCE($5, fare),
+           is_active = COALESCE($6, is_active)
+       WHERE id = $7 RETURNING *`,
+      [day, time, activity, venue, fare, is_active, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Record not found" });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const deleteJumuiyaWeeklyActivity = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await db.query(
+      `DELETE FROM weekly_activities WHERE id = $1 RETURNING id`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Record not found" });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────
+// JUMUIYA-SCOPED SEMESTER ACTIVITIES
+// ─────────────────────────────────────────────
+
+export const getJumuiyaSemesterActivities = async (req, res) => {
+  const { jumuiyaId } = req.params;
+  const { all } = req.query;
+
+  try {
+    let query = `SELECT * FROM semester_activities WHERE jumuiya_id = $1`;
+    if (all !== 'true') {
+      query += ` AND is_active = true`;
+    }
+    query += ` ORDER BY date_time ASC, id ASC`;
+
+    const result = await db.query(query, [jumuiyaId]);
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const createJumuiyaSemesterActivity = async (req, res) => {
+  const { jumuiyaId } = req.params;
+  const { title, date_time, venue, description, fare } = req.body;
+
+  if (!title || !date_time) {
+    return res.status(400).json({ success: false, error: "title and date_time are required" });
+  }
+
+  try {
+    const result = await db.query(
+      `INSERT INTO semester_activities (jumuiya_id, title, date_time, venue, description, fare)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [jumuiyaId, title, date_time, venue || null, description || null, fare || null]
+    );
+
+    res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const updateJumuiyaSemesterActivity = async (req, res) => {
+  const { id } = req.params;
+  const { title, date_time, venue, description, fare, is_active } = req.body;
+
+  try {
+    const result = await db.query(
+      `UPDATE semester_activities
+       SET title = COALESCE($1, title),
+           date_time = COALESCE($2, date_time),
+           venue = COALESCE($3, venue),
+           description = COALESCE($4, description),
+           fare = COALESCE($5, fare),
+           is_active = COALESCE($6, is_active)
+       WHERE id = $7 RETURNING *`,
+      [title, date_time, venue, description, fare, is_active, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Record not found" });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const deleteJumuiyaSemesterActivity = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await db.query(
+      `DELETE FROM semester_activities WHERE id = $1 RETURNING id`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Record not found" });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 };
 
 export const createWeeklyActivity = async (req, res) => {
   console.log("[createWeekly] Request body:", req.body);
-  const { day, time, activity, venue, fare } = req.body;
+  const { day, time, activity, venue, fare, image_url } = req.body;
 
   if (!day || !time || !activity || !venue) {
     return res.status(400).json({
@@ -31,10 +210,10 @@ export const createWeeklyActivity = async (req, res) => {
 
   try {
     const result = await db.query(
-      `INSERT INTO weekly_activities (day, time, activity, venue, fare)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO weekly_activities (day, time, activity, venue, fare, image_url)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [day, time, activity, venue, fare || null]
+      [day, time, activity, venue, fare || null, image_url || null]
     );
 
     res.status(201).json({ success: true, data: result.rows[0] });
@@ -46,15 +225,15 @@ export const createWeeklyActivity = async (req, res) => {
 
 export const updateWeeklyActivity = async (req, res) => {
   const { id } = req.params;
-  const { day, time, activity, venue, fare } = req.body;
+  const { day, time, activity, venue, fare, image_url } = req.body;
 
   try {
     const result = await db.query(
       `UPDATE weekly_activities
-       SET day=$1, time=$2, activity=$3, venue=$4, fare=$5
-       WHERE id=$6
+       SET day=$1, time=$2, activity=$3, venue=$4, fare=$5, image_url=$6
+       WHERE id=$7
        RETURNING *`,
-      [day, time, activity, venue, fare || null, id]
+      [day, time, activity, venue, fare || null, image_url || null, id]
     );
 
     if (result.rows.length === 0) {
@@ -88,6 +267,55 @@ export const deleteWeeklyActivity = async (req, res) => {
 
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Upload a custom image for a weekly activity (Cloudinary URL from multer)
+export const uploadWeeklyImage = async (req, res) => {
+  const { id } = req.params;
+
+  if (!req.file?.path) {
+    return res.status(400).json({
+      success: false,
+      error: "No image file uploaded",
+    });
+  }
+
+  try {
+    const result = await db.query(
+      `UPDATE weekly_activities SET image_url=$1 WHERE id=$2 RETURNING *`,
+      [req.file.path, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Record not found" });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error("Error uploading weekly activity image:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Remove the custom image for a weekly activity (falls back to public default)
+export const removeWeeklyImage = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await db.query(
+      `UPDATE weekly_activities SET image_url=NULL WHERE id=$1 RETURNING *`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Record not found" });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error("Error removing weekly activity image:", error.message);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -170,10 +398,6 @@ export const reorderWeeklyActivities = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
-// SEMESTER ACTIVITIES
-// ─────────────────────────────────────────────
-
 export const getSemesterActivities = async (req, res) => {
   try {
     const result = await db.query(
@@ -189,7 +413,7 @@ export const getSemesterActivities = async (req, res) => {
 
 export const createSemesterActivity = async (req, res) => {
   console.log("[createSemester] Request body:", req.body);
-  const { title, date_time, venue, description, fare } = req.body;
+  const { title, date_time, venue, description, fare, image_url } = req.body;
 
   if (!title || !date_time || !venue) {
     return res.status(400).json({
@@ -200,10 +424,10 @@ export const createSemesterActivity = async (req, res) => {
 
   try {
     const result = await db.query(
-      `INSERT INTO semester_activities (title, date_time, venue, description, fare)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO semester_activities (title, date_time, venue, description, fare, image_url)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [title, date_time, venue, description || "", fare || null]
+      [title, date_time, venue, description || "", fare || null, image_url || null]
     );
 
     res.status(201).json({ success: true, data: result.rows[0] });
@@ -214,15 +438,15 @@ export const createSemesterActivity = async (req, res) => {
 
 export const updateSemesterActivity = async (req, res) => {
   const { id } = req.params;
-  const { title, date_time, venue, description, fare } = req.body;
+  const { title, date_time, venue, description, fare, image_url } = req.body;
 
   try {
     const result = await db.query(
       `UPDATE semester_activities
-       SET title=$1, date_time=$2, venue=$3, description=$4, fare=$5
-       WHERE id=$6
+       SET title=$1, date_time=$2, venue=$3, description=$4, fare=$5, image_url=$6
+       WHERE id=$7
        RETURNING *`,
-      [title, date_time, venue, description, fare || null, id]
+      [title, date_time, venue, description, fare || null, image_url || null, id]
     );
 
     if (result.rows.length === 0) {
@@ -234,6 +458,86 @@ export const updateSemesterActivity = async (req, res) => {
 
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Upload a custom image for a semester event (Cloudinary URL from multer)
+export const uploadSemesterImage = async (req, res) => {
+  const { id } = req.params;
+
+  if (!req.file?.path) {
+    return res.status(400).json({
+      success: false,
+      error: "No image file uploaded",
+    });
+  }
+
+  try {
+    const result = await db.query(
+      `UPDATE semester_activities SET image_url=$1 WHERE id=$2 RETURNING *`,
+      [req.file.path, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Record not found" });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error("Error uploading semester activity image:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Remove the custom image for a semester event
+export const removeSemesterImage = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await db.query(
+      `UPDATE semester_activities SET image_url=NULL WHERE id=$1 RETURNING *`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Record not found" });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error("Error removing semester activity image:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Upload the global default image for semester events (shown when no per-event image is set)
+export const uploadSemesterDefaultImage = async (req, res) => {
+  if (!req.file?.path) {
+    return res.status(400).json({ success: false, error: "No image file uploaded" });
+  }
+
+  try {
+    const imageUrl = req.file.path; // Cloudinary secure_url via multer
+    await db.query(
+      `INSERT INTO system_settings (key, value, updated_at) VALUES ($1, $2, NOW())
+       ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = NOW()`,
+      ["semester_default_image", imageUrl]
+    );
+    res.json({ success: true, data: { image_url: imageUrl } });
+  } catch (error) {
+    console.error("Error uploading semester default image:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Remove the global default image for semester events
+export const removeSemesterDefaultImage = async (req, res) => {
+  try {
+    await db.query(`DELETE FROM system_settings WHERE key = $1`, ["semester_default_image"]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error removing semester default image:", error.message);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -259,10 +563,6 @@ export const deleteSemesterActivity = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
-// ─────────────────────────────────────────────
-// EFFECTIVE SCHEDULE (AUTO SWITCH)
-// ─────────────────────────────────────────────
-
 export const getEffectiveWeeklySchedule = async (req, res) => {
   try {
     const today = new Date().toISOString().split("T")[0];
@@ -318,10 +618,6 @@ export const getEffectiveWeeklySchedule = async (req, res) => {
     });
   }
 };
-// ─────────────────────────────────────────────
-// NOVENA SYSTEM
-// ─────────────────────────────────────────────
-
 export const getNovenaSchedules = async (req, res) => {
   try {
     const result = await db.query(
@@ -515,10 +811,6 @@ export const deleteNovenaOverrideActivity = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────
-// SEMESTER ACTIVITIES (ADMIN: activate/deactivate)
-// ─────────────────────────────────────────────
-
 export const activateSemesterActivity = async (req, res) => {
   const { id } = req.params;
 
@@ -556,10 +848,6 @@ export const deactivateSemesterActivity = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
-
-// ─────────────────────────────────────────────
-// NOVENA OVERRIDES (ADMIN: reorder)
-// ─────────────────────────────────────────────
 
 export const reorderNovenaOverrides = async (req, res) => {
   const { items } = req.body || {};

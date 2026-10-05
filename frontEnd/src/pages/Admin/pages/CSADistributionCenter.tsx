@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
+import { getYearOfStudy, genderCode, isMale, isFemale } from "../../../utils/memberYear";
 import {
   Upload, Plus, Trash2, FileSpreadsheet, CheckCircle,
-  AlertTriangle, Users, BarChart3, RefreshCw, X, GitMerge, Filter, Send, ThumbsUp, ThumbsDown, Printer, Edit2, Save,
+  AlertTriangle, Users, BarChart3, RefreshCw, X, GitMerge, Filter, Send, ThumbsUp, ThumbsDown, Edit2, Save, QrCode,
 } from "lucide-react";
 import * as XLSX from "xlsx";
+import QRCode from "qrcode";
 
 const JUMUIYAS = [
   { id: "st-anthony", name: "St. Anthony", color: "#8b5cf6" },
@@ -119,10 +121,14 @@ export default function CSADistributionCenter() {
   const [distributing, setDistributing] = useState(false);
   const [distributionDone, setDistributionDone] = useState(false);
 
+  // Balance mode: "membership" levels against the full jumuiya membership,
+  // "equal" (equal-split) spreads the new intake evenly ignoring seniors.
+  const [strategy, setStrategy] = useState<"membership" | "equal">("equal");
+  const strategyParam = strategy === "equal" ? "equal-split" : undefined;
+
   // Approval workflow state
   const [activeBatches, setActiveBatches] = useState<any[]>([]);
   const [approvalStatuses, setApprovalStatuses] = useState<Record<number, any>>({});
-  const [loadingBatches, setLoadingBatches] = useState(false);
   const [finalizing, setFinalizing] = useState<number | null>(null);
   const [reviewingJumuiya, setReviewingJumuiya] = useState<Record<string, boolean>>({});
   const [rejectedMembers, setRejectedMembers] = useState<any[]>([]);
@@ -156,17 +162,13 @@ export default function CSADistributionCenter() {
   const fetchData = async (year?: string, gender?: string) => {
     setLoadingData(true);
     try {
-      const params = new URLSearchParams();
-      if (year) params.set("academic_year", year);
-      if (gender) params.set("gender", gender);
-      const query = params.toString() ? `?${params.toString()}` : "";
-
-      const [pendingRes, statsRes] = await Promise.all([
-        fetch(`/api/v1/jumuiya-members/csa/pending-members${query}`),
-        fetch(`/api/v1/jumuiya-members/csa/jumuiya-stats?academic_year=${year || ""}`),
+      const [pendingData, statsData] = await Promise.all([
+        memberService.csaGetPendingMembers({
+          academic_year: year || undefined,
+          gender: gender || undefined,
+        }),
+        memberService.csaGetJumuiyaStats({ academic_year: year || undefined }),
       ]);
-      const pendingData = await pendingRes.json();
-      const statsData = await statsRes.json();
       setPendingMembers(pendingData.data || []);
       setJumuiyaStats(statsData.data || null);
       setDistributionDone(false);
@@ -301,7 +303,7 @@ export default function CSADistributionCenter() {
       const errMap: Record<number, string[]> = {};
       const keptMembers: any[] = [];
 
-      records.forEach((r: any, idx: number) => {
+      records.forEach((r: any) => {
         if (r.status === "error") {
           const errors = r.validation_errors || [];
           const warnings = r.validation_warnings || [];
@@ -329,10 +331,32 @@ export default function CSADistributionCenter() {
         setImportResult(res.data);
       }
       fetchData(filterYear, filterGender);
+      window.dispatchEvent(new CustomEvent("csa_members_updated"));
     } catch (err: any) {
-      setError(err?.response?.data?.error || err?.message || "Import failed");
+      const raw = err?.response?.data?.error || err?.message || "Import failed";
+      const friendly = raw.includes("check constraint")
+        ? "Import failed due to a data issue. Please refresh the page and try again."
+        : raw;
+      setError(friendly);
     } finally {
       setImporting(false);
+    }
+  };
+
+  const handleDownloadQR = async () => {
+    const joinUrl = `${window.location.origin}/join`;
+    try {
+      const dataUrl = await QRCode.toDataURL(joinUrl, {
+        width: 400,
+        margin: 2,
+        color: { dark: "#0f172a", light: "#ffffff" },
+      });
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = "csa-join-qr-code.png";
+      link.click();
+    } catch {
+      setError("Failed to generate QR code");
     }
   };
 
@@ -348,6 +372,7 @@ export default function CSADistributionCenter() {
     try {
       const payload: any = {};
       if (filterYear) payload.academic_year = filterYear;
+      if (strategyParam) payload.strategy = strategyParam;
       const res = await memberService.csaDistributePreview(payload);
       setPreview(res.data);
     } catch (err: any) {
@@ -361,11 +386,13 @@ export default function CSADistributionCenter() {
     try {
       const payload: any = {};
       if (filterYear) payload.academic_year = filterYear;
+      if (strategyParam) payload.strategy = strategyParam;
       const res = await memberService.csaSubmitForApproval(payload);
       setPreview(null);
       setDistributionDone(false);
       setActiveBatches(prev => [...prev, { ...res.data.batch, total_allocations: res.data.assignments?.length || 0 }]);
       fetchData(filterYear, filterGender);
+      window.dispatchEvent(new CustomEvent("csa_members_updated"));
       setError(`Batch #${res.data.batch.id} created with ${res.data.summary.totalMembers} member(s). Click "Check Status" to review and finalize.`);
       // Switch to success-style message
     } catch (err: any) {
@@ -379,11 +406,12 @@ export default function CSADistributionCenter() {
     setFinalizing(batchId);
     setError(null);
     try {
-      const res = await memberService.csaFinalizeDistribution(batchId);
+      await memberService.csaFinalizeDistribution(batchId);
       setApprovalStatuses(prev => { const n = {...prev}; delete n[batchId]; return n; });
       setActiveBatches(prev => prev.filter(b => b.id !== batchId));
       setDistributionDone(true);
       fetchData(filterYear, filterGender);
+      window.dispatchEvent(new CustomEvent("csa_members_updated"));
     } catch (err: any) {
       setError(err?.response?.data?.error || err?.message || "Finalize failed");
     } finally {
@@ -445,8 +473,8 @@ export default function CSADistributionCenter() {
     }
   };
 
-  const pendingMale = pendingMembers.filter(m => m.gender === "Male").length;
-  const pendingFemale = pendingMembers.filter(m => m.gender === "Female").length;
+  const pendingMale = pendingMembers.filter(m => isMale(m.gender)).length;
+  const pendingFemale = pendingMembers.filter(m => isFemale(m.gender)).length;
 
   return (
     <div className="space-y-6">
@@ -473,7 +501,6 @@ export default function CSADistributionCenter() {
         </div>
       )}
 
-      {/* ── Import Card ── */}
       <div className="bg-white rounded-xl border border-slate-200 p-5">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
@@ -500,6 +527,27 @@ export default function CSADistributionCenter() {
 
           <div className="h-5 w-px bg-slate-200 mx-1" />
 
+          {/* Balance mode toggle */}
+          <div className="flex items-center gap-1.5" title={
+            strategy === "membership"
+              ? "New members are placed to level total membership across Jumuiyas (uses current member counts)."
+              : "Equal Split: new members are spread evenly across all 7 Jumuiyas, balancing gender — existing member counts are ignored. Best while senior registrations are still incomplete."
+          }>
+            <span className="text-xs font-medium text-slate-500">Balance:</span>
+            <div className="flex bg-slate-100 rounded-lg p-0.5">
+              <button onClick={() => setStrategy("membership")}
+                className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-colors ${strategy === "membership" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                Full Membership
+              </button>
+              <button onClick={() => setStrategy("equal")}
+                className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-colors ${strategy === "equal" ? "bg-violet-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                Equal Split
+              </button>
+            </div>
+          </div>
+
+          <div className="h-5 w-px bg-slate-200 mx-1" />
+
           {/* Academic Year selector for import */}
           <div className="flex items-center gap-1.5">
             <label className="text-xs font-medium text-slate-500">Import Year:</label>
@@ -523,8 +571,8 @@ export default function CSADistributionCenter() {
           <select value={filterGender} onChange={(e) => handleFilterChange(filterYear, e.target.value)}
             className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
             <option value="">All Members</option>
-            <option value="Male">Gents</option>
-            <option value="Female">Ladies</option>
+            <option value="Gent">Gents</option>
+            <option value="Lady">Ladies</option>
           </select>
           {(filterYear || filterGender) && (
             <button onClick={() => handleFilterChange("", "")} className="text-xs text-indigo-600 hover:text-indigo-700 font-medium whitespace-nowrap">
@@ -579,7 +627,7 @@ export default function CSADistributionCenter() {
                     <td className="py-1.5 px-3">
                       <select value={m.gender} onChange={(e) => { handleMemberChange(i, "gender", e.target.value); if (hasErr) { const next = {...memberErrors}; delete next[i]; setMemberErrors(next); } }}
                         className={`w-24 border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${hasErr ? "border-red-300 bg-red-50" : "border-slate-200 focus:border-indigo-400"}`}>
-                        <option value="">Select</option><option value="Male">Male</option><option value="Female">Female</option>
+                        <option value="">Select</option><option value="Gent">Gent</option><option value="Lady">Lady</option>
                       </select>
                     </td>
                     <td className="py-1.5 px-3">
@@ -602,19 +650,23 @@ export default function CSADistributionCenter() {
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex w-full min-w-0 gap-1.5 sm:gap-2">
           {mode === "manual" && (
-            <button onClick={addRow} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:border-slate-300 rounded-lg transition-colors">
-              <Plus size={14} /> Add Row
+            <button onClick={addRow} title="Add Row" aria-label="Add Row" className="flex min-w-0 flex-1 items-center justify-center gap-1 px-2 py-2 text-xs sm:text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:border-slate-300 rounded-lg transition-colors">
+              <Plus size={14} className="shrink-0" /> <span className="truncate"><span className="sm:hidden">Add</span><span className="hidden sm:inline">Add Row</span></span>
             </button>
           )}
           <button onClick={handleValidate}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-lg transition-colors">
-            <CheckCircle size={14} /> Validate
+            title="Validate" aria-label="Validate" className="flex min-w-0 flex-1 items-center justify-center gap-1 px-2 py-2 text-xs sm:text-sm font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-lg transition-colors">
+            <CheckCircle size={14} className="shrink-0" /> <span className="truncate">Validate</span>
           </button>
           <button onClick={handleImport} disabled={importing || Object.keys(memberErrors).length > 0 || !validated}
-            className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 rounded-lg transition-colors">
-            {importing ? "Importing..." : "Import to CSA"}
+            title="Import to CSA" aria-label="Import to CSA" className="flex min-w-0 flex-1 items-center justify-center gap-1 px-2 py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 rounded-lg transition-colors">
+            <span className="truncate">{importing ? "Importing..." : <><span className="sm:hidden">Import</span><span className="hidden sm:inline">Import to CSA</span></>}</span>
+          </button>
+          <button onClick={handleDownloadQR}
+            title="Download QR" aria-label="Download QR" className="flex min-w-0 flex-1 items-center justify-center gap-1 px-2 py-2 text-xs sm:text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:border-slate-300 rounded-lg transition-colors">
+            <QrCode size={14} className="shrink-0" /> <span className="truncate"><span className="sm:hidden">QR</span><span className="hidden sm:inline">Download QR</span></span>
           </button>
         </div>
 
@@ -625,16 +677,20 @@ export default function CSADistributionCenter() {
               {importResult.summary.errors > 0 ? "Import completed with errors" : "Import Complete"}
             </div>
             <p className={`text-sm ${importResult.summary.errors > 0 ? "text-amber-700" : "text-emerald-700"}`}>
-              Total: <strong>{importResult.summary.total}</strong> | Valid: <strong>{importResult.summary.valid}</strong> | Errors: <strong>{importResult.summary.errors}</strong>
+              {importResult.summary.valid > 0 && (
+                <>{importResult.summary.valid} member{importResult.summary.valid !== 1 ? "s" : ""} added to All Members and ready to log in. </>
+              )}
+              {importResult.summary.errors > 0 && (
+                <>· {importResult.summary.errors} row{importResult.summary.errors !== 1 ? "s" : ""} had errors.</>
+              )}
               {Object.keys(memberErrors).length > 0 && (
-                <span className="ml-2">— Fix the highlighted rows below and click <strong>Validate</strong> then <strong>Import</strong> again</span>
+                <span className="ml-1">Fix the highlighted rows below and click <strong>Validate</strong> then <strong>Import</strong> again.</span>
               )}
             </p>
           </div>
         )}
       </div>
 
-      {/* ── Stats + Distribution ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 bg-white rounded-xl border border-slate-200 p-5">
           <h4 className="font-semibold text-slate-800 flex items-center gap-2 mb-4">
@@ -642,9 +698,9 @@ export default function CSADistributionCenter() {
             {filterYear ? filterYear : "All Time"}
           </h4>
           {loadingData ? (
-            <div className="animate-pulse space-y-3">
-              <div className="h-8 bg-slate-100 rounded w-1/2" />
-              <div className="h-4 bg-slate-100 rounded w-3/4" />
+            <div className="space-y-3">
+              <div className="h-8 skeleton-shimmer rounded w-1/2" />
+              <div className="h-4 skeleton-shimmer rounded w-3/4" />
             </div>
           ) : (
             <>
@@ -655,8 +711,8 @@ export default function CSADistributionCenter() {
                 </div>
               </div>
               <div className="flex gap-3 text-sm mb-4">
-                <span className="text-blue-600 bg-blue-50 px-3 py-1 rounded-full font-medium flex items-center gap-1">♂ {pendingMale} <span className="font-normal text-blue-400">Men</span></span>
-                <span className="text-pink-600 bg-pink-50 px-3 py-1 rounded-full font-medium flex items-center gap-1">♀ {pendingFemale} <span className="font-normal text-pink-400">Women</span></span>
+                <span className="text-blue-600 bg-blue-50 px-3 py-1 rounded-full font-medium flex items-center gap-1">♂ {pendingMale} <span className="font-normal text-blue-400">Gents</span></span>
+                <span className="text-pink-600 bg-pink-50 px-3 py-1 rounded-full font-medium flex items-center gap-1">♀ {pendingFemale} <span className="font-normal text-pink-400">Ladies</span></span>
               </div>
               {pendingMembers.length > 0 && (
                 <button onClick={handlePreview}
@@ -674,7 +730,11 @@ export default function CSADistributionCenter() {
             Current Member Distribution {filterYear ? `(${filterYear})` : "(All Time)"}
           </h4>
           {loadingData ? (
-            <div className="space-y-2">{Array.from({ length: 7 }).map((_, i) => <div key={i} className="h-6 bg-slate-100 rounded animate-pulse" />)}</div>
+            <div className="space-y-2.5">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} className="h-6 skeleton-shimmer rounded-full" />
+              ))}
+            </div>
           ) : jumuiyaStats?.jumuiyas ? (
             <div className="space-y-2">
               {jumuiyaStats.jumuiyas.map((j: any) => {
@@ -690,8 +750,8 @@ export default function CSADistributionCenter() {
                     <div className="text-right shrink-0 leading-tight">
                       <div className="text-sm font-bold text-slate-800">{j.total}</div>
                       <div className="flex gap-1.5 justify-end">
-                        <span className="text-[11px] bg-blue-50 text-blue-600 px-1.5 py-[1px] rounded font-semibold whitespace-nowrap">M {j.male_count}</span>
-                        <span className="text-[11px] bg-pink-50 text-pink-600 px-1.5 py-[1px] rounded font-semibold whitespace-nowrap">W {j.female_count}</span>
+                        <span className="text-[11px] bg-blue-50 text-blue-600 px-1.5 py-[1px] rounded font-semibold whitespace-nowrap">M {j.gent_count}</span>
+                        <span className="text-[11px] bg-pink-50 text-pink-600 px-1.5 py-[1px] rounded font-semibold whitespace-nowrap">L {j.lady_count}</span>
                       </div>
                     </div>
                   </div>
@@ -702,7 +762,6 @@ export default function CSADistributionCenter() {
         </div>
       </div>
 
-      {/* ── Distribution Preview ── */}
       {preview && (
         <div className="bg-white rounded-xl border border-slate-200 p-5">
           <div className="flex items-center gap-3 mb-4">
@@ -711,7 +770,12 @@ export default function CSADistributionCenter() {
             </div>
             <div>
               <h4 className="font-semibold text-slate-800">Distribution Preview</h4>
-              <p className="text-xs text-slate-400">{preview.summary.totalMembers} members (M {preview.summary.maleCount}, W {preview.summary.femaleCount}) to be distributed</p>
+              <p className="text-xs text-slate-400">
+                {preview.summary.totalMembers} members (M {preview.summary.maleCount}, L {preview.summary.femaleCount}) to be distributed
+                <span className={`ml-2 px-1.5 py-0.5 rounded font-semibold ${preview.data?.strategy === "equal-split" ? "bg-violet-100 text-violet-700" : "bg-slate-100 text-slate-500"}`}>
+                  {preview.data?.strategy === "equal-split" ? "Equal Split (new members only)" : "Full Membership balance"}
+                </span>
+              </p>
             </div>
           </div>
 
@@ -734,6 +798,7 @@ export default function CSADistributionCenter() {
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10">
                   <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase w-10">No.</th>
                     <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase">Member</th>
                     <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase">Gender</th>
                     <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase">Assigned To</th>
@@ -744,8 +809,9 @@ export default function CSADistributionCenter() {
                     const j = JUMUIYAS.find(x => x.id === a.target_slug);
                     return (
                       <tr key={i} className="border-b border-slate-100 hover:bg-slate-50">
+                        <td className="py-1.5 px-3 text-slate-400 text-xs">{i + 1}</td>
                         <td className="py-1.5 px-3 font-medium text-slate-700">{a.member_name}</td>
-                        <td className="py-1.5 px-3"><span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${a.member_gender === "Male" ? "bg-blue-50 text-blue-600" : "bg-pink-50 text-pink-600"}`}>{a.member_gender === "Male" ? "M" : "W"}</span></td>
+                        <td className="py-1.5 px-3">{(() => { const g = genderCode(a.member_gender); return g === "—" ? <span className="text-xs text-slate-400">—</span> : <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${g === "M" ? "bg-blue-50 text-blue-600" : "bg-pink-50 text-pink-600"}`}>{g}</span>; })()}</td>
                         <td className="py-1.5 px-3"><span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: `${j?.color}15`, color: j?.color }}>{a.target_name}</span></td>
                       </tr>
                     );
@@ -765,7 +831,6 @@ export default function CSADistributionCenter() {
         </div>
       )}
 
-      {/* ── Approval Status: Active Batches ── */}
       {activeBatches.length > 0 && (
         <div className="space-y-4">
           <h4 className="font-semibold text-slate-800 flex items-center gap-2">
@@ -816,7 +881,6 @@ export default function CSADistributionCenter() {
                 {loaded && status.jumuiyas && (
                   <div className="space-y-2 mt-3">
                     {status.jumuiyas.map((j: any) => {
-                      const pct = totalAll > 0 ? (j.approved / j.total) * 100 : 0;
                       return (
                         <div key={j.name} className="flex items-center gap-3">
                           <span className="text-xs font-medium text-slate-600 w-28 truncate">{j.name}</span>
@@ -865,7 +929,6 @@ export default function CSADistributionCenter() {
         </div>
       )}
 
-      {/* ── Rejected Members ── */}
       {rejectedMembers.length > 0 && (
         <div className="bg-white rounded-xl border border-red-200 p-5">
           <h4 className="font-semibold text-slate-800 flex items-center gap-2 mb-4">
@@ -876,6 +939,7 @@ export default function CSADistributionCenter() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase w-10">No.</th>
                   <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase">Name</th>
                   <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase">Reg #</th>
                   <th className="text-left py-2 px-3 font-semibold text-slate-500 text-xs uppercase">Gender</th>
@@ -887,13 +951,14 @@ export default function CSADistributionCenter() {
                 </tr>
               </thead>
               <tbody>
-                {rejectedMembers.map(m => {
+                {rejectedMembers.map((m, idx) => {
                   const isEditing = editingRejected === m.id;
                   return (
                     <tr key={m.id} className="border-b border-slate-100 hover:bg-slate-50">
+                      <td className="py-2 px-3 text-slate-400 text-xs">{idx + 1}</td>
                       <td className="py-2 px-3">
                         {isEditing ? (
-                          <input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))}
+                          <input value={editForm.name} onChange={e => setEditForm((p: any) => ({ ...p, name: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-28" />
                         ) : (
                           <span className="text-slate-700 font-medium">{m.name}</span>
@@ -901,7 +966,7 @@ export default function CSADistributionCenter() {
                       </td>
                       <td className="py-2 px-3">
                         {isEditing ? (
-                          <input value={editForm.reg_number} onChange={e => setEditForm(p => ({ ...p, reg_number: e.target.value }))}
+                          <input value={editForm.reg_number} onChange={e => setEditForm((p: any) => ({ ...p, reg_number: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-24" />
                         ) : (
                           <span className="text-slate-600">{m.reg_number || "—"}</span>
@@ -909,27 +974,27 @@ export default function CSADistributionCenter() {
                       </td>
                       <td className="py-2 px-3">
                         {isEditing ? (
-                          <select value={editForm.gender} onChange={e => setEditForm(p => ({ ...p, gender: e.target.value }))}
+                          <select value={editForm.gender} onChange={e => setEditForm((p: any) => ({ ...p, gender: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1">
                             <option value="">—</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
+                            <option value="Gent">Gent</option>
+                            <option value="Lady">Lady</option>
                           </select>
                         ) : (
-                          <span className={`text-xs font-semibold ${m.gender === "Male" ? "text-blue-600" : "text-pink-600"}`}>
-                            {m.gender === "Male" ? "M" : m.gender === "Female" ? "W" : "—"}
+                          <span className={`text-xs font-semibold ${genderCode(m.gender) === "M" ? "text-blue-600" : genderCode(m.gender) === "L" ? "text-pink-600" : "text-slate-400"}`}>
+                            {genderCode(m.gender)}
                           </span>
                         )}
                       </td>
                       <td className="py-2 px-3">
                         {isEditing ? (
-                          <input value={editForm.phone} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))}
+                          <input value={editForm.phone} onChange={e => setEditForm((p: any) => ({ ...p, phone: e.target.value }))}
                             className="text-xs border border-slate-200 rounded px-1.5 py-1 w-24" />
                         ) : (
                           <span className="text-slate-600">{m.phone || "—"}</span>
                         )}
                       </td>
-                      <td className="py-2 px-3 text-slate-600">{m.academic_year || "—"}</td>
+                      <td className="py-2 px-3 text-slate-600">{getYearOfStudy(m.reg_number || m.member_id || "") || "—"}</td>
                       <td className="py-2 px-3">
                         <span className="text-xs text-red-500">{m.rejection_reason || "Rejected"}</span>
                       </td>

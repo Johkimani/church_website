@@ -1,39 +1,55 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import PhoneInput from 'react-phone-number-input/input';
 import { isValidPhoneNumber } from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
-import { Upload, X, Check, BarChart2, Search, UserCheck } from 'lucide-react';
-import { POSITION_BY_CATEGORY, JUMUIYA_OPTIONS, JUMUIYA_ROLES, JUMUIYA_COLORS } from '../constants/adminConstants';
+import { Upload, X, Check, BarChart2, Search, UserCheck, Clock, AlertTriangle } from 'lucide-react';
+import { POSITION_BY_CATEGORY, JUMUIYA_OPTIONS, JUMUIYA_ROLES, JUMUIYA_COLORS, GROUP_OPTIONS, POSITIONS_BY_GROUP } from '../constants/adminConstants';
 import { resizeImage } from '../../../utils/imageOptimization';
 import { memberService } from '../../../api/jumuiyaMemberService';
 
-interface OfficialFormSectionProps {
- onSubmit: (formData: FormData) => Promise<void>;
- isSubmitting: boolean;
- displayTerm?: string;
- officialsExist: boolean;
- mode?: 'csa' | 'jumuiya';
- allOfficials?: any[];
-}
+ interface OfficialFormSectionProps {
+  onSubmit: (formData: FormData) => Promise<void>;
+  isSubmitting: boolean;
+  displayTerm?: string;
+  officialsExist: boolean;
+  mode?: 'csa' | 'jumuiya' | 'groups';
+  allOfficials?: any[];
+ }
 
-export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, officialsExist, mode = 'csa', allOfficials = [] }: OfficialFormSectionProps) {
- const [name, setName] = useState('');
- const [category, setCategory] = useState('');
- const [position, setPosition] = useState('');
- const [contact, setContact] = useState('');
- const [contactError, setContactError] = useState('');
- const [termOfService, setTermOfService] = useState('');
- const [photo, setPhoto] = useState<File | null>(null);
- const [preview, setPreview] = useState<string | null>(null);
- const [showProgressModal, setShowProgressModal] = useState(false);
- const [regNumber, setRegNumber] = useState('');
- const [lookupResults, setLookupResults] = useState<any[]>([]);
- const [lookupLoading, setLookupLoading] = useState(false);
- const [lookupError, setLookupError] = useState('');
- const [showLookupDropdown, setShowLookupDropdown] = useState(false);
- const [memberFound, setMemberFound] = useState(false);
+ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, officialsExist, mode = 'csa', allOfficials = [] }: OfficialFormSectionProps) {
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState('');
+  const [position, setPosition] = useState('');
+  const [contact, setContact] = useState('');
+  const [contactError, setContactError] = useState('');
+  const [termOfService, setTermOfService] = useState('');
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [regNumber, setRegNumber] = useState('');
+  const [lookupResults, setLookupResults] = useState<any[]>([]);
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupError, setLookupError] = useState('');
+  const [showLookupDropdown, setShowLookupDropdown] = useState(false);
+  const [memberFound, setMemberFound] = useState(false);
  const lookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+ // Incremented per lookup so a slow response belonging to a previous keystroke
+ // (or to a form that has since been cleared) cannot repopulate the chooser.
+ const lookupSeqRef = useRef(0);
  const dropdownRef = useRef<HTMLDivElement>(null);
+  const nameDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Name lookup state
+  const [nameLookupResults, setNameLookupResults] = useState<any[]>([]);
+  const [nameLookupLoading, setNameLookupLoading] = useState(false);
+  const [nameLookupError, setNameLookupError] = useState('');
+  const [showNameLookupDropdown, setShowNameLookupDropdown] = useState(false);
+  const [nameMemberFound, setNameMemberFound] = useState(false);
+  const nameLookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+ const nameLookupSeqRef = useRef(0);
+
+  // Historical mode state
+  const [isHistorical, setIsHistorical] = useState(false);
 
   const categoryStats = React.useMemo(() => {
     const stats: Record<string, { count: number; limit: number; isFull: boolean }> = {};
@@ -41,6 +57,12 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
       Object.keys(POSITION_BY_CATEGORY).forEach(cat => {
         const limit = POSITION_BY_CATEGORY[cat]?.length || 0;
         const count = allOfficials.filter((o: any) => o.category === cat && o.status !== 'archived').length;
+        stats[cat] = { count, limit, isFull: count >= limit };
+      });
+    } else if (mode === 'groups') {
+      GROUP_OPTIONS.forEach(cat => {
+        const limit = POSITIONS_BY_GROUP[cat]?.length || 0;
+        const count = allOfficials.filter(o => o.category === cat && o.status !== 'archived').length;
         stats[cat] = { count, limit, isFull: count >= limit };
       });
     } else {
@@ -54,21 +76,56 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
   }, [allOfficials, mode]);
 
  useEffect(() => {
- if (displayTerm) {
+ if (displayTerm && !isHistorical) {
  setTermOfService(displayTerm);
  }
- }, [displayTerm]);
+ }, [displayTerm, isHistorical]);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setShowLookupDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
+ // Close dropdowns on outside click
+ useEffect(() => {
+   const handleClick = (e: MouseEvent) => {
+     if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+       setShowLookupDropdown(false);
+     }
+     if (nameDropdownRef.current && !nameDropdownRef.current.contains(e.target as Node)) {
+       setShowNameLookupDropdown(false);
+     }
+   };
+   document.addEventListener('mousedown', handleClick);
+   return () => document.removeEventListener('mousedown', handleClick);
+ }, []);
+
+ // Debounce timers must not fire after the component goes away, and any lookup
+ // already in flight must be treated as stale.
+ useEffect(() => {
+   return () => {
+     if (lookupTimerRef.current) clearTimeout(lookupTimerRef.current);
+     if (nameLookupTimerRef.current) clearTimeout(nameLookupTimerRef.current);
+     lookupSeqRef.current += 1;
+     nameLookupSeqRef.current += 1;
+   };
+ }, []);
+
+ /**
+  * Clears both member-lookup widgets completely: pending debounce, in-flight
+  * request, results, errors and the open chooser. Bumping the sequence numbers
+  * is what stops a response that is already on the wire from re-populating the
+  * chooser over a form the admin can no longer see the contents of.
+  */
+ const resetLookups = () => {
+   if (lookupTimerRef.current) { clearTimeout(lookupTimerRef.current); lookupTimerRef.current = null; }
+   if (nameLookupTimerRef.current) { clearTimeout(nameLookupTimerRef.current); nameLookupTimerRef.current = null; }
+   lookupSeqRef.current += 1;
+   nameLookupSeqRef.current += 1;
+   setLookupResults([]);
+   setLookupError('');
+   setMemberFound(false);
+   setShowLookupDropdown(false);
+   setNameLookupResults([]);
+   setNameLookupError('');
+   setNameMemberFound(false);
+   setShowNameLookupDropdown(false);
+ };
 
  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
  const file = e.target.files?.[0] || null;
@@ -90,32 +147,42 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
      setShowLookupDropdown(false);
      return;
    }
+   const seq = ++lookupSeqRef.current;
    setLookupLoading(true);
    setLookupError('');
    try {
      const res = await memberService.lookupMemberByRegNumber(value.trim());
+     // A newer keystroke (or a reset) happened while this was in flight.
+     if (seq !== lookupSeqRef.current) return;
      const data = res.data || [];
      setLookupResults(data);
      if (data.length === 1) {
        const m = data[0];
        setName(`${m.first_name} ${m.last_name}`);
        if (m.phone) setContact(m.phone);
+       if (mode === 'jumuiya' && m.jumuiya_name) {
+         const matched = JUMUIYA_OPTIONS.find(j => j.toLowerCase() === m.jumuiya_name.toLowerCase());
+         if (matched) { setCategory(matched); setPosition(''); }
+       }
        setMemberFound(true);
        setShowLookupDropdown(false);
      } else if (data.length > 1) {
        setShowLookupDropdown(true);
        setMemberFound(false);
      } else {
-       setLookupError('No member found with that registration number');
+       setLookupError('No member found');
        setMemberFound(false);
        setShowLookupDropdown(false);
      }
-   } catch {
-     setLookupError('Lookup failed');
-   } finally {
-     setLookupLoading(false);
-   }
- }, []);
+    } catch {
+      if (seq !== lookupSeqRef.current) return;
+      setLookupError('Lookup failed');
+    } finally {
+      // Only the newest request may clear the spinner, otherwise a stale
+      // response switches it off while a newer lookup is still running.
+      if (seq === lookupSeqRef.current) setLookupLoading(false);
+    }
+  }, [mode]);
 
  const handleRegNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
    const val = e.target.value;
@@ -128,6 +195,10 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
  const selectLookupResult = (m: any) => {
    setName(`${m.first_name} ${m.last_name}`);
    if (m.phone) setContact(m.phone);
+   if (mode === 'jumuiya' && m.jumuiya_name) {
+     const matched = JUMUIYA_OPTIONS.find(j => j.toLowerCase() === m.jumuiya_name.toLowerCase());
+     if (matched) { setCategory(matched); setPosition(''); }
+   }
    setMemberFound(true);
    setShowLookupDropdown(false);
    setLookupResults([]);
@@ -140,66 +211,182 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
    setLookupError('');
  };
 
- const availableJumuiyaRoles = React.useMemo(() => {
- if (mode !== 'jumuiya' || !category) return JUMUIYA_ROLES;
- const occupiedRoles = allOfficials
- .filter(o => o.category === category)
- .map(o => o.position);
- return JUMUIYA_ROLES.filter(role => !occupiedRoles.includes(role));
- }, [mode, category, allOfficials]);
+ // ── Name field lookup ──
+ const nameLookup = useCallback(async (value: string) => {
+   if (value.trim().length < 2) {
+     setNameLookupResults([]);
+     setNameLookupError('');
+     setNameMemberFound(false);
+     setShowNameLookupDropdown(false);
+     return;
+   }
+    setNameLookupLoading(true);
+    setNameLookupError('');
+    const seq = ++nameLookupSeqRef.current;
+    try {
+      const res = await memberService.lookupMemberByRegNumber(value.trim());
+      // Discard a response the user has already typed past, or that lands
+      // after the form was reset — otherwise the chooser reopens by itself.
+      if (seq !== nameLookupSeqRef.current) return;
+      const data = res.data || [];
+     setNameLookupResults(data);
+      if (data.length === 1) {
+        const m = data[0];
+        const fullName = `${m.first_name || ''} ${m.last_name || ''}`.trim();
+        setName(fullName);
+        setRegNumber(m.member_id || '');
+        if (m.phone) setContact(m.phone);
+        if (mode === 'jumuiya' && m.jumuiya_name) {
+          const matched = JUMUIYA_OPTIONS.find(j => j.toLowerCase() === m.jumuiya_name.toLowerCase());
+          if (matched) { setCategory(matched); setPosition(''); }
+        }
+        setNameMemberFound(true);
+        setShowNameLookupDropdown(false);
+     } else if (data.length > 1) {
+       setShowNameLookupDropdown(true);
+       setNameMemberFound(false);
+     } else {
+       setNameLookupError('No member found');
+       setNameMemberFound(false);
+       setShowNameLookupDropdown(false);
+     }
+    } catch {
+      if (seq !== nameLookupSeqRef.current) return;
+      setNameLookupError('Lookup failed');
+    } finally {
+      if (seq === nameLookupSeqRef.current) setNameLookupLoading(false);
+    }
+  }, [mode]);
 
- const availableCSARoles = React.useMemo(() => {
- if (mode !== 'csa' || !category) return POSITION_BY_CATEGORY[category] || [];
- const occupiedRoles = allOfficials
- .filter(o => o.category === category)
- .map(o => o.position);
- return (POSITION_BY_CATEGORY[category] || []).filter(role => !occupiedRoles.includes(role));
- }, [mode, category, allOfficials]);
+ const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+   const val = e.target.value;
+   setName(val);
+   setNameMemberFound(false);
+   if (nameLookupTimerRef.current) clearTimeout(nameLookupTimerRef.current);
+   nameLookupTimerRef.current = setTimeout(() => nameLookup(val), 500);
+ };
+
+ const selectNameLookupResult = (m: any) => {
+   setName(`${m.first_name} ${m.last_name}`);
+   setRegNumber(m.member_id || '');
+   if (m.phone) setContact(m.phone);
+   if (mode === 'jumuiya' && m.jumuiya_name) {
+     const matched = JUMUIYA_OPTIONS.find(j => j.toLowerCase() === m.jumuiya_name.toLowerCase());
+     if (matched) { setCategory(matched); setPosition(''); }
+   }
+   setNameMemberFound(true);
+   setShowNameLookupDropdown(false);
+   setNameLookupResults([]);
+ };
+
+ const clearNameLink = () => {
+   setName('');
+   setNameMemberFound(false);
+   setNameLookupResults([]);
+   setNameLookupError('');
+ };
+
+  const availableJumuiyaRoles = React.useMemo(() => {
+  if (mode !== 'jumuiya' || !category) return JUMUIYA_ROLES;
+  if (isHistorical) return JUMUIYA_ROLES;
+  const occupiedRoles = allOfficials
+  .filter(o => o.category === category)
+  .map(o => o.position);
+  return JUMUIYA_ROLES.filter(role => !occupiedRoles.includes(role));
+  }, [mode, category, allOfficials, isHistorical]);
+
+  const availableGroupRoles = React.useMemo(() => {
+  if (mode !== 'groups' || !category) return POSITIONS_BY_GROUP[category] || [];
+  if (isHistorical) return POSITIONS_BY_GROUP[category] || [];
+  const occupiedRoles = allOfficials
+  .filter(o => o.category === category)
+  .map(o => o.position);
+  return (POSITIONS_BY_GROUP[category] || []).filter(role => !occupiedRoles.includes(role));
+  }, [mode, category, allOfficials, isHistorical]);
+
+  const availableCSARoles = React.useMemo(() => {
+  if (mode !== 'csa' || !category) return POSITION_BY_CATEGORY[category] || [];
+  if (isHistorical) return POSITION_BY_CATEGORY[category] || [];
+  const occupiedRoles = allOfficials
+  .filter(o => o.category === category)
+  .map(o => o.position);
+  return (POSITION_BY_CATEGORY[category] || []).filter(role => !occupiedRoles.includes(role));
+  }, [mode, category, allOfficials, isHistorical]);
 
  const handleSubmit = async (e: React.FormEvent) => {
- e.preventDefault();
- try {
- const fd = new FormData();
+  e.preventDefault();
+  const fd = new FormData();
  fd.append('name', name);
  fd.append('category', category);
  fd.append('position', position);
  if (contact) fd.append('contact', contact);
  if (termOfService) fd.append('term_of_service', termOfService);
  if (regNumber.trim()) fd.append('reg_number', regNumber.trim());
+ if (isHistorical) fd.append('historical', 'true');
 
- if (photo) {
- const optimizedPhotoBlob = await resizeImage(photo);
- fd.append('photo', optimizedPhotoBlob, 'photo.jpg');
- }
+  if (photo) {
+  const optimizedPhotoBlob = await resizeImage(photo);
+  fd.append('photo', optimizedPhotoBlob, 'photo.jpg');
+  }
 
- onSubmit(fd);
- 
- // Reset form
- setName('');
- setCategory('');
- setPosition('');
- setContact('');
- setPhoto(null);
- setPreview(null);
- setRegNumber('');
- setMemberFound(false);
- setLookupResults([]);
- setLookupError('');
- } catch (err) {
- console.error('Submission error:', err);
- }
- };
+  // Must be awaited. The parent mutations use mutateAsync, so a rejected
+  // request throws here; clearing first would throw away a name, category,
+  // position, contact and photo the admin would then have to retype.
+  try {
+  await onSubmit(fd);
+  } catch (err) {
+  // The mutation already raised a toast and rolled back its optimistic row.
+  // Keep everything the admin typed so they can correct and retry.
+  console.error('Official submission failed:', err);
+  return;
+  }
 
- const termMismatch = officialsExist && termOfService && termOfService !== displayTerm;
- const isInvalid = !name || !category || !position || !!contactError || isSubmitting || !!termMismatch;
+  // Only clear once the server has confirmed.
+  resetLookups();
+  setName('');
+  setCategory('');
+  setPosition('');
+  setContact('');
+  setContactError('');
+  setPhoto(null);
+  setPreview(null);
+  setRegNumber('');
+  };
+
+  const termMismatch = !isHistorical && officialsExist && termOfService && termOfService !== displayTerm;
+  // The server rejects a missing reg_number on the normal (non-historical)
+  // path, so catch it here rather than letting the admin fill in the whole
+  // form only to be told it was incomplete.
+  const regNumberMissing = !isHistorical && !regNumber.trim();
+  const isInvalid = !name || !category || !position || !!contactError || isSubmitting || !!termMismatch || regNumberMissing;
 
  return (
- <div className="mb-12 bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 transition-colors">
- <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white text-center">
+ <div className="mb-12 bg-white rounded-xl shadow-lg border border-gray-100 transition-colors">
+ <div className={`rounded-t-xl overflow-hidden p-6 text-white text-center transition-colors ${isHistorical ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 'bg-gradient-to-r from-blue-600 to-blue-700'}`}>
  <h2 className="text-2xl font-bold flex items-center justify-center gap-2">
- <Upload className="w-6 h-6" />
- Add New Official
+ {isHistorical ? <Clock className="w-6 h-6" /> : <Upload className="w-6 h-6" />}
+ {isHistorical ? 'Add Past Official' : 'Add New Official'}
  </h2>
+ </div>
+
+ {isHistorical && (
+ <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 text-center">
+ <p className="text-sm font-semibold text-amber-700 flex items-center justify-center gap-2">
+ <Clock className="w-4 h-4" />
+ Historical mode — saved directly as archived with no active roles
+ </p>
+ </div>
+ )}
+
+ <div className="px-6 pt-4 flex justify-end">
+ <button
+ type="button"
+ onClick={() => setIsHistorical(!isHistorical)}
+ className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm border ${isHistorical ? 'bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
+ >
+ <Clock className="w-3.5 h-3.5" />
+ {isHistorical ? 'Historical Mode ON' : 'Past Officials'}
+ </button>
  </div>
  
  <form onSubmit={handleSubmit} className="p-8">
@@ -207,7 +394,7 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
                   <div className="space-y-2" ref={dropdownRef}>
                     <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
                       <Search className="w-3.5 h-3.5 text-gray-400" />
-                      Registration Number <span className="text-xs font-normal text-gray-400">(type middle digits to auto-fill)</span>
+                      Registration Number {!isHistorical && <span className="text-red-500">*</span>} <span className="text-xs font-normal text-gray-400">(type middle digits to auto-fill)</span>
                     </label>
                     <div className="relative">
                       <input
@@ -226,46 +413,89 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
                           <UserCheck className="w-4 h-4" />
                         </div>
                       )}
+                      {showLookupDropdown && lookupResults.length > 1 && (
+                        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 overscroll-contain overflow-y-auto">
+                          {lookupResults.map((m: any, i: number) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => selectLookupResult(m)}
+                              className="w-full text-left px-4 py-2.5 hover:bg-blue-50 border-b border-gray-100 last:border-0 text-sm"
+                            >
+                              <span className="font-medium text-gray-900">{m.first_name} {m.last_name}</span>
+                              <span className="text-gray-500 ml-2 text-xs">{m.member_id}</span>
+                              {m.phone && <span className="text-gray-400 ml-2 text-xs">{m.phone}</span>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     {lookupError && <div className="text-red-500 text-xs font-medium flex items-center gap-1"><X className="w-3 h-3" />{lookupError}</div>}
+                    {regNumberMissing && (
+                      <div className="text-amber-600 text-xs font-medium flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />Required — search above to link this official to a registered member
+                      </div>
+                    )}
                     {memberFound && (
                       <div className="text-green-600 text-xs font-medium flex items-center gap-1">
                         <Check className="w-3 h-3" />Member found — name & phone auto-filled
                         <button type="button" onClick={clearMemberLink} className="ml-2 text-red-500 hover:text-red-700 underline text-[10px]">Clear</button>
                       </div>
                     )}
-                    {showLookupDropdown && lookupResults.length > 1 && (
-                      <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                        {lookupResults.map((m: any, i: number) => (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={() => selectLookupResult(m)}
-                            className="w-full text-left px-4 py-2.5 hover:bg-blue-50 border-b border-gray-100 last:border-0 text-sm"
-                          >
-                            <span className="font-medium text-gray-900">{m.first_name} {m.last_name}</span>
-                            <span className="text-gray-500 ml-2 text-xs">{m.member_id}</span>
-                            {m.phone && <span className="text-gray-400 ml-2 text-xs">{m.phone}</span>}
-                          </button>
-                        ))}
-                      </div>
-                    )}
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700 ">Name *</label>
-                    <input 
-                      value={name} 
-                      onChange={e => setName(e.target.value)} 
-                      placeholder="Auto-filled from member lookup" 
-                      className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 transition-all outline-none" 
-                      required 
-                    />
-                  </div>
+                   <div className="space-y-2" ref={nameDropdownRef}>
+                     <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+                       <Search className="w-3.5 h-3.5 text-gray-400" />
+                       Name <span className="text-xs font-normal text-gray-400">(type to search & auto-fill)</span>
+                     </label>
+                     <div className="relative">
+                       <input
+                         value={name}
+                         onChange={handleNameChange}
+                         placeholder="e.g. John Doe"
+                         className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 transition-all outline-none"
+                         required
+                       />
+                       {nameLookupLoading && (
+                         <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                           <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                         </div>
+                       )}
+                        {nameMemberFound && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
+                            <UserCheck className="w-4 h-4" />
+                          </div>
+                        )}
+                        {showNameLookupDropdown && nameLookupResults.length > 1 && (
+                          <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 overscroll-contain overflow-y-auto">
+                            {nameLookupResults.map((m: any, i: number) => (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => selectNameLookupResult(m)}
+                                className="w-full text-left px-4 py-2.5 hover:bg-blue-50 border-b border-gray-100 last:border-0 text-sm"
+                              >
+                                <span className="font-medium text-gray-900">{m.first_name} {m.last_name}</span>
+                                <span className="text-gray-500 ml-2 text-xs">{m.member_id}</span>
+                                {m.phone && <span className="text-gray-400 ml-2 text-xs">{m.phone}</span>}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                     {nameLookupError && <div className="text-red-500 text-xs font-medium flex items-center gap-1"><X className="w-3 h-3" />{nameLookupError}</div>}
+                     {nameMemberFound && (
+                       <div className="text-green-600 text-xs font-medium flex items-center gap-1">
+                         <Check className="w-3 h-3" />Member found — reg & phone auto-filled
+                         <button type="button" onClick={clearNameLink} className="ml-2 text-red-500 hover:text-red-700 underline text-[10px]">Clear</button>
+                       </div>
+                      )}
+                    </div>
 
  <div className="space-y-2">
  <div className="flex justify-between items-center mb-1">
- <label className="block text-sm font-semibold text-gray-700 ">{mode === 'jumuiya' ? 'Jumuiya *' : 'Category *'}</label>
+  <label className="block text-sm font-semibold text-gray-700 ">{mode === 'jumuiya' ? 'Jumuiya *' : mode === 'groups' ? 'Group *' : 'Category *'}</label>
  {mode === 'jumuiya' && (
  <button 
  type="button" 
@@ -283,28 +513,36 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
   className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 outline-none appearance-none font-medium" 
   required
   >
-  <option value="">{mode === 'jumuiya' ? 'Select Jumuiya' : 'Select category'}</option>
+  <option value="">{mode === 'jumuiya' ? 'Select Jumuiya' : mode === 'groups' ? 'Select Group' : 'Select category'}</option>
   {mode === 'csa' 
   ? Object.keys(POSITION_BY_CATEGORY).map(k => {
       const stats = categoryStats[k];
-      const label = stats?.isFull ? `${k} (Full) ✔` : `${k} (${stats?.count || 0}/${stats?.limit || 0})`;
+      const label = stats?.isFull ? `${k} (Full)` : `${k} (${stats?.count || 0}/${stats?.limit || 0})`;
       return <option key={k} value={k}>{label}</option>;
     })
-  : JUMUIYA_OPTIONS.map(k => {
+  : mode === 'groups'
+    ? GROUP_OPTIONS.map(k => {
+        const stats = categoryStats[k];
+        const limit = POSITIONS_BY_GROUP[k]?.length || 0;
+        const label = stats?.isFull ? `${k} (Full)` : `${k} (${stats?.count || 0}/${limit})`;
+        return <option key={k} value={k}>{label}</option>;
+      })
+    : JUMUIYA_OPTIONS.map(k => {
       const stats = categoryStats[k];
-      const label = stats?.isFull ? `${k} (Full) ✔` : `${k} (${stats?.count || 0}/8)`;
+      const label = stats?.isFull ? `${k} (Full)` : `${k} (${stats?.count || 0}/8)`;
       return <option key={k} value={k}>{label}</option>;
     })
   }
   </select>
-  {category && categoryStats[category] && (
+  {category && categoryStats[category] && !isHistorical && (
     <div className="mt-1.5 flex items-center justify-between px-1">
       <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Status:</span>
       <span className={`text-[11px] font-bold flex items-center gap-1.5 ${categoryStats[category].isFull ? 'text-green-600' : 'text-blue-600'}`}>
         {categoryStats[category].isFull ? (
           <>
-            <span className="inline-flex items-center justify-center w-4 h-4 bg-green-100 text-green-700 rounded-full text-[10px] font-black">✔</span>
+            <span className="inline-flex items-center justify-center w-4 h-4 bg-green-100 text-green-700 rounded-full text-[10px] font-black">
             Fully Registered ({categoryStats[category].count}/{categoryStats[category].limit})
+            </span>
           </>
         ) : (
           `Available (${categoryStats[category].count}/${categoryStats[category].limit} filled)`
@@ -323,11 +561,13 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
  required 
  disabled={!category}
  >
- <option value="">Select position/role</option>
- {mode === 'csa'
- ? (category && availableCSARoles.map(p => <option key={p} value={p}>{p}</option>))
- : (category && availableJumuiyaRoles.map(p => <option key={p} value={p}>{p}</option>))
- }
+  <option value="">Select position/role</option>
+  {mode === 'csa'
+  ? (category && availableCSARoles.map(p => <option key={p} value={p}>{p}</option>))
+  : mode === 'groups'
+    ? (category && availableGroupRoles.map(p => <option key={p} value={p}>{p}</option>))
+    : (category && availableJumuiyaRoles.map(p => <option key={p} value={p}>{p}</option>))
+  }
  </select>
  </div>
 
@@ -345,14 +585,14 @@ export function OfficialFormSection({ onSubmit, isSubmitting, displayTerm, offic
  </div>
 
  <div className="space-y-2">
- <label className="block text-sm font-semibold text-gray-700 ">Term of Service</label>
+ <label className="block text-sm font-semibold text-gray-700 ">Term of Service {isHistorical ? '(any year, e.g. 2023-2024)' : ''}</label>
  <input 
  value={termOfService} 
  onChange={e => setTermOfService(e.target.value)} 
  placeholder="e.g. 2024-2025" 
  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 outline-none" 
  />
- {officialsExist && displayTerm && (
+ {officialsExist && displayTerm && !isHistorical && (
  <>
  <div className="flex items-center justify-between gap-1 mt-1">
  <p className={`text-[11px] font-medium italic flex items-center gap-1 ${termMismatch ? 'text-red-500' : 'text-blue-600 '}`}>

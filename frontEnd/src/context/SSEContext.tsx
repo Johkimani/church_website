@@ -22,12 +22,8 @@ import React, {
 import { useAuth } from "./AuthContext";
 import { UPLOAD_BASE } from "../api/config";
 
-// ── Derive server root from existing UPLOAD_BASE constant ───────────────────
-// UPLOAD_BASE = "http://localhost:3001"  (strips the /api suffix)
 const SERVER_ROOT =
   UPLOAD_BASE || (import.meta.env.DEV ? "http://localhost:3001" : "");
-
-// ── Types ────────────────────────────────────────────────────────────────────
 
 export type SSEEventName =
   | "connected"
@@ -48,19 +44,15 @@ interface SSEContextType {
   subscribe: <T = any>(event: SSEEventName, handler: SSEListener<T>) => () => void;
 }
 
-// ── Context ──────────────────────────────────────────────────────────────────
-
 const SSEContext = createContext<SSEContextType>({
   isConnected: false,
   subscribe: () => () => {},
 });
 
-// ── Provider ─────────────────────────────────────────────────────────────────
-
 export const SSEProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { user } = useAuth();
+  const { user, refreshSession } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
 
   /** Listener registry: event name → Set of handlers */
@@ -69,7 +61,6 @@ export const SSEProvider: React.FC<{ children: React.ReactNode }> = ({
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
 
-  // ── Internal dispatcher ────────────────────────────────────────────────────
   const dispatch = useCallback((eventName: SSEEventName, data: any) => {
     listenersRef.current.get(eventName)?.forEach((handler) => {
       try {
@@ -80,28 +71,25 @@ export const SSEProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   }, []);
 
-  // ── Connection management ──────────────────────────────────────────────────
   useEffect(() => {
     mountedRef.current = true;
 
-    if (!user?.accessToken) {
-      esRef.current?.close();
-      esRef.current = null;
-      setIsConnected(false);
-      return;
-    }
+    const connect = async () => {
+      if (!mountedRef.current) return;
 
-    const sseUrl = `${SERVER_ROOT}/api/v1/notifications/sse?token=${encodeURIComponent(
-      user.accessToken
-    )}`;
+      // Ensure a valid (non-expired) access token before opening the stream.
+      // refreshSession reads localStorage, rotates the token if expired, and
+      // returns the token to use for this connection attempt.
+      const token = await refreshSession();
+      if (!mountedRef.current || !token) return;
 
-    const connect = () => {
-      if (!mountedRef.current || !user?.accessToken) return;
+      const sseUrl = `${SERVER_ROOT}/api/v1/notifications/sse?token=${encodeURIComponent(
+        token
+      )}`;
 
       const es = new EventSource(sseUrl);
       esRef.current = es;
 
-      // ── Named event listeners ──────────────────────────────────────────────
       es.addEventListener("connected", () => {
         if (mountedRef.current) setIsConnected(true);
       });
@@ -123,18 +111,26 @@ export const SSEProvider: React.FC<{ children: React.ReactNode }> = ({
         });
       });
 
-      // ── Error / reconnect ──────────────────────────────────────────────────
       es.onerror = () => {
         if (!mountedRef.current) return;
         setIsConnected(false);
         es.close();
-        // EventSource readyState 2 = CLOSED; schedule reconnect
+        // EventSource readyState 2 = CLOSED; schedule reconnect.
+        // connect() calls refreshSession() again so a reconnect triggered by an
+        // expired token uses a freshly refreshed token instead of re-sending the
+        // same expired JWT (which previously caused a 401 reconnect loop).
         if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
         reconnectTimerRef.current = setTimeout(connect, 3_000);
       };
     };
 
-    connect();
+    if (user?.accessToken) {
+      connect();
+    } else {
+      esRef.current?.close();
+      esRef.current = null;
+      setIsConnected(false);
+    }
 
     return () => {
       mountedRef.current = false;
@@ -143,11 +139,9 @@ export const SSEProvider: React.FC<{ children: React.ReactNode }> = ({
       esRef.current = null;
       setIsConnected(false);
     };
-  // Re-connect only when the access token changes (login / logout).
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.accessToken]);
+    // Re-connect when the access token changes (login / logout / refresh).
+  }, [user?.accessToken, refreshSession]);
 
-  // ── Public subscribe API ───────────────────────────────────────────────────
   const subscribe = useCallback(
     <T = any>(event: SSEEventName, handler: SSEListener<T>) => {
       if (!listenersRef.current.has(event)) {
@@ -169,7 +163,5 @@ export const SSEProvider: React.FC<{ children: React.ReactNode }> = ({
     </SSEContext.Provider>
   );
 };
-
-// ── Hook ─────────────────────────────────────────────────────────────────────
 
 export const useSSE = () => useContext(SSEContext);

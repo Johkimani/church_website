@@ -1,4 +1,5 @@
 import express from "express";
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createServer } from "http";
@@ -24,16 +25,18 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Secure App with Helmet (Security Headers)
+// Trust exactly one proxy hop (Render). This makes req.ip reflect the real
+// client address parsed from the X-Forwarded-For chain added by Render's
+// proxy, instead of trusting a client-supplied X-Forwarded-For header that
+// would let attackers rotate IPs and bypass the rate limiters.
+app.set("trust proxy", 1);
+
 app.use(helmet());
 
-// Performance: Compression for high-efficiency response delivery
 app.use(compression());
 
-// Prevent Parameter Pollution
 app.use(hpp());
 
-// app midlewares
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
@@ -66,14 +69,31 @@ app.use(requestIp.mw());
 
 app.use(cors(corsOptions));
 
-// Rate limiter
+// M-Pesa callbacks arrive from Safaricom's servers and can burst/retry, so they
+// get a much higher allowance than client-facing endpoints. Payment endpoints
+// (which trigger real-money STK pushes) get a tighter tier per client IP.
+const isMpesaCallbackPath = (req) =>
+  /\/payments\/callback$|\/stkPush\/callback$|\/authentication\/mpesa\/callback$/i.test(req.path);
+
+const isPaymentEndpoint = (req) =>
+  /\/payments(\/|$)/i.test(req.path) ||
+  /\/stkPush(\/|$)/i.test(req.path) ||
+  /\/stk-push-guest(\/|$)/i.test(req.path);
+
+// Credential-guessing endpoints (login, OTP, password reset, first-login setup)
+// get a much tighter allowance than general traffic (OWASP: lockout after a few
+// tries). Token refresh is exempt — it is already gated by a valid refresh token
+// and fires frequently for legitimate multi-tab users.
+const isAuthEndpoint = (req) =>
+  /\/api\/v1\/authentication\/(login|reset|otp|verify|first-login-setup|resend-otp)/i.test(req.path);
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5000,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req, res) => {
-    return req.clientIp;
+    return req.ip;
   },
   handler: (req, res, next, options) => {
     res.status(options.statusCode || 429).json({
@@ -83,28 +103,101 @@ const limiter = rateLimit({
   },
 });
 
-// Rate limiter activation for DDoS protection
-app.use(limiter);
+const callbackLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipFailedRequests: true,
+  keyGenerator: (req, res) => req.ip,
+  handler: (req, res, next, options) => {
+    res.status(options.statusCode || 429).json({
+      error: `Too many callback requests from this IP`,
+    });
+  },
+});
+
+const paymentLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req, res) => req.ip,
+  handler: (req, res, next, options) => {
+    res.status(options.statusCode || 429).json({
+      error: `There are too many payment requests. You are only allowed ${options.max
+      } requests per ${options.windowMs / 60000} minutes`,
+    });
+  },
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Only failed attempts consume the per-IP budget: brute-forcing still gets
+  // throttled, but legitimate users logging in from a shared IP aren't penalized
+  // for their successes (per-account DB lockout already handles repeat failures).
+  skipSuccessfulRequests: true,
+  keyGenerator: (req, res) => req.ip,
+  handler: (req, res, next, options) => {
+    res.status(options.statusCode || 429).json({
+      error: `Too many authentication attempts. You are only allowed ${options.max
+      } requests per ${options.windowMs / 60000} minutes`,
+    });
+  },
+});
+
+app.use((req, res, next) => {
+  if (isMpesaCallbackPath(req)) return callbackLimiter(req, res, next);
+  if (isPaymentEndpoint(req)) return paymentLimiter(req, res, next);
+  if (isAuthEndpoint(req)) return authLimiter(req, res, next);
+  return limiter(req, res, next);
+});
 app.use(morganMiddleware);
+
+// Root + health routes (outside the /api mount so Render health checks and
+// direct visits to the root URL return JSON instead of "Cannot GET /")
+app.get("/", (req, res) => {
+  res.status(200).json({ status: "ok", service: "church-website-api" });
+});
+
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
+});
 
 app.use("/api", apiRoutes)
 
-// Organized Static Routes for locally uploaded media files
+// Unmatched /api routes: clean JSON 404 so probing unknown endpoints returns the
+// same shape/status as the role-guarded 404s (requireRole) — no HTML, no stack,
+// nothing that confirms a hidden admin route exists.
+app.use("/api", (req, res) => {
+  res.status(404).json({ success: false, message: "Resource not found" });
+});
+
 app.use("/uploads", express.static(path.join(__dirname, "../localFileUploads")));
 app.use("/gallery-images", express.static(path.join(__dirname, "../galleryImages")));
 
 
-// Initialize Backend Data Service
 BackendDataService.init();
 
-// SPA: serve built frontend + fallback to index.html for non-API routes
+// SPA: serve built frontend + fallback to index.html for non-API routes.
+// Only when the build actually exists (the frontend normally deploys to
+// Vercel, so backEnd/frontEnd/dist is usually absent on the API host).
+// Uses an Express 5-compatible named wildcard — app.get('*') throws
+// "Missing parameter name at index 1: *" on boot in production.
 const frontendDistPath = path.join(__dirname, "../../frontEnd/dist");
 const indexHtmlPath = path.join(frontendDistPath, "index.html");
 
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production' && fs.existsSync(indexHtmlPath)) {
   app.use(express.static(frontendDistPath));
 
-  app.get('*', (req, res, next) => {
+  app.get('/{*splat}', (req, res, next) => {
     if (req.path.startsWith('/api')) return next();
     if (req.path.startsWith('/uploads')) return next();
     if (req.path.startsWith('/gallery-images')) return next();

@@ -1,3 +1,6 @@
+const isGentMember = (g) => ["gent", "male", "man", "boy", "m"].includes(String(g || "").trim().toLowerCase());
+const isLadyMember = (g) => ["lady", "female", "woman", "girl", "f"].includes(String(g || "").trim().toLowerCase());
+
 export const distributeMembers = ({
   members,
   groups,
@@ -7,20 +10,20 @@ export const distributeMembers = ({
     return { assignments: [], stats: null };
   }
 
-  const maleMembers = members.filter(m => m.gender === "Male");
-  const femaleMembers = members.filter(m => m.gender === "Female");
-  const otherMembers = members.filter(m => m.gender !== "Male" && m.gender !== "Female");
+  const gentMembers = members.filter(m => isGentMember(m.gender));
+  const ladyMembers = members.filter(m => isLadyMember(m.gender));
+  const otherMembers = members.filter(m => !isGentMember(m.gender) && !isLadyMember(m.gender));
 
   let assignments = [];
 
   if (strategy === "gender-separate") {
-    const maleGroups = groups.filter(g => g.group_type === "male");
-    const femaleGroups = groups.filter(g => g.group_type === "female");
+    const gentGroups = groups.filter(g => g.group_type === "male");
+    const ladyGroups = groups.filter(g => g.group_type === "female");
     const mixedGroups = groups.filter(g => g.group_type === "mixed");
 
     assignments = [
-      ...assignToGroups(maleMembers, maleGroups),
-      ...assignToGroups(femaleMembers, femaleGroups),
+      ...assignToGroups(gentMembers, gentGroups),
+      ...assignToGroups(ladyMembers, ladyGroups),
       ...assignToGroups(otherMembers, mixedGroups),
     ];
   } else {
@@ -30,8 +33,8 @@ export const distributeMembers = ({
   const stats = {
     totalMembers: members.length,
     totalGroups: groups.length,
-    maleCount: maleMembers.length,
-    femaleCount: femaleMembers.length,
+    maleCount: gentMembers.length,
+    femaleCount: ladyMembers.length,
     assignmentsByGroup: groups.map(g => ({
       groupId: g.id,
       groupName: g.group_name,
@@ -72,23 +75,23 @@ const assignToGroupsBalanced = (members, groups) => {
   }));
 
   const shuffled = [...members].sort(() => Math.random() - 0.5);
-  const males = shuffled.filter(m => m.gender === "Male");
-  const females = shuffled.filter(m => m.gender === "Female");
-  const others = shuffled.filter(m => m.gender !== "Male" && m.gender !== "Female");
+  const gentMembers = shuffled.filter(m => isGentMember(m.gender));
+  const ladyMembers = shuffled.filter(m => isLadyMember(m.gender));
+  const others = shuffled.filter(m => !isGentMember(m.gender) && !isLadyMember(m.gender));
 
-  const distributeGender = (pool, isMale) => {
+  const distributeGender = (pool, isGent) => {
     pool.forEach((member) => {
       const target = groupSlots
         .filter(g => g.currentSize < g.capacity)
         .sort((a, b) => {
-          const aCount = isMale ? a.maleCount : a.femaleCount;
-          const bCount = isMale ? b.maleCount : b.femaleCount;
+          const aCount = isGent ? a.maleCount : a.femaleCount;
+          const bCount = isGent ? a.maleCount : b.femaleCount;
           if (aCount !== bCount) return aCount - bCount;
           return a.currentSize - b.currentSize;
         })[0];
 
       if (target) {
-        if (isMale) target.maleCount++;
+        if (isGent) target.maleCount++;
         else target.femaleCount++;
         target.currentSize++;
         assignments.push({
@@ -101,8 +104,8 @@ const assignToGroupsBalanced = (members, groups) => {
     });
   };
 
-  distributeGender(males, true);
-  distributeGender(females, false);
+  distributeGender(gentMembers, true);
+  distributeGender(ladyMembers, false);
   distributeGender(others, false);
 
   return assignments;

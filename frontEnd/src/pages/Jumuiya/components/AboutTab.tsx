@@ -6,14 +6,14 @@ import "./TabsSystem.css";
 interface AboutTabProps {
   jumuiya: JumuiyaData;
   onNavigateBack: () => void;
+  onQuickLink?: (tab: 'officials' | 'activities' | 'channels' | 'tshirts') => void;
 }
 
-const AboutTab: React.FC<AboutTabProps> = ({ jumuiya }) => {
+const AboutTab: React.FC<AboutTabProps> = ({ jumuiya, onQuickLink }) => {
   const [imgLoaded, setImgLoaded] = useState(false);
 
   return (
     <div className="tab-system-content" style={{ "--jumuiya-color": jumuiya.color } as React.CSSProperties}>
-      {/* ═══ Hero Banner ═══ */}
       <div className="about-hero" style={{ background: jumuiya.color }}>
         <div className="about-hero-overlay" />
         
@@ -33,16 +33,12 @@ const AboutTab: React.FC<AboutTabProps> = ({ jumuiya }) => {
         <div className="about-hero-text">
           <div className="about-hero-badge">
             <FaChurch style={{ fontSize: "0.75rem" }} />
-            <span>Jumuiya Community</span>
+            <span>{jumuiya.description || "Jumuiya Community"}</span>
           </div>
           <h1 className="about-hero-title">{jumuiya.fullName || jumuiya.name}</h1>
-          {jumuiya.description && (
-            <p className="about-hero-desc">"{jumuiya.description}"</p>
-          )}
         </div>
       </div>
 
-      {/* ═══ Stats Row ═══ */}
       <div className="about-stats-row">
         <div className="about-stat-card">
           <div className="about-stat-icon" style={{ background: `${jumuiya.color}15`, color: jumuiya.color }}>
@@ -73,7 +69,6 @@ const AboutTab: React.FC<AboutTabProps> = ({ jumuiya }) => {
         </div>
       </div>
 
-      {/* ═══ Main Content Grid ═══ */}
       <div className="about-main-grid">
         {/* Left: Story Section */}
         <div className="about-story-section">
@@ -169,15 +164,17 @@ const AboutTab: React.FC<AboutTabProps> = ({ jumuiya }) => {
             </h4>
             <div className="about-links-grid">
               {[
-                { label: "View Officials", icon: "👥" },
-                { label: "See Activities", icon: "📅" },
-                { label: "Join Community", icon: "🤝" },
-                { label: "Order T-Shirt", icon: "👕" },
+                { label: "View Officials", icon: "", tab: 'officials' as const },
+                { label: "See Activities", icon: "", tab: 'activities' as const },
+                { label: "Join Community", icon: "", tab: 'channels' as const },
+                { label: "Order T-Shirt", icon: "", tab: 'tshirts' as const },
               ].map((link) => (
                 <button
                   key={link.label}
+                  type="button"
                   className="about-quick-link"
                   style={{ "--hover-color": jumuiya.color } as React.CSSProperties}
+                  onClick={() => onQuickLink?.(link.tab)}
                 >
                   <span>{link.icon}</span>
                   <span>{link.label}</span>

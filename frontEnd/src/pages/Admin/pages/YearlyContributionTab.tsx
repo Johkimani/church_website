@@ -1,8 +1,5 @@
 import { useState, useEffect } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
-} from "recharts";
 import { Trophy, Users, RefreshCw, Calendar, Church } from "lucide-react";
 
 const currentYear = new Date().getFullYear();

@@ -18,7 +18,7 @@ export const setupAdmin = async (req, res) => {
     `);
 
     if (existing.rows.length > 0) {
-      return res.json({ status: 'ok', message: 'Admin user already exists', member_id: existing.rows[0].member_id });
+      return res.json({ status: 'ok', message: 'Admin user already exists' });
     }
 
     // Seed roles if not present

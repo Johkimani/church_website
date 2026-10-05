@@ -1,29 +1,14 @@
 import axios from "axios";
-import { LocalStorage } from "../utils";
+import { SessionStorage } from "../utils";
 import type { fileUpload } from "../interface/api";
-import { normalizeFiles } from "../pages/Devotions/utitlty";
 import { BASE_URL } from "./config";
 
-const API_BASE_URL = BASE_URL;
-
-const getApiErrorMessage = (error: unknown): string => {
-  if (axios.isAxiosError(error)) {
-    if (error.response) {
-      return (
-        error.response.data?.error ||
-        error.response.data?.message ||
-        `Server responded with status ${error.response.status}`
-      );
-
-      
-    }
-    if (error.request) {
-      return "Unable to reach the backend. Please ensure the server is running and the URL is correct.";
-    }
-    return error.message;
-  }
-  return typeof error === "string" ? error : "An unexpected error occurred.";
+const normalizeFiles = (files: File[] | File | null | undefined): File[] => {
+  if (!files) return [];
+  return Array.isArray(files) ? files : [files];
 };
+
+const API_BASE_URL = BASE_URL;
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -31,22 +16,19 @@ export const apiClient = axios.create({
   timeout: 120000,
 });
 
-export const getApiErrorMessageFromError = getApiErrorMessage;
-
 // Request interceptor
 apiClient.interceptors.request.use(
   (config) => {
-    const userdata = LocalStorage.get("userdata");
+    const userdata = SessionStorage.get("userdata");
     if (userdata?.accessToken) {
       const token = userdata.accessToken;
       if (typeof token === "string" && token.split(".").length === 3) {
         config.headers.Authorization = `Bearer ${token}`;
       } else {
         console.warn("Malformed access token detected; clearing it.");
-        LocalStorage.remove("userdata");
+        SessionStorage.remove("userdata");
       }
     }
-    console.log(`[REQUEST] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`, config.data || "");
     return config;
   },
   (error) => Promise.reject(error)
@@ -62,7 +44,6 @@ const processQueue = (error: any, token: string | null = null) => {
 
 apiClient.interceptors.response.use(
   (response) => {
-    console.log(`[RESPONSE] ${response.config.method?.toUpperCase()} ${response.config.url} ${response.status}`);
     return response;
   },
   async (error) => {
@@ -87,17 +68,16 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const userdata = LocalStorage.get("userdata");
-        if (!userdata?.refreshToken) throw new Error("No refresh token available");
+        const userdata = SessionStorage.get("userdata");
+        if (!userdata?.accessToken) throw new Error("No session available");
 
-        const { data } = await refreshAccessAndRefreshToken(userdata.refreshToken);
+        const { data } = await refreshAccessAndRefreshToken(userdata.accessToken);
 
         const updatedData = {
           ...userdata,
           accessToken: data.accessToken,
-          refreshToken: data.refreshToken || userdata.refreshToken,
         };
-        LocalStorage.set("userdata", updatedData);
+        SessionStorage.set("userdata", updatedData);
 
         processQueue(null, data.accessToken);
 
@@ -105,7 +85,7 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (err) {
         processQueue(err, null);
-        LocalStorage.remove("userdata");
+        SessionStorage.remove("userdata");
         if (!window.location.pathname.includes("/login")) {
           window.location.href = "/login?expired=true";
         }
@@ -119,30 +99,102 @@ apiClient.interceptors.response.use(
   }
 );
 
-const refreshClient = axios.create({ baseURL: API_BASE_URL });
+const refreshClient = axios.create({ baseURL: API_BASE_URL, withCredentials: true });
 
-const refreshAccessAndRefreshToken = (refreshToken: string) =>
-  refreshClient.post("authentication/refresh", { refreshToken });
+// The refresh token lives in an httpOnly cookie (sent automatically via
+// withCredentials). The current access token is passed as a binding so the
+// server can reject the request if the cookie belongs to a different member.
+const refreshAccessAndRefreshToken = (accessToken: string) =>
+  refreshClient.post("authentication/refresh", { accessToken });
 
 // --- Your API functions below ---
-export const generateAndSaveQuestions = (data: { topic: string }) =>
+export const generateAndSaveQuestions = (data: { topic: string; numberOfQuestions?: number }) =>
   apiClient.post("/questions", data);
 
-export const fetchDailyQuestions = (limit: number = 10) =>
-  apiClient.get(`/questions/?limit=${limit}`);
+export const createManualQuestion = (data: {
+  questionText: string;
+  answers: { option: string; text: string }[];
+  correctAnswer: { option: string; text: string; explanation?: string };
+  topic?: string;
+}) => apiClient.post("/questions/manual", data);
 
-export const fetchJumuiyaComparisonData = () => apiClient.get("/csa/jumuiya-comparison");
+export const fetchManageQuestions = (params?: { page?: number; limit?: number; search?: string; topic?: string }) =>
+  apiClient.get("/questions/manage", { params });
+
+export const fetchQuestionTopics = () => apiClient.get("/questions/topics");
+
+export const updateQuestionApi = (id: string | number, payload: any) =>
+  apiClient.put(`/questions/${id}`, payload);
+
+export const deleteQuestionApi = (id: string | number) =>
+  apiClient.delete(`/questions/${id}`);
+
+export const deleteQuestionsByTopicApi = (topic: string) =>
+  apiClient.delete("/questions/by-topic", { params: { topic } });
+
+export const recordAttemptApi = (payload: {
+  questionId: number | string;
+  selectedOption: number;
+}) => apiClient.post("/questions/attempt", payload);
+
+export const fetchTodayChallengeStatus = () => apiClient.get("/questions/today-status");
+
+export const setQuestionStatusApi = (id: number | string, status: "approved" | "rejected") =>
+  apiClient.put(`/questions/${id}/status`, { status });
+
+// Weekly challenge (member-facing)
+export const fetchCurrentWeeklyChallenge = () => apiClient.get("/weekly-challenge/current");
+
+// Weekly challenge (liturgist-facing)
+export const listWeeklyChallenges = () => apiClient.get("/weekly-challenge/challenges");
+export const createWeeklyChallenge = (payload: {
+  weekStart: string;
+  topic: string;
+  questionIds: number[];
+}) => apiClient.post("/weekly-challenge/challenges", payload);
+export const fetchWeeklyChallengeDetail = (id: number | string) =>
+  apiClient.get(`/weekly-challenge/challenges/${id}`);
+export const updateWeeklyChallengeApi = (id: number | string, payload: any) =>
+  apiClient.put(`/weekly-challenge/challenges/${id}`, payload);
+export const activateWeeklyChallengeApi = (id: number | string) =>
+  apiClient.post(`/weekly-challenge/challenges/${id}/activate`);
+export const publishWeeklyChallengeApi = (id: number | string) =>
+  apiClient.post(`/weekly-challenge/challenges/${id}/publish`);
+export const reviewWeeklyChallengeApi = (id: number | string) =>
+  apiClient.get(`/weekly-challenge/challenges/${id}/review`);
+
+
+export type AssistantChatHistoryItem = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+export const postAssistantChat = (data: {
+  message: string;
+  history?: AssistantChatHistoryItem[];
+  context?: {
+    path?: string;
+    name?: string;
+    role?: string | string[];
+    knowledge?: string;
+  };
+}) => apiClient.post("/assistant/chat", data);
 
 // Published stats (admin-controlled snapshots)
 export const publishStats = () => apiClient.post("/publish-stats");
-export const fetchPublishedComparison = () => apiClient.get("/published/comparison");
+export const fetchPublishedComparison = (params?: { week?: string; from?: string; to?: string }) =>
+  apiClient.get("/published/comparison", { params });
+export const fetchComparisonOptions = () => apiClient.get("/published/comparison/options");
 export const fetchPublishedMemberProgress = () => apiClient.get("/published/member-progress");
 export const fetchPublishedJumuiyaDashboard = (jumuiyaId: string) =>
   apiClient.get(`/published/jumuiya-dashboard/${jumuiyaId}`);
 
 export const fetchGalleryTeaser = () => apiClient.get("/gallery/teaser");
 
-export const memberProgressData = () => apiClient.get("/member/progress");
+export const fetchSystemSettings = () => apiClient.get("/settings");
+
+export const updateSystemSettings = (settings: Record<string, string>) =>
+  apiClient.put("/settings", settings);
 
 export const memberSummaryData = () => apiClient.get("/member/summary");
 
@@ -189,13 +241,6 @@ export const uploadFile = async (
       ? (e) => { if (e.total) options.onProgress!(Math.round((e.loaded / e.total) * 100)); }
       : undefined,
   });
-};
-
-export const fetchAllUploadedFiles = () => apiClient.post("/files");
-
-export const deleteOneOrMoreFiles = (publicIds: string | string[]) => {
-  const ids = Array.isArray(publicIds) ? publicIds : [publicIds];
-  return apiClient.delete("/files", { data: { publicIds: ids } });
 };
 
 export const fetchTable = (table: string, params: Record<string, any> = {}) => {

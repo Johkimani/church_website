@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import activitiesService from "../../../api/activitiesServices";
-import { Plus, Pencil, Trash2, Eye, EyeOff, RefreshCw } from "lucide-react";
+import apiService from "../../../services/api";
+import { Plus, Pencil, Trash2, Eye, EyeOff, RefreshCw, CalendarDays, CalendarClock, History, Image, Upload, X } from "lucide-react";
+import toast from "react-hot-toast";
+import { useAuth } from "../../../context/AuthContext";
 
 interface Event {
   id: number;
@@ -10,9 +13,53 @@ interface Event {
   venue: string;
   fare: number | null;
   is_active: boolean;
+  image_url: string | null;
 }
 
-const emptyForm = { title: "", description: "", date_time: "", venue: "", fare: "" };
+const emptyForm = { title: "", description: "", date_time: "", venue: "", fare: "", image_url: "" };
+
+function EventImage({ event, onReplace, onRemove }: {
+  event: Event;
+  onReplace: (file: File) => void;
+  onRemove: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  return (
+    <div className="relative w-24 h-16 shrink-0 rounded-lg overflow-hidden bg-slate-100 border border-slate-200 group/img">
+      {event.image_url ? (
+        <img src={event.image_url} alt={event.title} className="w-full h-full object-cover" loading="lazy" />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center text-slate-300">
+          <Image size={18} />
+        </div>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onReplace(f);
+          e.target.value = "";
+        }}
+      />
+      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-1">
+        <button type="button" onClick={() => inputRef.current?.click()} title="Change image"
+          className="p-1.5 rounded-full bg-white/90 hover:bg-white text-slate-700 transition-colors">
+          <Upload size={14} />
+        </button>
+        {event.image_url && (
+          <button type="button" onClick={onRemove} title="Remove image"
+            className="p-1.5 rounded-full bg-white/90 hover:bg-red-500 hover:text-white text-slate-700 transition-colors">
+            <Trash2 size={14} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function formatDateForInput(iso: string) {
   if (!iso) return "";
@@ -24,21 +71,90 @@ function formatDateForInput(iso: string) {
   } catch { return iso.slice(0, 16); }
 }
 
+function relativeChip(dt: Date) {
+  const now = new Date();
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const startDay = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()).getTime();
+  const diffDays = Math.round((startDay - startToday) / 86400000);
+  if (diffDays === 0) return { text: "Today", cls: "bg-indigo-100 text-indigo-700" };
+  if (diffDays === 1) return { text: "Tomorrow", cls: "bg-indigo-100 text-indigo-700" };
+  if (diffDays > 1 && diffDays <= 7) return { text: `in ${diffDays} days`, cls: "bg-indigo-50 text-indigo-600" };
+  if (diffDays > 7) return { text: `in ${diffDays} days`, cls: "bg-slate-100 text-slate-500" };
+  return null;
+}
+
+const GLOBAL_ROLES = ['csa_chair', 'os', 'jumuiya_coordinator', 'assistant_jumuiya_coordinator', 'admin'];
+
 export default function SemesterActivitiesAdmin() {
+  const { user } = useAuth();
+  const userRoles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
+  const isScoped = !!user?.jumuiya_id && !userRoles.some(r => GLOBAL_ROLES.includes(r));
+  const jumuiyaId = user?.jumuiya_id || '';
+
   const [events, setEvents] = useState<Event[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [formFile, setFormFile] = useState<File | null>(null);
+  const [formPreview, setFormPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<"all" | "upcoming" | "past">("all");
 
-  useEffect(() => { load(); }, []);
+  // Default image state
+  const [defaultImage, setDefaultImage] = useState<string | null>(null);
+  const [defaultImageUploading, setDefaultImageUploading] = useState(false);
+  const defaultImageInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => { load(); loadDefaultImage(); }, []);
+
+  async function loadDefaultImage() {
+    try {
+      const settings = await apiService.getPublicSettings();
+      setDefaultImage(settings?.semester_default_image || null);
+    } catch { /* ignore */ }
+  }
+
+  // Revoke object URL previews when they change or the component unmounts
+  useEffect(() => {
+    const url = formPreview;
+    return () => { if (url) URL.revokeObjectURL(url); };
+  }, [formPreview]);
+
+  async function handleUploadDefaultImage(file: File) {
+    setDefaultImageUploading(true);
+    try {
+      const result = await activitiesService.uploadSemesterDefaultImage(file);
+      setDefaultImage(result.image_url);
+      toast.success("Default image updated");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || err?.message || "Upload failed");
+    } finally {
+      setDefaultImageUploading(false);
+    }
+  }
+
+  async function handleRemoveDefaultImage() {
+    if (!confirm("Remove the default event image?")) return;
+    setDefaultImageUploading(true);
+    try {
+      await activitiesService.removeSemesterDefaultImage();
+      setDefaultImage(null);
+      toast.success("Default image removed");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || err?.message || "Failed to remove");
+    } finally {
+      setDefaultImageUploading(false);
+    }
+  }
 
   async function load() {
     setLoading(true);
     setError(null);
     try {
-      const data = await activitiesService.getSemester();
+      const data = isScoped
+        ? await activitiesService.getJumuiyaSemester(jumuiyaId, true)
+        : await activitiesService.getSemester();
       setEvents(data || []);
     } catch (err: any) {
       const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || "Failed to load events";
@@ -48,27 +164,52 @@ export default function SemesterActivitiesAdmin() {
     }
   }
 
+  function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setFormFile(f);
+    setFormPreview(URL.createObjectURL(f));
+    e.target.value = "";
+  }
+
+  function resetForm() {
+    setForm(emptyForm);
+    setEditingId(null);
+    setFormFile(null);
+    setFormPreview(null);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.title || !form.date_time || !form.venue) return;
     setSaving(true);
     setError(null);
+    let id = editingId;
     try {
       const payload = {
         ...form,
         date_time: new Date(form.date_time).toISOString(),
       };
-      if (editingId) {
-        await activitiesService.updateSemester(editingId, payload);
+      if (id) {
+        await (isScoped
+          ? activitiesService.updateJumuiyaSemester(id, payload)
+          : activitiesService.updateSemester(id, payload));
       } else {
-        await activitiesService.createSemester(payload);
+        const created = isScoped
+          ? await activitiesService.createJumuiyaSemester(jumuiyaId, payload)
+          : await activitiesService.createSemester(payload);
+        id = created?.id;
       }
-      setForm(emptyForm);
-      setEditingId(null);
+      if (id && formFile) {
+        await activitiesService.uploadSemesterImage(id, formFile);
+      }
+      resetForm();
       load();
+      toast.success(editingId ? "Event updated" : "Event added");
     } catch (err: any) {
       const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || "Failed to save event";
       setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -81,24 +222,30 @@ export default function SemesterActivitiesAdmin() {
       date_time: formatDateForInput(e.date_time),
       venue: e.venue,
       fare: e.fare ? String(e.fare) : "",
+      image_url: e.image_url || "",
     });
     setEditingId(e.id);
+    setFormFile(null);
+    setFormPreview(null);
   }
 
   function cancelEdit() {
-    setForm(emptyForm);
-    setEditingId(null);
+    resetForm();
   }
 
   async function handleDelete(id: number) {
     if (!confirm("Delete this event?")) return;
     setError(null);
     try {
-      await activitiesService.deleteSemester(id);
+      await (isScoped
+        ? activitiesService.deleteJumuiyaSemester(id)
+        : activitiesService.deleteSemester(id));
       load();
+      toast.success("Event deleted");
     } catch (err: any) {
       const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || "Failed to delete";
       setError(msg);
+      toast.error(msg);
     }
   }
 
@@ -111,11 +258,60 @@ export default function SemesterActivitiesAdmin() {
         await activitiesService.activateSemester(e.id);
       }
       load();
+      toast.success(e.is_active ? "Event deactivated" : "Event activated");
     } catch (err: any) {
       const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || "Failed to toggle";
       setError(msg);
+      toast.error(msg);
     }
   }
+
+  async function handleReplaceImage(e: Event, file: File) {
+    setError(null);
+    try {
+      await activitiesService.uploadSemesterImage(e.id, file);
+      load();
+      toast.success("Image updated");
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || "Failed to update image";
+      setError(msg);
+      toast.error(msg);
+    }
+  }
+
+  async function handleRemoveImage(e: Event) {
+    if (!confirm(`Remove the image for "${e.title}"?`)) return;
+    setError(null);
+    try {
+      await activitiesService.removeSemesterImage(e.id);
+      load();
+      toast.success("Image removed");
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || "Failed to remove image";
+      setError(msg);
+      toast.error(msg);
+    }
+  }
+
+  const now = Date.now();
+  const upcomingCount = events.filter((e) => new Date(e.date_time).getTime() >= now).length;
+  const pastCount = events.length - upcomingCount;
+
+  const sortedEvents = [...events].sort((a, b) => {
+    const da = new Date(a.date_time).getTime();
+    const db = new Date(b.date_time).getTime();
+    const aPast = da < now;
+    const bPast = db < now;
+    if (aPast !== bPast) return aPast ? 1 : -1;
+    return aPast ? db - da : da - db;
+  });
+
+  const filteredEvents = sortedEvents.filter((e) => {
+    const t = new Date(e.date_time).getTime();
+    if (filter === "upcoming") return t >= now;
+    if (filter === "past") return t < now;
+    return true;
+  });
 
   return (
     <div>
@@ -127,6 +323,106 @@ export default function SemesterActivitiesAdmin() {
         <button onClick={load} className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors">
           <RefreshCw size={14} /> Refresh
         </button>
+      </div>
+
+      {/* Summary stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/30 shrink-0">
+            <CalendarDays size={18} />
+          </div>
+          <div>
+            <p className="text-2xl font-black text-slate-800 leading-none">{events.length}</p>
+            <p className="text-xs text-slate-500 font-medium mt-1">Total Events</p>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/30 shrink-0">
+            <CalendarClock size={18} />
+          </div>
+          <div>
+            <p className="text-2xl font-black text-slate-800 leading-none">{upcomingCount}</p>
+            <p className="text-xs text-slate-500 font-medium mt-1">Upcoming</p>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center text-white shadow-md shadow-slate-500/30 shrink-0">
+            <History size={18} />
+          </div>
+          <div>
+            <p className="text-2xl font-black text-slate-800 leading-none">{pastCount}</p>
+            <p className="text-xs text-slate-500 font-medium mt-1">Past</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Default Event Image Panel */}
+      <div className="bg-white rounded-xl border border-slate-200 p-5 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="font-semibold text-slate-800 text-sm">Default Event Image</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Shown on events that have no custom image uploaded.</p>
+          </div>
+          {defaultImage && (
+            <button
+              onClick={handleRemoveDefaultImage}
+              disabled={defaultImageUploading}
+              className="flex items-center gap-1.5 text-xs font-semibold text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+            >
+              <X size={13} /> Remove
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="relative w-32 h-20 shrink-0 rounded-lg overflow-hidden bg-slate-100 border border-slate-200">
+            {defaultImage ? (
+              <img src={defaultImage} alt="Default event" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-1">
+                <Image size={20} />
+                <span className="text-[9px] font-semibold">None set</span>
+              </div>
+            )}
+            {defaultImageUploading && (
+              <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+                <RefreshCw size={16} className="animate-spin text-indigo-500" />
+              </div>
+            )}
+          </div>
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg cursor-pointer transition-colors w-fit">
+              <Upload size={13} />
+              {defaultImage ? "Replace Image" : "Set Default Image"}
+              <input
+                ref={defaultImageInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleUploadDefaultImage(f);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            <p className="text-[10px] text-slate-400">Max 10 MB · JPG, PNG, WebP</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Status filter */}
+      <div className="flex items-center gap-2 bg-slate-100 rounded-xl p-1 w-fit mb-6">
+        {(["all", "upcoming", "past"] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+              filter === f ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            {f === "all" ? `All (${events.length})` : f === "upcoming" ? `Upcoming (${upcomingCount})` : `Past (${pastCount})`}
+          </button>
+        ))}
       </div>
 
       {error && (
@@ -144,6 +440,34 @@ export default function SemesterActivitiesAdmin() {
               {editingId ? "Edit Event" : "Add New Event"}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Event Image</label>
+                <div className="flex items-center gap-3">
+                  <div className="relative w-28 h-20 shrink-0 rounded-lg overflow-hidden bg-slate-100 border border-slate-200">
+                    {formPreview || form.image_url ? (
+                      <img src={formPreview || form.image_url || ""} alt="Event preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-300">
+                        <Image size={20} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg cursor-pointer transition-colors">
+                      <Upload size={14} />
+                      {formFile ? "Change Image" : "Choose Image"}
+                      <input type="file" accept="image/*" className="hidden" onChange={handleFileSelected} />
+                    </label>
+                    {formFile && (
+                      <button type="button" onClick={() => { setFormFile(null); setFormPreview(null); }}
+                        className="block text-xs font-semibold text-red-600 hover:text-red-700 transition-colors">
+                        Clear selection
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1.5">Optional. Shown as the event cover photo on the public page.</p>
+              </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Title</label>
                 <input
@@ -174,6 +498,7 @@ export default function SemesterActivitiesAdmin() {
                   required
                 />
               </div>
+              {!isScoped && (
               <div>
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Fare (KES) — optional</label>
                 <input
@@ -186,6 +511,7 @@ export default function SemesterActivitiesAdmin() {
                   className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
                 />
               </div>
+              )}
               <div>
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Description</label>
                 <textarea
@@ -221,26 +547,31 @@ export default function SemesterActivitiesAdmin() {
             </div>
           ) : (
             <div className="space-y-3">
-              {events.map((e) => {
+              {filteredEvents.map((e) => {
                 const dt = new Date(e.date_time);
                 const isPast = dt < new Date();
+                const rel = !isPast ? relativeChip(dt) : null;
                 return (
                   <div key={e.id} className={`bg-white rounded-xl border ${e.is_active ? "border-slate-200" : "border-slate-100 bg-slate-50/50"} p-4 flex items-center gap-4 transition-all hover:shadow-sm`}>
                     <div className={`w-2 h-10 rounded-full shrink-0 ${isPast ? "bg-slate-200" : e.is_active ? "bg-indigo-400" : "bg-slate-200"}`} />
 
+                    <EventImage event={e} onReplace={(f) => handleReplaceImage(e, f)} onRemove={() => handleRemoveImage(e)} />
+
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
+                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                         <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                           {dt.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
                         </span>
+                        {rel && <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${rel.cls}`}>{rel.text}</span>}
                         {isPast && <span className="text-[10px] font-semibold text-slate-300 bg-slate-100 px-2 py-0.5 rounded">Past</span>}
+                        {e.image_url && <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">Custom image</span>}
                         {!e.is_active && <span className="text-[10px] font-semibold text-slate-300 bg-slate-100 px-2 py-0.5 rounded">Inactive</span>}
                       </div>
                       <h4 className="font-semibold text-slate-800">{e.title}</h4>
                       <div className="flex items-center gap-4 text-xs text-slate-500 mt-1">
                         <span>{dt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</span>
                         <span>{e.venue}</span>
-                        {e.fare ? <span className="font-semibold text-emerald-600">KES {Number(e.fare).toLocaleString()}</span> : null}
+                        {!isScoped && e.fare ? <span className="font-semibold text-emerald-600">KES {Number(e.fare).toLocaleString()}</span> : null}
                       </div>
                       {e.description && <p className="text-xs text-slate-400 mt-1 line-clamp-1">{e.description}</p>}
                     </div>

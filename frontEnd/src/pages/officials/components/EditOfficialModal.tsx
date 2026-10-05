@@ -3,7 +3,7 @@ import { X, Save, ShieldAlert, Phone } from 'lucide-react';
 import PhoneInput from 'react-phone-number-input/input';
 import { isValidPhoneNumber } from 'react-phone-number-input';
 import type { Official } from '../../../hooks/useOfficials';
-import { POSITION_BY_CATEGORY, JUMUIYA_OPTIONS, JUMUIYA_ROLES } from '../constants/adminConstants';
+import { POSITION_BY_CATEGORY, JUMUIYA_OPTIONS, JUMUIYA_ROLES, GROUP_OPTIONS, POSITIONS_BY_GROUP } from '../constants/adminConstants';
 import { resizeImage } from '../../../utils/imageOptimization';
 
 interface EditOfficialModalProps {
@@ -12,7 +12,7 @@ interface EditOfficialModalProps {
  official: Official | null;
  onUpdate: (id: number, formData: FormData) => Promise<void>;
  isUpdating: boolean;
- mode?: 'csa' | 'jumuiya';
+ mode?: 'csa' | 'jumuiya' | 'groups';
  allOfficials?: any[];
  displayTerm?: string;
  officialsExist?: boolean;
@@ -36,6 +36,12 @@ export function EditOfficialModal({
       Object.keys(POSITION_BY_CATEGORY).forEach(cat => {
         const limit = POSITION_BY_CATEGORY[cat]?.length || 0;
         const count = allOfficials.filter((o: any) => o.category === cat && o.status !== 'archived' && o.id !== official?.id).length;
+        stats[cat] = { count, limit, isFull: count >= limit };
+      });
+    } else if (mode === 'groups') {
+      GROUP_OPTIONS.forEach(cat => {
+        const limit = POSITIONS_BY_GROUP[cat]?.length || 0;
+        const count = allOfficials.filter(o => o.category === cat && o.status !== 'archived' && o.id !== official?.id).length;
         stats[cat] = { count, limit, isFull: count >= limit };
       });
     } else {
@@ -68,6 +74,14 @@ export function EditOfficialModal({
  .filter(o => o.category === category && o.id !== official?.id)
  .map(o => o.position);
  return JUMUIYA_ROLES.filter(role => !occupiedRoles.includes(role));
+ }, [mode, category, allOfficials, official]);
+
+ const availableGroupRoles = React.useMemo(() => {
+ if (mode !== 'groups' || !category) return POSITIONS_BY_GROUP[category] || [];
+ const occupiedRoles = allOfficials
+ .filter(o => o.category === category && o.id !== official?.id)
+ .map(o => o.position);
+ return (POSITIONS_BY_GROUP[category] || []).filter(role => !occupiedRoles.includes(role));
  }, [mode, category, allOfficials, official]);
 
  const availableCSARoles = React.useMemo(() => {
@@ -106,8 +120,8 @@ export function EditOfficialModal({
  onClose();
  };
 
- const termMismatch = officialsExist && termOfService && termOfService !== displayTerm;
- const isInvalid = !name || !category || !position || !!contactError || isUpdating || !!termMismatch;
+  const termMismatch = officialsExist && displayTerm && official?.status !== 'archived' && termOfService && termOfService !== displayTerm;
+  const isInvalid = !name || !category || !position || !!contactError || isUpdating || !!termMismatch;
 
  return (
  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
@@ -154,27 +168,34 @@ export function EditOfficialModal({
   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium" 
   required
   >
-  <option value="">{mode === 'jumuiya' ? 'Select Jumuiya' : 'Select category'}</option>
+  <option value="">{mode === 'jumuiya' ? 'Select Jumuiya' : mode === 'groups' ? 'Select Group' : 'Select category'}</option>
   {mode === 'csa' 
   ? Object.keys(POSITION_BY_CATEGORY).map(k => {
       const stats = categoryStats[k];
-      const label = stats?.isFull ? `${k} (Full) ✔` : `${k} (${stats?.count || 0}/${stats?.limit || 0})`;
+      const label = stats?.isFull ? `${k} (Full)` : `${k} (${stats?.count || 0}/${stats?.limit || 0})`;
       return <option key={k} value={k}>{label}</option>;
     })
-  : JUMUIYA_OPTIONS.map(k => {
+  : mode === 'groups'
+    ? GROUP_OPTIONS.map(k => {
+        const stats = categoryStats[k];
+        const limit = POSITIONS_BY_GROUP[k]?.length || 0;
+        const label = stats?.isFull ? `${k} (Full)` : `${k} (${stats?.count || 0}/${limit})`;
+        return <option key={k} value={k}>{label}</option>;
+      })
+    : JUMUIYA_OPTIONS.map(k => {
       const stats = categoryStats[k];
-      const label = stats?.isFull ? `${k} (Full) ✔` : `${k} (${stats?.count || 0}/8)`;
+      const label = stats?.isFull ? `${k} (Full)` : `${k} (${stats?.count || 0}/8)`;
       return <option key={k} value={k}>{label}</option>;
     })
   }
   </select>
-  {category && categoryStats[category] && (
+  {category && categoryStats[category] && official?.status !== 'archived' && (
     <div className="mt-1 flex items-center justify-between px-1">
       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Status:</span>
       <span className={`text-[10px] font-bold flex items-center gap-1 ${categoryStats[category].isFull ? 'text-green-600' : 'text-blue-600'}`}>
         {categoryStats[category].isFull ? (
           <>
-            <span>✔</span> Fully Filled ({categoryStats[category].count}/{categoryStats[category].limit})
+            <span> Fully Filled ({categoryStats[category].count}/{categoryStats[category].limit})</span>
           </>
         ) : (
           `Available (${categoryStats[category].count}/${categoryStats[category].limit})`
@@ -192,11 +213,13 @@ export function EditOfficialModal({
  required 
  disabled={!category}
  >
- <option value="">Select position/role</option>
- {mode === 'csa'
- ? (category && availableCSARoles.map(p => <option key={p} value={p}>{p}</option>))
- : (category && availableJumuiyaRoles.map(p => <option key={p} value={p}>{p}</option>))
- }
+  <option value="">Select position/role</option>
+  {mode === 'csa'
+  ? (category && availableCSARoles.map(p => <option key={p} value={p}>{p}</option>))
+  : mode === 'groups'
+    ? (category && availableGroupRoles.map(p => <option key={p} value={p}>{p}</option>))
+    : (category && availableJumuiyaRoles.map(p => <option key={p} value={p}>{p}</option>))
+  }
  </select>
  </div>
  </div>
@@ -217,13 +240,13 @@ export function EditOfficialModal({
  </div>
 
  <div className="space-y-1">
- <label className="text-xs font-bold text-gray-500 uppercase px-1">Term of Service</label>
+ <label className="text-xs font-bold text-gray-500 uppercase px-1">Term of Service {official?.status === 'archived' ? '(any year)' : ''}</label>
  <input 
  value={termOfService} 
  onChange={e => setTermOfService(e.target.value)} 
  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none ${termMismatch ? 'border-red-500 bg-red-50 ' : 'border-gray-300 '}`} 
  />
- {officialsExist && displayTerm && (
+ {officialsExist && displayTerm && official?.status !== 'archived' && (
  <div className="flex items-center justify-between gap-1 mt-1">
  <p className={`text-[10px] font-bold italic flex items-center gap-1 ${termMismatch ? 'text-red-600' : 'text-blue-600 '}`}>
  {termMismatch 

@@ -1,5 +1,6 @@
 import { db } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
+import { sendOrderPaymentConfirmation } from "../services/notificationService.js";
 
 export const createOrder = async (req, res) => {
   try {
@@ -9,6 +10,36 @@ export const createOrder = async (req, res) => {
     } = req.body;
 
     const itemsJson = items ? JSON.stringify(items) : null;
+
+    // A client must never be able to mark an order 'paid' on its own word.
+    // Only the Safaricom callback (or the server-side confirm flow) sets
+    // mpesa_request.status = 'paid'; require that proof before accepting it.
+    let verifiedAmount = null;
+    if (status === "paid") {
+      if (!checkout_id) {
+        return res.status(400).json({
+          error: "checkout_id is required to confirm a paid order",
+        });
+      }
+      const payResult = await db.query(
+        `SELECT status, mpesa_receipt, amount FROM mpesa_request WHERE checkout_id = $1`,
+        [checkout_id],
+      );
+      const payRow = payResult.rows[0];
+      if (!payRow || payRow.status !== "paid") {
+        return res.status(400).json({
+          error: "Payment has not been verified by the server. Complete the M-Pesa payment first.",
+        });
+      }
+      if (payRow.mpesa_receipt && mpesa_receipt && payRow.mpesa_receipt !== mpesa_receipt) {
+        return res.status(400).json({
+          error: "Receipt number does not match the verified payment.",
+        });
+      }
+      // The amount on record is what the server charged — never the client's
+      // word. Underpaid pushes are stored as 'underpaid' and rejected above.
+      verifiedAmount = Number(payRow.amount ?? 0) || null;
+    }
 
     // Generate reference: CSA-000001 format
     const seqResult = await db.query("SELECT nextval('orders_id_seq') as next_id");
@@ -23,7 +54,7 @@ export const createOrder = async (req, res) => {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
        RETURNING *`,
       [
-        user_id || null, amount, phone || null, checkout_id || null,
+        user_id || null, verifiedAmount ?? amount, phone || null, checkout_id || null,
         mpesa_receipt || null, status || "pending", itemsJson,
         reference, customer_name || null, customer_email || null,
         payment_method || "mpesa", collection_method || "pickup",
@@ -58,37 +89,79 @@ export const getOrders = async (req, res) => {
   }
 };
 
+export const trackOrder = async (req, res) => {
+  try {
+    const { reference, phone } = req.query;
+    if (!reference) {
+      return res.status(400).json({ error: "Order reference is required" });
+    }
+
+    const conditions = [`order_reference = $1`];
+    const params = [reference.trim()];
+
+    if (phone && phone.trim()) {
+      const digits = phone.replace(/\D/g, '');
+      params.push(`%${digits}%`);
+      conditions.push(`phone LIKE $${params.length}`);
+    }
+
+    const result = await db.query(
+      `SELECT id, order_reference, customer_name, phone, amount, status, payment_method, 
+              mpesa_receipt, collection_method, delivery_address, items, created_at
+       FROM orders WHERE ${conditions.join(' AND ')} LIMIT 1`,
+      params
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Order not found. Check your reference and phone number." });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    logger.error(error.message);
+    res.status(500).json({ error: "Failed to track order" });
+  }
+};
+
 export const confirmPayment = async (req, res) => {
   try {
-    const { phone, checkout_id, mpesa_receipt } = req.body;
+    const { checkout_id, mpesa_receipt } = req.body;
 
     if (!mpesa_receipt) {
       return res.status(400).json({ error: "M-Pesa receipt number is required" });
     }
-    if (!phone && !checkout_id) {
-      return res.status(400).json({ error: "Phone number or checkout ID is required" });
+    if (!checkout_id) {
+      return res.status(400).json({ error: "Checkout ID is required" });
     }
 
-    // Find the order — by checkout_id first, then fallback to phone
-    let order;
-    if (checkout_id) {
-      const result = await db.query(
-        `SELECT * FROM orders WHERE checkout_id = $1 AND status = 'pending' LIMIT 1`,
-        [checkout_id],
-      );
-      order = result.rows[0];
-    }
+    // The pending payment must exist server-side (created when the STK push was
+    // initiated). No phone-number fallback: that allowed marking any pending
+    // order as paid without owning its checkout.
+    const payResult = await db.query(
+      `SELECT status FROM mpesa_request WHERE checkout_id = $1`,
+      [checkout_id],
+    );
+    const payRow = payResult.rows[0];
 
-    if (!order && phone) {
-      const result = await db.query(
-        `SELECT * FROM orders WHERE phone = $1 AND status = 'pending' ORDER BY created_at DESC LIMIT 1`,
-        [phone],
-      );
-      order = result.rows[0];
+    const orderRes = await db.query(
+      `SELECT * FROM orders WHERE checkout_id = $1 AND status = 'pending' LIMIT 1`,
+      [checkout_id],
+    );
+    const order = orderRes.rows[0];
+
+    // Payment already confirmed (e.g. the Safaricom callback landed first):
+    // treat as an idempotent success.
+    if (!order && payRow?.status === "paid") {
+      return res.json({ status: "paid" });
     }
 
     if (!order) {
-      return res.status(404).json({ error: "No pending order found for this phone/checkout" });
+      return res.status(404).json({ error: "No pending order found for this checkout" });
+    }
+    if (!payRow || payRow.status !== "pending") {
+      return res.status(400).json({
+        error: "No pending payment request found for this checkout — please initiate the M-Pesa payment first",
+      });
     }
 
     // Update the order
@@ -97,12 +170,20 @@ export const confirmPayment = async (req, res) => {
       [mpesa_receipt, order.id],
     );
 
-    // Also update mpesa_request if checkout_id exists
-    if (order.checkout_id) {
-      await db.query(
-        `UPDATE mpesa_request SET status = 'paid', mpesa_receipt = $1, updated_at = CURRENT_TIMESTAMP WHERE checkout_id = $2`,
-        [mpesa_receipt, order.checkout_id],
-      );
+    // Also update mpesa_request
+    await db.query(
+      `UPDATE mpesa_request SET status = 'paid', mpesa_receipt = $1, updated_at = CURRENT_TIMESTAMP WHERE checkout_id = $2`,
+      [mpesa_receipt, checkout_id],
+    );
+
+    // Fire-and-forget payment confirmation (never throws)
+    try {
+      await sendOrderPaymentConfirmation({
+        order: updated.rows[0],
+        mpesaReceipt: mpesa_receipt,
+      });
+    } catch (notifErr) {
+      logger.error(`Failed to send order confirmation: ${notifErr.message}`);
     }
 
     logger.info(`Payment manually confirmed: Order ${order.order_reference}, Receipt=${mpesa_receipt}`);

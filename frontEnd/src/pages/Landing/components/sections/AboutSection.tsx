@@ -1,11 +1,42 @@
+import { useState, useEffect } from 'react';
+import { Maximize2, X } from 'lucide-react';
+
 function AboutSection() {
+  const [activeImage, setActiveImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setActiveImage(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   return (
     <section id="about" className="max-w-7xl mx-auto px-4 py-12 md:px-6 md:py-20 lg:px-8 relative">
+      {/* Catholic background - stained glass, clearly visible, keeps text readable */}
+      <div className="absolute inset-0 -z-20 bg-[url('/images/about-section-bg.jpg')] bg-cover bg-center opacity-40" aria-hidden="true" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-white/90 via-white/50 to-white/90" aria-hidden="true" />
+
       {/* Background ambient light - Subtler near-white */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-[400px] bg-slate-50/20 blur-[120px] -z-10 rounded-full hidden md:block" />
 
       <div className="text-center max-w-3xl mx-auto mb-12 md:mb-20">
         <h2 className="text-slate-400 font-bold tracking-[0.2em] uppercase text-[10px] mb-4">Who We Are</h2>
+        <div className="mb-6 flex justify-center">
+          <a href="/devotions/rosary" className="inline-flex hover:scale-105 transition-transform duration-300" title="Pray the Rosary with Our Lady">
+            <div className="rounded-full overflow-hidden p-1.5" style={{
+              background: "linear-gradient(135deg, #FBBF24, #D97706)",
+              boxShadow: "0 14px 30px rgba(217,119,6,0.35), 0 4px 12px rgba(28,25,23,0.15)",
+            }}>
+              <img
+                src="/images/mary-immaculate.jpg"
+                alt="The Blessed Virgin Mary"
+                className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover"
+              />
+            </div>
+          </a>
+        </div>
         <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 mb-6 tracking-tight">
           Welcome to CSA Kirinyaga University
         </h1>
@@ -26,9 +57,16 @@ function AboutSection() {
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/70 to-transparent -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-[1200ms] skew-x-12"></div>
 
           <div className="flex flex-col items-center text-center relative z-10">
-            <div className="text-white mb-8 p-5 bg-gradient-to-br from-[#2563eb] via-[#3b82f6] to-[#60a5fa] rounded-2xl shadow-lg shadow-blue-500/10 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500">
-               <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-            </div>
+            <button
+              onClick={() => setActiveImage('/images/eucharist.jpg')}
+              className="mb-8 p-2.5 bg-gradient-to-br from-[#2563eb] via-[#3b82f6] to-[#60a5fa] rounded-full shadow-lg shadow-blue-500/10 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500 cursor-zoom-in relative"
+              aria-label="View mission image full size"
+            >
+              <img src="/images/eucharist.jpg" alt="The Eucharist — our mission of prayer" className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover" />
+              <span className="absolute -bottom-1 -right-1 w-7 h-7 bg-white/95 rounded-full flex items-center justify-center shadow-md text-blue-600">
+                <Maximize2 size={13} />
+              </span>
+            </button>
             <span className="inline-block px-3 py-1 bg-blue-50 text-blue-500 rounded-full text-[9px] font-black tracking-[0.2em] uppercase mb-3">PURPOSE</span>
             <h3 className="text-3xl font-black text-slate-900 mb-4 tracking-tight group-hover:text-primary transition-colors duration-300">
               Our Mission
@@ -48,9 +86,16 @@ function AboutSection() {
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/70 to-transparent -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-[1200ms] skew-x-12"></div>
 
           <div className="flex flex-col items-center text-center relative z-10">
-            <div className="text-white mb-8 p-5 bg-gradient-to-br from-[#059669] via-[#10b981] to-[#34d399] rounded-2xl shadow-lg shadow-emerald-500/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
-               <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
-            </div>
+            <button
+              onClick={() => setActiveImage('/images/christ.jpg')}
+              className="mb-8 p-2.5 bg-gradient-to-br from-[#059669] via-[#10b981] to-[#34d399] rounded-full shadow-lg shadow-emerald-500/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 cursor-zoom-in relative"
+              aria-label="View vision image full size"
+            >
+              <img src="/images/christ.jpg" alt="Christ — our vision of spreading the Gospel" className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover" />
+              <span className="absolute -bottom-1 -right-1 w-7 h-7 bg-white/95 rounded-full flex items-center justify-center shadow-md text-emerald-600">
+                <Maximize2 size={13} />
+              </span>
+            </button>
             <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-500 rounded-full text-[9px] font-black tracking-[0.2em] uppercase mb-3">FUTURE</span>
             <h3 className="text-3xl font-black text-slate-900 mb-4 tracking-tight group-hover:text-primary transition-colors duration-300">
               Our Vision
@@ -61,6 +106,28 @@ function AboutSection() {
           </div>
         </div>
       </div>
+
+      {/* Image Lightbox */}
+      {activeImage && (
+        <div
+          className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 md:p-10 animate-in fade-in duration-200"
+          onClick={() => setActiveImage(null)}
+        >
+          <button
+            onClick={() => setActiveImage(null)}
+            className="absolute top-5 right-5 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors"
+            aria-label="Close image"
+          >
+            <X size={22} />
+          </button>
+          <img
+            src={activeImage}
+            alt="Full size view"
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl animate-in zoom-in duration-300"
+          />
+        </div>
+      )}
     </section>
   );
 }

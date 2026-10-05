@@ -7,8 +7,9 @@ import logger from "../logger/winston.js";
  */
 export const getGallery = async (req, res) => {
     try {
-        const user = req.user; // Populated by verifyToken if applicable
-        
+        const user = req.user;
+        const { module_id: filterModule } = req.query;
+
         // Proximity Algorithm: Find photos taken within +/- 3 days of today's MM-DD (Anniversaries)
         const today = new Date();
         const startDay = new Date(today);
@@ -26,26 +27,37 @@ export const getGallery = async (req, res) => {
             (${anniversaryCondition}) as is_anniversary
             FROM hub_gallery 
             WHERE moderation_status = 'Approved'
-            AND (category = 'general' OR category IS NULL)
         `;
         let params = [];
 
-        // Access Control Logic
-        const roles = user?.role ? (Array.isArray(user.role) ? user.role : [user.role]) : [];
-        const isGlobalViewer = roles.some((r) =>
-          ["csa_chair", "os", "jumuiya_coordinator"].includes(String(r).toLowerCase().trim())
-        );
-        if (user && !isGlobalViewer) {
-            // Member sees their Jumuiya + General photos
-            query += ' AND (module_id = $1 OR module_id = $2)';
-            params.push('general');
-            params.push(user.jumuiya_id?.toString() || 'none');
-        } else if (!user) {
-            // Anonymous sees ONLY general
+        // If a specific module_id is requested (jumuiya gallery or admin dashboard),
+        // return ALL categories for that module — no category restriction.
+        if (filterModule) {
             query += ' AND module_id = $1';
-            params.push('general');
+            params.push(filterModule);
+        } else {
+            // Access Control Logic for public / general browsing
+            const roles = user?.role ? (Array.isArray(user.role) ? user.role : [user.role]) : [];
+            const isAdmin = roles.some((r) =>
+              ["csa_chair", "os", "jumuiya_coordinator", "admin", "superadmin", "project_manager"].includes(String(r).toLowerCase().trim())
+            );
+
+            if (isAdmin) {
+                // Admin users see ALL categories (Hero Slider, gallery-grid, teaser, general)
+                // No category filter needed
+            } else if (user) {
+                // Logged-in non-admin: only general category + their jumuiya
+                query += " AND (category = 'general' OR category IS NULL)";
+                query += ' AND (module_id = $1 OR module_id = $2)';
+                params.push('general');
+                params.push(user.jumuiya_id?.toString() || 'none');
+            } else {
+                // Public: only general category
+                query += " AND (category = 'general' OR category IS NULL)";
+                query += ' AND module_id = $1';
+                params.push('general');
+            }
         }
-        // If global viewer (csa_chair, os, jumuiya_coordinator), no extra filters (sees everything)
 
         query += ' ORDER BY upload_date DESC';
         
@@ -140,8 +152,8 @@ export const uploadToGallery = async (req, res) => {
         const imageUrl = req.file.path; // Cloudinary URL from multer-storage-cloudinary
 
         const query = `
-            INSERT INTO hub_gallery (module_id, image_url, description, event_name, public_id, category)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO hub_gallery (module_id, image_url, description, event_name, public_id, category, moderation_status)
+            VALUES ($1, $2, $3, $4, $5, $6, 'Approved')
             RETURNING *
         `;
         const values = [moduleId || 'general', imageUrl, description || '', eventName || 'Untitled Event', publicId || '', category || 'general'];

@@ -19,7 +19,7 @@ import { ApiError } from "../utils/ApiError.js";
 function classifyError(err) {
   // Default values
   let statusCode = 500;
-  let message = err.message || "Something went wrong";
+  let message = err.message || "Request could not be completed";
 
   // ApiError already has everything
   if (err instanceof ApiError) {
@@ -43,6 +43,12 @@ function classifyError(err) {
         message = "File upload error.";
     }
     return { statusCode, message };
+  }
+
+  // Generic errors: never leak internal details (SQL, connection errors, etc.)
+  // to clients in production.
+  if (process.env.NODE_ENV === "production" && statusCode >= 500) {
+    return { statusCode, message: "Internal Server Error" };
   }
 
   // Fallback: generic error

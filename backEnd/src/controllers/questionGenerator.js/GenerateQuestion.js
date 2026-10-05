@@ -4,27 +4,31 @@ import { sansitiseAndParseQuestionBlock } from "../../utils/index.js";
 import Question from "../../model/question.js";
 
 export const GenerateQuestion = async (req, res) => {
-  const { topic, numberOfQuestions = 50 } = req.body;
+  const requested = parseInt(req.body?.numberOfQuestions, 10);
+  const numberOfQuestions = Math.min(
+    Number.isInteger(requested) && requested > 0 ? requested : 30,
+    60,
+  );
 
-  logger.debug(`Generating ${numberOfQuestions} questions on topic: ${topic}`);
+  logger.debug(`Generating ${numberOfQuestions} questions on topic: ${req.body?.topic}`);
 
   try {
     const response = await axios.post(
       "https://api.groq.com/openai/v1/chat/completions",
       {
-        model: "llama-3.1-8b-instant",
+        model: "openai/gpt-oss-120b",
         messages: [
           {
             role: "system",
             content:
-              "You are a helpful assistant that generates multiple-choice questions strictly about Christianity. Do not create questions about mathematics, science, or any other topics, ⚠️ IMPORTANT , outside Christian faith, scripture, theology, and church life.",
+              "You are a helpful assistant that generates multiple-choice questions strictly about Christianity. Do not create questions about mathematics, science, or any other topics, IMPORTANT , outside Christian faith, scripture, theology, and church life.",
           },
           {
             role: "user",
             content: `
                        Generate ${numberOfQuestions} thoughtful and challanging spiritual discussion questions about: "${topic}".
 
-    ⚠️ IMPORTANT: Follow this exact format for each question block:
+    IMPORTANT: Follow this exact format for each question block:
 
     1. Question text (numbered, bold)
        A) Option A
@@ -43,7 +47,7 @@ export const GenerateQuestion = async (req, res) => {
        Correct Answer: A) God’s unconditional love
        Explanation: The parable emphasizes forgiveness and mercy, showing God’s love for repentant sinners.
 
-    ✅ Rules:
+    Rules:
     - Always number questions sequentially.
     - Always provide exactly 4 options (A–D).
     - Always mark the correct answer with "Correct Answer: X)".
@@ -95,10 +99,14 @@ export const GenerateQuestion = async (req, res) => {
     }
 
     try {
-      const insertedDocs = await Question.insertMany(questionsArray);
+      const insertedDocs = await Question.insertMany(questionsArray, {
+        topic,
+        generatedBy: req.user?.member_id || req.user?.id || req.user?.memberId || "admin",
+      });
       return res.status(201).json({
         message: "Questions generated and saved successfully",
         count: insertedDocs.length,
+        questions: insertedDocs,
       });
     } catch (err) {
       console.error("Insert error:", err.message);

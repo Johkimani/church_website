@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { FaChevronLeft, FaChevronRight, FaTrash } from 'react-icons/fa';
-import apiService from '../../Landing/services/api';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { FaArrowLeft, FaArrowRight, FaTrash } from 'react-icons/fa';
+import apiService from '../../../services/api';
 
 export interface SliderImg {
     id?: number | string;
@@ -16,39 +16,101 @@ interface HeroSliderProps {
     section?: string;
     fallbackImages?: SliderImg[];
     shopAnchor?: string;
+    buttonLabel?: string;
+    static?: boolean;
 }
 
 export const HeroSlider: React.FC<HeroSliderProps> = ({
     images,
     isAdmin,
     onDelete,
-    section = 'sacramentals',
-    fallbackImages = [],
     shopAnchor = '#products',
+    buttonLabel = 'Shop Now',
+    static: isStatic = false,
 }) => {
     const [idx, setIdx] = useState(0);
+    const [isTransitioning, setIsTransitioning] = useState(false);
+    const [progress, setProgress] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
+    const [loadedImages, setLoadedImages] = useState<Record<string | number, boolean>>({});
     const len = images.length;
+    const timeoutRef = useRef<number | null>(null);
+    const progressRef = useRef<number | null>(null);
+    const touchStartX = useRef(0);
+    const touchStartY = useRef(0);
 
-    const next = useCallback(() => setIdx(p => (p + 1) % len), [len]);
-    const prev = useCallback(() => setIdx(p => (p - 1 + len) % len), [len]);
+    const goTo = useCallback((newIdx: number) => {
+        if (newIdx === idx || isTransitioning || len <= 1) return;
+        setIsTransitioning(true);
+        setProgress(0);
+        setIdx(newIdx);
+        setTimeout(() => setIsTransitioning(false), 800);
+    }, [idx, isTransitioning, len]);
 
+    const next = useCallback(() => goTo((idx + 1) % len), [goTo, idx, len]);
+    const prev = useCallback(() => goTo((idx - 1 + len) % len), [goTo, idx, len]);
+
+    // Auto-play timer
     useEffect(() => {
-        if (len <= 1) return;
-        const t = setInterval(next, 5500);
-        return () => clearInterval(t);
-    }, [len, next]);
+        if (isStatic || len <= 1 || isPaused) return;
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = window.setTimeout(next, 5500);
+        return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
+    }, [len, next, idx, isPaused, isStatic]);
+
+    // Progress bar animation
+    useEffect(() => {
+        if (isStatic || len <= 1 || isPaused) { setProgress(0); return; }
+        setProgress(0);
+        const start = Date.now();
+        const duration = 5500;
+        const tick = () => {
+            const elapsed = Date.now() - start;
+            const pct = Math.min((elapsed / duration) * 100, 100);
+            setProgress(pct);
+            if (pct < 100) progressRef.current = window.requestAnimationFrame(tick);
+        };
+        progressRef.current = window.requestAnimationFrame(tick);
+        return () => { if (progressRef.current) cancelAnimationFrame(progressRef.current); };
+    }, [idx, len, isPaused, isStatic]);
+
+    // Touch/swipe handlers
+    const onTouchStart = (e: React.TouchEvent) => {
+        touchStartX.current = e.touches[0].clientX;
+        touchStartY.current = e.touches[0].clientY;
+    };
+
+    const onTouchEnd = (e: React.TouchEvent) => {
+        const dx = e.changedTouches[0].clientX - touchStartX.current;
+        const dy = e.changedTouches[0].clientY - touchStartY.current;
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+            if (dx < 0) next();
+            else prev();
+        }
+    };
 
     if (!len) {
-        return (
-            <div className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl shadow-2xl bg-gradient-to-br from-slate-800 to-indigo-900 flex items-center justify-center">
-                <div className="text-center text-white px-6">
-                    <p className="text-lg font-bold mb-2 opacity-80">No slider images yet</p>
-                    <p className="text-sm opacity-60 mb-6">Upload images to display here</p>
+        if (isStatic) {
+            return (
+                <div className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl shadow-xl bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
                     {isAdmin && (
-                        <a
-                            href="/admin/projects"
-                            className="px-6 py-2.5 bg-white text-indigo-600 font-bold text-sm rounded-xl shadow-lg hover:bg-blue-50 transition-colors"
-                        >
+                        <div className="relative z-10 px-6">
+                            <a href="/admin/projects" className="px-6 py-2.5 bg-blue-600 text-white font-semibold text-sm rounded-xl shadow-lg hover:bg-blue-700 transition-colors">
+                                Manage Slider Images
+                            </a>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+        return (
+            <div className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl bg-gradient-to-br from-slate-100 to-blue-50 border border-slate-200 flex items-center justify-center">
+                <div className="text-center px-6">
+                    <p className="text-lg font-bold mb-2 text-slate-700">No slider images yet</p>
+                    <p className="text-sm text-slate-400 mb-6">Upload images to display here</p>
+                    {isAdmin && (
+                        <a href="/admin/projects" className="px-6 py-2.5 bg-blue-600 text-white font-semibold text-sm rounded-xl shadow-lg hover:bg-blue-700 transition-colors">
                             Manage Slider Images
                         </a>
                     )}
@@ -57,80 +119,155 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
         );
     }
 
-
     return (
-        <div className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl shadow-2xl">
-            {images.map((img, i) => (
-                <div
-                    key={i}
-                    className={`absolute inset-0 transition-all duration-700 ease-in-out ${i === idx ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
-                >
-                    <img
-                        src={img.url}
-                        alt={img.title || img.message || 'slide'}
-                        className="w-full h-full object-cover"
+        <div
+            className="relative w-full h-[240px] sm:h-[320px] md:h-[420px] lg:h-[520px] overflow-hidden rounded-2xl md:rounded-3xl shadow-xl bg-gradient-to-br from-slate-900 to-slate-800 group"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+            {...(isStatic ? {} : { onTouchStart, onTouchEnd })}
+        >
+            {/* Progress bar */}
+            {!isStatic && len > 1 && (
+                <div className="absolute top-0 left-0 right-0 z-30 h-[3px] bg-white/10">
+                    <div
+                        className="h-full bg-white/70 transition-none"
+                        style={{ width: `${progress}%` }}
                     />
-                    {/* Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/25 to-transparent" />
-
-                    {/* Text */}
-                    <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8 md:p-12">
-                        {img.title && (
-                            <p className="text-white/70 text-xs sm:text-sm font-semibold uppercase tracking-widest mb-1">
-                                {img.title}
-                            </p>
-                        )}
-                        {img.message && (
-                            <h2 className="text-white text-lg sm:text-2xl md:text-4xl font-black leading-tight drop-shadow-lg max-w-2xl">
-                                {img.message}
-                            </h2>
-                        )}
-                        <div className="mt-4 h-1 w-10 sm:w-16 bg-blue-400 rounded-full" />
-                        <a
-                            href={shopAnchor}
-                            className="mt-4 inline-block px-6 py-3 bg-white text-blue-700 font-bold text-sm rounded-xl shadow-lg hover:bg-blue-50 transition-colors"
-                        >
-                            Shop Now
-                        </a>
-                    </div>
-
-                    {/* Admin delete */}
-                    {isAdmin && img.id && onDelete && (
-                        <button
-                            onClick={() => onDelete(img.id!)}
-                            className="absolute top-3 right-3 z-20 bg-rose-600/90 hover:bg-rose-700 text-white rounded-xl px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 shadow-lg transition"
-                        >
-                            <FaTrash size={10} /> Delete Image
-                        </button>
-                    )}
                 </div>
-            ))}
+            )}
 
-            {/* Nav Arrows */}
-            {len > 1 && (
-                <>
-                    <button
-                        onClick={prev}
-                        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 flex items-center justify-center bg-white/20 backdrop-blur-sm hover:bg-white/40 text-white rounded-full shadow-lg transition-all hover:scale-110"
+            {/* Slides */}
+            {images.map((img, i) => {
+                if (isStatic && i !== 0) return null;
+                const isActive = isStatic || i === idx;
+                const isLoaded = loadedImages[img.id || i];
+                const show = isStatic || (isActive && isLoaded);
+                return (
+                    <div
+                        key={i}
+                        className={`absolute inset-0 ${show ? 'opacity-100 z-10' : 'opacity-0 -z-10'}`}
+                        style={{ transition: 'opacity 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
                     >
-                        <FaChevronLeft size={16} />
-                    </button>
-                    <button
-                        onClick={next}
-                        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 flex items-center justify-center bg-white/20 backdrop-blur-sm hover:bg-white/40 text-white rounded-full shadow-lg transition-all hover:scale-110"
-                    >
-                        <FaChevronRight size={16} />
-                    </button>
-
-                    {/* Dots */}
-                    <div className="absolute bottom-3 sm:bottom-5 right-4 sm:right-8 z-20 flex gap-2">
-                        {images.map((_, i) => (
-                            <button
-                                key={i}
-                                onClick={() => setIdx(i)}
-                                className={`h-2.5 rounded-full transition-all duration-300 ${i === idx ? 'w-7 bg-white' : 'w-2.5 bg-white/40 hover:bg-white/70'}`}
+                        <img
+                            src={img.url}
+                            alt={img.title || img.message || 'slide'}
+                            className={`w-full h-full object-cover ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                            style={{
+                                transform: 'scale(1)',
+                                transition: isStatic
+                                    ? 'opacity 0.8s ease-in-out, transform 6s cubic-bezier(0.4, 0, 0.2, 1)'
+                                    : 'transform 6s cubic-bezier(0.4, 0, 0.2, 1)',
+                            }}
+                            loading={i === 0 ? 'eager' : 'lazy'}
+                            onLoad={() => setLoadedImages(prev => ({ ...prev, [img.id || i]: true }))}
+                        />
+                        {!isLoaded && (
+                            <div className={`absolute inset-0 ${isStatic
+                                ? 'bg-gradient-to-br from-slate-800 to-slate-900'
+                                : 'bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 animate-pulse'}`}
                             />
-                        ))}
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
+
+                        <div
+                            className="absolute bottom-0 left-0 right-0 p-5 sm:p-8 md:p-12"
+                            style={{
+                                transform: isActive ? 'translateY(0)' : 'translateY(20px)',
+                                opacity: isActive ? 1 : 0,
+                                transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.3s',
+                            }}
+                        >
+                            {img.title && (
+                                <p className="text-white/75 text-xs sm:text-sm font-semibold uppercase tracking-widest mb-1.5">
+                                    {img.title}
+                                </p>
+                            )}
+                            {img.message && (
+                                <h2 className="text-white text-lg sm:text-2xl md:text-4xl font-bold leading-tight drop-shadow-lg max-w-2xl">
+                                    {img.message}
+                                </h2>
+                            )}
+                            <div className="mt-4 h-1 w-10 sm:w-16 bg-blue-400 rounded-full" />
+                            <a
+                                href={shopAnchor}
+                                className="mt-5 inline-block px-6 py-3 bg-blue-600 text-white font-semibold text-sm rounded-xl shadow-lg hover:bg-blue-700 transition-colors"
+                            >
+                                {buttonLabel}
+                            </a>
+                        </div>
+
+                        {isAdmin && img.id && onDelete && (
+                            <button
+                                onClick={() => onDelete(img.id!)}
+                                className="absolute top-3 right-3 z-20 bg-rose-600/90 hover:bg-rose-700 text-white rounded-xl px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 shadow-lg transition"
+                            >
+                                <FaTrash size={10} /> Delete Image
+                            </button>
+                        )}
+                    </div>
+                );
+            })}
+
+            {/* Arrows */}
+                {!isStatic && len > 1 && (
+                    <>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); prev(); }}
+                            className="absolute left-0 top-1/2 -translate-y-1/2 hidden sm:flex flex-col items-center justify-center gap-1
+                                h-20 md:h-24 w-10 md:w-12
+                                bg-white/10 hover:bg-white/20 text-white
+                                backdrop-blur-md border-r-0 border border-white/15
+                                rounded-r-none rounded-l-none rounded-tr-3xl rounded-br-3xl
+                                transition-all duration-300 ease-out
+                                opacity-0 group-hover:opacity-100 -translate-x-full group-hover:translate-x-0
+                                z-40 active:scale-95 cursor-pointer shadow-[4px_0_20px_rgba(0,0,0,0.2)]"
+                            aria-label="Previous slide"
+                        >
+                            <FaArrowLeft className="text-sm md:text-base" />
+                            <span className="text-[8px] font-bold tracking-[0.2em] uppercase opacity-70">Prev</span>
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); next(); }}
+                            className="absolute right-0 top-1/2 -translate-y-1/2 hidden sm:flex flex-col items-center justify-center gap-1
+                                h-20 md:h-24 w-10 md:w-12
+                                bg-white/10 hover:bg-white/20 text-white
+                                backdrop-blur-md border-l-0 border border-white/15
+                                rounded-l-none rounded-r-none rounded-tl-3xl rounded-bl-3xl
+                                transition-all duration-300 ease-out
+                                opacity-0 group-hover:opacity-100 translate-x-full group-hover:translate-x-0
+                                z-40 active:scale-95 cursor-pointer shadow-[-4px_0_20px_rgba(0,0,0,0.2)]"
+                            aria-label="Next slide"
+                        >
+                            <FaArrowRight className="text-sm md:text-base" />
+                            <span className="text-[8px] font-bold tracking-[0.2em] uppercase opacity-70">Next</span>
+                        </button>
+
+                    {/* Dots + counter */}
+                    <div className="absolute bottom-3 sm:bottom-5 right-4 sm:right-8 z-20 flex items-center gap-3">
+                        <span className="text-white/50 text-xs font-mono tabular-nums hidden sm:inline">
+                            {idx + 1}/{len}
+                        </span>
+                        <div className="flex gap-1.5">
+                            {images.map((_, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => goTo(i)}
+                                    className="relative h-2 rounded-full transition-all duration-400 overflow-hidden"
+                                    style={{
+                                        width: i === idx ? '28px' : '8px',
+                                        backgroundColor: i === idx ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)',
+                                    }}
+                                    aria-label={`Go to slide ${i + 1}`}
+                                >
+                                    {i === idx && (
+                                        <div
+                                            className="absolute inset-y-0 left-0 bg-white/50 rounded-full"
+                                            style={{ width: `${progress}%` }}
+                                        />
+                                    )}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </>
             )}
@@ -148,7 +285,6 @@ export const useSliderImages = (section: string, fallback: SliderImg[] = []) => 
         let mounted = true;
         setSliderLoading(true);
 
-        // Check admin status
         const admin = localStorage.getItem("csa_is_admin") === "true" ||
             sessionStorage.getItem("csa_is_admin") === "true";
         if (mounted) setIsAdmin(admin);

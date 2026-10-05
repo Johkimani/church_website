@@ -1,7 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { useJumuiyaMembers } from '../../../hooks/useJumuiyaMembers';
-import { memberService } from '../../../api/jumuiyaMemberService';
+import { memberService, JumuiyaRosterMember } from '../../../api/jumuiyaMemberService';
 import { FaUserPlus, FaUsers, FaCheckCircle, FaPhoneAlt, FaMoneyBillWave, FaExclamationCircle, FaStamp, FaSpinner } from 'react-icons/fa';
 import './TabsSystem.css';
 import ChoirJoinForm from '../choir/ChoirJoinForm';
@@ -21,7 +20,7 @@ const REGISTRATION_FEE = 50;
 
 const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaId, jumuiyaColor = 'var(--primary)' }) => {
     const { user } = useAuth();
-    const { members } = useJumuiyaMembers({ jumuiya_id: jumuiyaId });
+    const [members, setMembers] = useState<JumuiyaRosterMember[]>([]);
     const [registrationType, setRegistrationType] = useState<RegistrationType>('self');
     const [selfPhone, setSelfPhone] = useState('');
     const [bulkPhone, setBulkPhone] = useState('');
@@ -31,6 +30,19 @@ const RegistrationTab: React.FC<RegistrationTabProps> = ({ jumuiyaName, jumuiyaI
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+
+    useEffect(() => {
+        let cancelled = false;
+        if (jumuiyaId) {
+            (async () => {
+                try {
+                    const res = await memberService.getJumuiyaRoster(jumuiyaId);
+                    if (!cancelled && res?.success) setMembers(res.data || []);
+                } catch { /* roster is best-effort for the registration form */ }
+            })();
+        }
+        return () => { cancelled = true; };
+    }, [jumuiyaId]);
 
     const currentMember = useMemo(() => {
         return members.find(m => m.id === user?.member_id && m.jumuiya_id === jumuiyaId);

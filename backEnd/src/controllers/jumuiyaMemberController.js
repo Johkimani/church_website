@@ -1,7 +1,8 @@
-import { db as pool } from "../Configs/dbConfig.js";
+import { db as pool, withTransaction } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 import { validateMemberRow, parseExcelRow } from "../utils/memberValidation.js";
 import { distributeMembers } from "../utils/distributionAlgorithm.js";
+import { syncNewImportRecords } from "../services/importSyncJob.js";
 import bcrypt from "bcrypt";
 
 /**
@@ -93,7 +94,39 @@ const checkExistingDuplicates = async (members) => {
   return results;
 };
 
-// ─── Seasons ────────────────────────────────────────────
+/**
+ * Resolve a jumuiya identifier (UUID or slug) to { slug, name }.
+ * Accepts a UUID (from sub_groups.group_id) or a slug like "st-monica".
+ * Returns null if unresolvable.
+ */
+const resolveJumuiyaInput = async (input) => {
+  if (!input) return null;
+  const slugToName = {
+    "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
+    "st-catherine": "St. Catherine", "st-dominic": "St. Dominic",
+    "st-elizabeth": "St. Elizabeth", "st-maria-goretti": "St. Maria Goretti",
+    "st-monica": "St. Monica",
+  };
+  if (slugToName[input]) return { slug: input, name: slugToName[input] };
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input);
+  if (isUuid) {
+    const result = await pool.query(
+      `SELECT slug, name FROM sub_groups WHERE group_id = $1`, [input]
+    );
+    if (result.rows.length) {
+      const row = result.rows[0];
+      return { slug: row.slug || input, name: row.name };
+    }
+  }
+  const nameResult = await pool.query(
+    `SELECT slug, name FROM sub_groups WHERE LOWER(name) = LOWER($1)`, [input]
+  );
+  if (nameResult.rows.length) {
+    const row = nameResult.rows[0];
+    return { slug: row.slug || input, name: row.name };
+  }
+  return null;
+};
 
 export const createSeason = async (req, res) => {
   try {
@@ -115,12 +148,14 @@ export const createSeason = async (req, res) => {
 
 export const getSeasons = async (req, res) => {
   try {
-    const { jumuiya_id } = req.params;
+    let { jumuiya_id } = req.params;
+    const resolved = await resolveJumuiyaInput(jumuiya_id);
+    if (!resolved) return res.status(400).json({ error: "Invalid jumuiya_id" });
     const result = await pool.query(
       `SELECT * FROM registration_seasons WHERE jumuiya_id = $1 ORDER BY start_date DESC`,
-      [jumuiya_id]
+      [resolved.slug]
     );
-    res.json({ status: "success", data: result.rows });
+    res.json({ status: "success", data: result.rows, jumuiyaName: resolved.name });
   } catch (error) {
     logger.error("getSeasons error:", error.message);
     res.status(500).json({ error: error.message });
@@ -160,8 +195,6 @@ export const deleteSeason = async (req, res) => {
   }
 };
 
-// ─── Imports ────────────────────────────────────────────
-
 export const importMembers = async (req, res) => {
   try {
     const { jumuiya_id } = req.params;
@@ -169,6 +202,17 @@ export const importMembers = async (req, res) => {
 
     if (!members || !Array.isArray(members) || members.length === 0) {
       return res.status(400).json({ error: "members array is required" });
+    }
+
+    let targetJumuiyaName = null;
+    let targetJumuiyaUuid = null;
+    if (jumuiya_id && jumuiya_id !== 'csa') {
+      const resolved = await resolveJumuiyaInput(jumuiya_id);
+      if (resolved) {
+        targetJumuiyaName = resolved.name;
+        const sgRes = await pool.query(`SELECT group_id FROM sub_groups WHERE name = $1 OR full_name = $1`, [resolved.name]);
+        if (sgRes.rows.length) targetJumuiyaUuid = sgRes.rows[0].group_id;
+      }
     }
 
     const nonEmpty = members.filter(m => m.regNumber?.trim() || m.name?.trim() || m.gender?.trim());
@@ -191,7 +235,7 @@ export const importMembers = async (req, res) => {
 
     for (let i = 0; i < nonEmpty.length; i++) {
       const member = nonEmpty[i];
-      const validated = validateMemberRow(member);
+      const validated = validateMemberRow(member, targetJumuiyaName);
       const dupes = dupErrors[i] || [];
       const allErrors = [...validated.errors, ...dupes];
       let status = validated.status;
@@ -213,12 +257,73 @@ export const importMembers = async (req, res) => {
       if (status === "error") errorCount++;
       else validCount++;
       results.push(recordResult.rows[0]);
+
+      // Direct synchronous insert into members table (0ms delay - immediate appearance)
+      if (validated.cleaned.regNumber && (status === "valid" || status === "warning")) {
+        const fullName = validated.cleaned.name || "";
+        const firstName = fullName.split(" ")[0] || "";
+        const lastName = fullName.substring(firstName.length).trim() || "";
+
+        let memberJumuiyaUuid = targetJumuiyaUuid;
+        if (!memberJumuiyaUuid && validated.cleaned.jumuiya) {
+          const sgMatch = await pool.query(`SELECT group_id FROM sub_groups WHERE LOWER(name) = LOWER($1)`, [validated.cleaned.jumuiya]);
+          if (sgMatch.rows.length) memberJumuiyaUuid = sgMatch.rows[0].group_id;
+        }
+
+        // DO NOTHING on conflict: an existing member's live data (names, phone,
+        // email, password, jumuiya) must never be overwritten by an import.
+        // Duplicates are already recorded as 'warning' import_records above.
+        // Passwords are hashed asynchronously by syncNewImportRecords' backfill,
+        // so we never block the request with per-row bcrypt.
+        await pool.query(
+          `INSERT INTO members (
+             member_id, first_name, last_name, phone, gender, course, email,
+             source, status, import_batch_id, join_date, jumuiya_id
+           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), $11)
+           ON CONFLICT (member_id) DO NOTHING`,
+          [
+            validated.cleaned.regNumber,
+            firstName,
+            lastName,
+            validated.cleaned.phone || null,
+            validated.cleaned.gender ? validated.cleaned.gender.toLowerCase() : null,
+            validated.cleaned.course || null,
+            validated.cleaned.email || null,
+            jumuiya_id === 'csa' ? 'csa' : 'jum',
+            status,
+            importId,
+            memberJumuiyaUuid || null
+          ]
+        );
+      }
     }
 
     await pool.query(
       `UPDATE member_imports SET valid_records = $1, error_records = $2 WHERE id = $3`,
       [validCount, errorCount, importId]
     );
+
+    // Create valid/warning members immediately so they appear in the members
+    // table and can log in right away (no 5-minute sync job wait).
+    await syncNewImportRecords();
+
+    // Clean up original pending WhatsApp self-registration records for this
+    // jumuiya whose cleaned_reg_number now exists in the members table.
+    // This prevents them from continuing to appear in the pending queue.
+    if (jumuiya_id && jumuiya_id !== 'csa') {
+      await pool.query(
+        `UPDATE import_records ir SET status = 'processed'
+         FROM member_imports mi
+         WHERE ir.import_id = mi.id
+           AND mi.jumuiya_id = $1
+           AND mi.file_name = 'whatsapp-self-registration'
+           AND ir.status = 'pending'
+           AND EXISTS (
+             SELECT 1 FROM members m WHERE m.member_id = ir.cleaned_reg_number
+           )`,
+        [jumuiya_id]
+      );
+    }
 
     res.status(201).json({
       status: "success",
@@ -443,6 +548,14 @@ export const updateImportStatus = async (req, res) => {
         );
         createdMembers.push(insertResult.rows[0]);
       }
+
+      // Mark all valid/warning import_records in this batch as 'processed'
+      // so they no longer appear in the pending self-registrations list.
+      await pool.query(
+        `UPDATE import_records SET status = 'processed'
+         WHERE import_id = $1 AND status IN ('valid', 'warning')`,
+        [importId]
+      );
     }
 
     const result = await pool.query(
@@ -463,8 +576,6 @@ export const updateImportStatus = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-// ─── Validation ─────────────────────────────────────────
 
 export const validateImportData = async (req, res) => {
   try {
@@ -505,8 +616,6 @@ export const validateImportData = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-// ─── Groups ──────────────────────────────────────────────
 
 export const createGroups = async (req, res) => {
   try {
@@ -589,8 +698,6 @@ export const deleteGroup = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-// ─── Distribution ───────────────────────────────────────
 
 export const autoDistribute = async (req, res) => {
   try {
@@ -715,56 +822,60 @@ export const getGroupMembers = async (req, res) => {
   }
 };
 
-// ─── Statistics ─────────────────────────────────────────
-
 export const getStatistics = async (req, res) => {
   try {
-    const { jumuiya_id } = req.params;
-    const slugToName = {
-      "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
-      "st-catherine": "St. Catherine", "st-dominic": "St. Dominic",
-      "st-elizabeth": "St. Elizabeth", "st-maria-goretti": "St. Maria Goretti",
-      "st-monica": "St. Monica",
-    };
-    const jumuiyaName = slugToName[jumuiya_id] || jumuiya_id;
+    let { jumuiya_id } = req.params;
+    const resolved = await resolveJumuiyaInput(jumuiya_id);
+    if (!resolved) return res.status(400).json({ error: "Invalid jumuiya_id" });
 
     const sgResult = await pool.query(
-      `SELECT group_id FROM sub_groups WHERE name = $1 OR slug = $1`, [jumuiyaName]
+      `SELECT group_id FROM sub_groups WHERE name = $1 OR slug = $1`, [resolved.name]
     );
     const jumuiyaUUID = sgResult.rows.length ? sgResult.rows[0].group_id : null;
 
-    const [jumMembers, csaMembers, genderBrkdwn, groupStats, activeSeason] = await Promise.all([
+    const [jumMembers, csaMembers, genderBrkdwn, totalMembersRow, groupStats, activeSeason, subGroupRow] = await Promise.all([
       jumuiyaUUID
         ? pool.query(
             `SELECT COUNT(*)::int as total,
-                    COALESCE(SUM(CASE WHEN LOWER(gender) = 'male' THEN 1 ELSE 0 END), 0)::int as male_count,
-                    COALESCE(SUM(CASE WHEN LOWER(gender) = 'female' THEN 1 ELSE 0 END), 0)::int as female_count
+                    COALESCE(SUM(CASE WHEN LOWER(TRIM(gender)) IN ('gent','male','man','boy','m') THEN 1 ELSE 0 END), 0)::int as gent_count,
+                    COALESCE(SUM(CASE WHEN LOWER(TRIM(gender)) IN ('lady','female','woman','girl','f') THEN 1 ELSE 0 END), 0)::int as lady_count
              FROM members WHERE jumuiya_id = $1 AND source = 'jum'
                AND (flagged_inactive IS NULL OR flagged_inactive = false)`,
             [jumuiyaUUID]
           )
-        : Promise.resolve({ rows: [{ total: 0, male_count: 0, female_count: 0 }] }),
+        : Promise.resolve({ rows: [{ total: 0, gent_count: 0, lady_count: 0 }] }),
 
       jumuiyaUUID
         ? pool.query(
             `SELECT COUNT(*)::int as total,
-                    COALESCE(SUM(CASE WHEN LOWER(gender) = 'male' THEN 1 ELSE 0 END), 0)::int as male_count,
-                    COALESCE(SUM(CASE WHEN LOWER(gender) = 'female' THEN 1 ELSE 0 END), 0)::int as female_count
+                    COALESCE(SUM(CASE WHEN LOWER(TRIM(gender)) IN ('gent','male','man','boy','m') THEN 1 ELSE 0 END), 0)::int as gent_count,
+                    COALESCE(SUM(CASE WHEN LOWER(TRIM(gender)) IN ('lady','female','woman','girl','f') THEN 1 ELSE 0 END), 0)::int as lady_count
              FROM members WHERE jumuiya_id = $1 AND source = 'csa'
                AND (flagged_inactive IS NULL OR flagged_inactive = false)`,
             [jumuiyaUUID]
           )
-        : Promise.resolve({ rows: [{ total: 0, male_count: 0, female_count: 0 }] }),
+        : Promise.resolve({ rows: [{ total: 0, gent_count: 0, lady_count: 0 }] }),
 
       jumuiyaUUID
         ? pool.query(
             `SELECT LOWER(gender) as gender, COUNT(*)::int as count
-             FROM members WHERE jumuiya_id = $1 AND source IN ('jum', 'csa')
+             FROM members WHERE jumuiya_id = $1
                AND (flagged_inactive IS NULL OR flagged_inactive = false)
+               AND (migrated_to_associates IS NULL OR migrated_to_associates = false)
              GROUP BY LOWER(gender)`,
             [jumuiyaUUID]
           )
         : Promise.resolve({ rows: [] }),
+
+      jumuiyaUUID
+        ? pool.query(
+            `SELECT COUNT(*)::int as total
+             FROM members WHERE jumuiya_id = $1
+               AND (flagged_inactive IS NULL OR flagged_inactive = false)
+               AND (migrated_to_associates IS NULL OR migrated_to_associates = false)`,
+            [jumuiyaUUID]
+          )
+        : Promise.resolve({ rows: [{ total: 0 }] }),
 
       pool.query(
         `SELECT mg.id, mg.group_name, mg.group_type, mg.capacity,
@@ -774,29 +885,39 @@ export const getStatistics = async (req, res) => {
          WHERE mg.jumuiya_id = $1
          GROUP BY mg.id, mg.group_name, mg.group_type, mg.capacity
          ORDER BY mg.group_name`,
-        [jumuiya_id]
+         [resolved.slug]
       ),
 
       pool.query(
         `SELECT * FROM registration_seasons
          WHERE jumuiya_id = $1 AND status = 'active'
          LIMIT 1`,
-        [jumuiya_id]
+        [resolved.slug]
       ),
+
+      jumuiyaUUID
+        ? pool.query(
+            `SELECT saint_image FROM sub_groups WHERE group_id = $1`,
+            [jumuiyaUUID]
+          )
+        : Promise.resolve({ rows: [] }),
     ]);
 
-    const jumRow = jumMembers.rows[0] || { total: 0, male_count: 0, female_count: 0 };
-    const csaRow = csaMembers.rows[0] || { total: 0, male_count: 0, female_count: 0 };
+    const jumRow = jumMembers.rows[0] || { total: 0, gent_count: 0, lady_count: 0 };
+    const csaRow = csaMembers.rows[0] || { total: 0, gent_count: 0, lady_count: 0 };
+    const totalRow = totalMembersRow.rows[0] || { total: 0 };
 
     res.json({
       status: "success",
       data: {
         jum: jumRow,
         csa: csaRow,
-        totalMembers: (jumRow.total || 0) + (csaRow.total || 0),
+        totalMembers: totalRow.total,
         genderBreakdown: genderBrkdwn.rows,
         groups: groupStats.rows,
         activeSeason: activeSeason.rows[0] || null,
+        jumuiyaName: resolved.name,
+        saintImage: subGroupRow.rows[0]?.saint_image || null,
       },
     });
   } catch (error) {
@@ -804,8 +925,6 @@ export const getStatistics = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-// ─── Batch Statistics (all jumuiyas in one call) ────────
 
 const slugToName = {
   "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
@@ -827,21 +946,21 @@ export const getBatchStatistics = async (req, res) => {
       const [jumMembers, csaMembers, groupStats, activeSeason] = await Promise.all([
         uuid
           ? pool.query(`SELECT COUNT(*)::int as total,
-                               COALESCE(SUM(CASE WHEN LOWER(gender)='male' THEN 1 ELSE 0 END),0)::int as male_count,
-                               COALESCE(SUM(CASE WHEN LOWER(gender)='female' THEN 1 ELSE 0 END),0)::int as female_count
+COALESCE(SUM(CASE WHEN LOWER(TRIM(gender)) IN ('gent','male','man','boy','m') THEN 1 ELSE 0 END),0)::int as gent_count,
+                                COALESCE(SUM(CASE WHEN LOWER(TRIM(gender)) IN ('lady','female','woman','girl','f') THEN 1 ELSE 0 END),0)::int as lady_count
                         FROM members WHERE jumuiya_id = $1 AND source = 'jum'
                         AND (migrated_to_associates IS NULL OR migrated_to_associates = false)
                         AND (flagged_inactive IS NULL OR flagged_inactive = false)`, [uuid])
-          : Promise.resolve({ rows: [{ total: 0, male_count: 0, female_count: 0 }] }),
+          : Promise.resolve({ rows: [{ total: 0, gent_count: 0, lady_count: 0 }] }),
 
         uuid
           ? pool.query(`SELECT COUNT(*)::int as total,
-                               COALESCE(SUM(CASE WHEN LOWER(gender)='male' THEN 1 ELSE 0 END),0)::int as male_count,
-                               COALESCE(SUM(CASE WHEN LOWER(gender)='female' THEN 1 ELSE 0 END),0)::int as female_count
+COALESCE(SUM(CASE WHEN LOWER(TRIM(gender)) IN ('gent','male','man','boy','m') THEN 1 ELSE 0 END),0)::int as gent_count,
+                                COALESCE(SUM(CASE WHEN LOWER(TRIM(gender)) IN ('lady','female','woman','girl','f') THEN 1 ELSE 0 END),0)::int as lady_count
                         FROM members WHERE jumuiya_id = $1 AND source = 'csa'
                         AND (migrated_to_associates IS NULL OR migrated_to_associates = false)
                         AND (flagged_inactive IS NULL OR flagged_inactive = false)`, [uuid])
-          : Promise.resolve({ rows: [{ total: 0, male_count: 0, female_count: 0 }] }),
+          : Promise.resolve({ rows: [{ total: 0, gent_count: 0, lady_count: 0 }] }),
 
         pool.query(`SELECT mg.id, mg.group_name, mg.group_type, mg.capacity,
                            COUNT(ga.id)::int as assigned_count
@@ -851,8 +970,8 @@ export const getBatchStatistics = async (req, res) => {
         pool.query(`SELECT * FROM registration_seasons WHERE jumuiya_id=$1 AND status='active' LIMIT 1`, [slug]),
       ]);
 
-      const j = jumMembers.rows[0] || { total: 0, male_count: 0, female_count: 0 };
-      const c = csaMembers.rows[0] || { total: 0, male_count: 0, female_count: 0 };
+      const j = jumMembers.rows[0] || { total: 0, gent_count: 0, lady_count: 0 };
+      const c = csaMembers.rows[0] || { total: 0, gent_count: 0, lady_count: 0 };
       const totalMembers = (j.total || 0) + (c.total || 0);
 
       return {
@@ -863,8 +982,8 @@ export const getBatchStatistics = async (req, res) => {
           groups: groupStats.rows,
           activeSeason: activeSeason.rows[0] || null,
           genderBreakdown: [
-            ...((j.male_count || c.male_count) ? [{ gender: "Male", count: (j.male_count || 0) + (c.male_count || 0) }] : []),
-            ...((j.female_count || c.female_count) ? [{ gender: "Female", count: (j.female_count || 0) + (c.female_count || 0) }] : []),
+            ...((j.gent_count || c.gent_count) ? [{ gender: "Gent", count: (j.gent_count || 0) + (c.gent_count || 0) }] : []),
+            ...((j.lady_count || c.lady_count) ? [{ gender: "Lady", count: (j.lady_count || 0) + (c.lady_count || 0) }] : []),
           ],
         },
       };
@@ -877,8 +996,6 @@ export const getBatchStatistics = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-// ─── Distribution History ───────────────────────────────
 
 export const getDistributionHistory = async (req, res) => {
   try {
@@ -894,8 +1011,6 @@ export const getDistributionHistory = async (req, res) => {
   }
 };
 
-// ─── Export ──────────────────────────────────────────────
-
 function deriveYearFromReg(memberId) {
   if (!memberId) return null;
   const match = String(memberId).match(/(\d{2})$/);
@@ -907,16 +1022,12 @@ function deriveYearFromReg(memberId) {
 
 export const getMembers = async (req, res) => {
   try {
-    const { jumuiya_id } = req.params;
-    const slugToName = {
-      "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
-      "st-catherine": "St. Catherine", "st-dominic": "St. Dominic",
-      "st-elizabeth": "St. Elizabeth", "st-maria-goretti": "St. Maria Goretti",
-      "st-monica": "St. Monica",
-    };
-    const jumuiyaName = slugToName[jumuiya_id] || jumuiya_id;
+    let { jumuiya_id } = req.params;
+    const resolved = await resolveJumuiyaInput(jumuiya_id);
+    if (!resolved) return res.json({ status: "success", data: [] });
+
     const sgResult = await pool.query(
-      `SELECT group_id FROM sub_groups WHERE name = $1 OR full_name = $1`, [jumuiyaName]
+      `SELECT group_id FROM sub_groups WHERE name = $1 OR full_name = $1`, [resolved.name]
     );
     const jumuiyaUUID = sgResult.rows.length ? sgResult.rows[0].group_id : null;
 
@@ -925,7 +1036,8 @@ export const getMembers = async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT m.member_id, m.first_name, m.last_name, m.gender, m.course, m.email, m.phone, m.year_of_study, m.join_date, m.source, m.flagged_inactive
+      `SELECT m.member_id, m.first_name, m.last_name, m.gender, m.course, m.email, m.phone, m.year_of_study, m.join_date, m.source, m.flagged_inactive,
+              m.sem_1_reg, m.sem_2_reg, m.sem_3_reg, m.sem_4_reg, m.sem_5_reg, m.sem_6_reg, m.sem_7_reg, m.sem_8_reg
        FROM members m
        LEFT JOIN registered r ON r.member_id = m.member_id AND r.status = 'active'
        WHERE m.jumuiya_id = $1 AND (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)
@@ -944,6 +1056,14 @@ export const getMembers = async (req, res) => {
       join_date: r.join_date || null,
       source: r.source,
       flagged_inactive: r.flagged_inactive || false,
+      sem_1_reg: r.sem_1_reg,
+      sem_2_reg: r.sem_2_reg,
+      sem_3_reg: r.sem_3_reg,
+      sem_4_reg: r.sem_4_reg,
+      sem_5_reg: r.sem_5_reg,
+      sem_6_reg: r.sem_6_reg,
+      sem_7_reg: r.sem_7_reg,
+      sem_8_reg: r.sem_8_reg,
     }));
 
     const seen = new Set();
@@ -970,16 +1090,12 @@ export const getMembers = async (req, res) => {
 
 export const exportMembers = async (req, res) => {
   try {
-    const { jumuiya_id } = req.params;
-    const slugToName = {
-      "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
-      "st-catherine": "St. Catherine", "st-dominic": "St. Dominic",
-      "st-elizabeth": "St. Elizabeth", "st-maria-goretti": "St. Maria Goretti",
-      "st-monica": "St. Monica",
-    };
-    const jumuiyaName = slugToName[jumuiya_id] || jumuiya_id;
+    let { jumuiya_id } = req.params;
+    const resolved = await resolveJumuiyaInput(jumuiya_id);
+    if (!resolved) return res.json({ status: "success", data: [] });
+
     const sgResult = await pool.query(
-      `SELECT group_id FROM sub_groups WHERE name = $1 OR full_name = $1`, [jumuiyaName]
+      `SELECT group_id FROM sub_groups WHERE name = $1 OR full_name = $1`, [resolved.name]
     );
     const jumuiyaUUID = sgResult.rows.length ? sgResult.rows[0].group_id : null;
 
@@ -1041,8 +1157,6 @@ export const exportAssignments = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-// ─── CSA-Level (centralized admission & distribution) ──
 
 const JUMUIYA_NAMES = [
   "St. Anthony", "St. Augustine", "St. Catherine",
@@ -1120,6 +1234,10 @@ export const csaImportMembers = async (req, res) => {
       [validCount, errorCount, importId]
     );
 
+    // Create valid/warning members immediately so they appear in the members
+    // table and can log in right away (no 5-minute sync job wait).
+    await syncNewImportRecords();
+
     res.status(201).json({
       status: "success",
       data: {
@@ -1152,8 +1270,10 @@ export const csaGetPendingMembers = async (req, res) => {
       conditions.push(`mi.academic_year = $${params.length}`);
     }
     if (gender) {
-      params.push(gender);
-      conditions.push(`LOWER(m.gender) = LOWER($${params.length})`);
+      params.push(gender.toLowerCase().trim());
+      conditions.push(
+        `CASE WHEN LOWER(TRIM($${params.length})) IN ('gent','male','man','boy','m') THEN LOWER(TRIM(m.gender)) IN ('gent','male','man','boy','m') ELSE LOWER(TRIM(m.gender)) IN ('lady','female','woman','girl','f') END`
+      );
     }
 
     const result = await pool.query(
@@ -1193,55 +1313,57 @@ export const csaGetJumuiyaStats = async (req, res) => {
 
       const totalResult = await pool.query(
         `SELECT COUNT(*)::int as total,
-                SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
-                SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
+                SUM(CASE WHEN LOWER(TRIM(m.gender)) IN ('gent','male','man','boy','m') THEN 1 ELSE 0 END)::int as gent_count,
+                SUM(CASE WHEN LOWER(TRIM(m.gender)) IN ('lady','female','woman','girl','f') THEN 1 ELSE 0 END)::int as lady_count
          FROM members m
          LEFT JOIN sub_groups sg ON sg.name = $1
          WHERE m.jumuiya_id = sg.group_id
-           AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)`,
+           AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)
+           AND (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)`,
         [name]
       );
 
       const csaResult = await pool.query(
         `SELECT COUNT(*)::int as total,
-                SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
-                SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
+                SUM(CASE WHEN LOWER(TRIM(m.gender)) IN ('gent','male','man','boy','m') THEN 1 ELSE 0 END)::int as gent_count,
+                SUM(CASE WHEN LOWER(TRIM(m.gender)) IN ('lady','female','woman','girl','f') THEN 1 ELSE 0 END)::int as lady_count
          FROM members m
          LEFT JOIN sub_groups sg ON sg.name = $1
          LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
          WHERE m.jumuiya_id = sg.group_id AND m.source = 'csa' ${yearFilter}
-           AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)`,
+           AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)
+           AND (m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)`,
         [name]
       );
 
-      const tRow = totalResult.rows[0] || { total: 0, male_count: 0, female_count: 0 };
-      const cRow = csaResult.rows[0] || { total: 0, male_count: 0, female_count: 0 };
-      jumuiyaStats.push({
-        slug,
-        name,
-        total: tRow.total,
-        male_count: tRow.male_count,
-        female_count: tRow.female_count,
-        csa: cRow,
-      });
-    }
+       const tRow = totalResult.rows[0] || { total: 0, gent_count: 0, lady_count: 0 };
+       const cRow = csaResult.rows[0] || { total: 0, gent_count: 0, lady_count: 0 };
+       jumuiyaStats.push({
+         slug,
+         name,
+         total: tRow.total,
+         gent_count: tRow.gent_count,
+         lady_count: tRow.lady_count,
+         csa: cRow,
+       });
+     }
 
-    const pendingResult = await pool.query(
+     const pendingResult = await pool.query(
       `SELECT COUNT(*)::int as total,
-              SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
-              SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
-       FROM members m
-       LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
-       WHERE m.source = 'csa' AND m.jumuiya_id IS NULL ${yearFilter}`
-    );
+               SUM(CASE WHEN LOWER(TRIM(m.gender)) IN ('gent','male','man','boy','m') THEN 1 ELSE 0 END)::int as gent_count,
+               SUM(CASE WHEN LOWER(TRIM(m.gender)) IN ('lady','female','woman','girl','f') THEN 1 ELSE 0 END)::int as lady_count
+        FROM members m
+        LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
+        WHERE m.source = 'csa' AND m.jumuiya_id IS NULL ${yearFilter}`
+     );
 
-    res.json({
-      status: "success",
-      data: {
-        jumuiyas: jumuiyaStats,
-        pending: pendingResult.rows[0] || { total: 0, male_count: 0, female_count: 0 },
-      },
-    });
+     res.json({
+       status: "success",
+       data: {
+         jumuiyas: jumuiyaStats,
+         pending: pendingResult.rows[0] || { total: 0, gent_count: 0, lady_count: 0 },
+       },
+     });
   } catch (error) {
     logger.error("csaGetJumuiyaStats error:", error.message);
     res.status(500).json({ error: error.message });
@@ -1292,12 +1414,104 @@ export const csaValidateMembers = async (req, res) => {
 };
 
 /**
+ * Per-jumuiya baseline counts used by the distribution algorithm.
+ *
+ *  - default ("jumuiya-balanced"): ALL active members count, so new members
+ *    are spread to level total membership.
+ *  - "equal-split": only already-placed CSA first-years count (source='csa').
+ *    Existing / WhatsApp-registered members are ignored so an incomplete
+ *    senior registration cannot skew the intake split. Multiple runs during
+ *    the same admission week stay consistent because earlier CSA placements
+ *    remain part of the baseline.
+ */
+const fetchDistributionBaselines = async (strategy, yearFilter) => {
+  const isEqualSplit = strategy === "equal-split";
+  const cohortWhere = isEqualSplit ? `AND m.source = 'csa'` : "";
+  const cohortYearFilter = isEqualSplit ? yearFilter : "";
+
+  const rows = [];
+  for (const name of JUMUIYA_NAMES) {
+    const totalResult = await pool.query(
+      `SELECT COUNT(*)::int as total,
+               SUM(CASE WHEN LOWER(TRIM(m.gender)) IN ('gent','male','man','boy','m') THEN 1 ELSE 0 END)::int as gent_count,
+               SUM(CASE WHEN LOWER(TRIM(m.gender)) IN ('lady','female','woman','girl','f') THEN 1 ELSE 0 END)::int as lady_count
+        FROM members m
+        LEFT JOIN sub_groups sg ON sg.name = $1
+        LEFT JOIN member_imports mi ON mi.id = m.import_batch_id
+        WHERE m.jumuiya_id = sg.group_id
+          AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)
+          ${cohortWhere}
+          ${cohortYearFilter}`,
+       [name]
+     );
+     rows.push({
+       slug: JUMUIYA_SLUG_MAP[name],
+       name,
+       existing: {
+         total: totalResult.rows[0]?.total || 0,
+         gent_count: totalResult.rows[0]?.gent_count || 0,
+         lady_count: totalResult.rows[0]?.lady_count || 0,
+       },
+      imported: { total: 0 },
+    });
+  }
+  return rows;
+};
+
+/**
+ * Gender-balanced distribution: distributes each gender independently
+ * in two passes. Gents are placed first (round-robin by lowest total,
+ * tiebreak by lowest gent count), then ladies are placed the same way.
+ * This prevents the "all gents first, then ladies" skew that causes
+ * unequal gender distribution across jumuiyas.
+ */
+const isGentMember = (g) => ["gent", "male", "man", "boy", "m"].includes(String(g || "").trim().toLowerCase());
+const isLadyMember = (g) => ["lady", "female", "woman", "girl", "f"].includes(String(g || "").trim().toLowerCase());
+
+const distributeGenderBalanced = (members, jumuiyaSlots) => {
+  const gentMembers = members.filter(m => isGentMember(m.gender));
+  const ladyMembers = members.filter(m => isLadyMember(m.gender));
+  const assignments = [];
+
+  const placeGroup = (group, isGent) => {
+    for (const member of group) {
+      const target = jumuiyaSlots
+        .sort((a, b) => {
+          const aScore = a.currentTotal + a.newCount;
+          const bScore = b.currentTotal + b.newCount;
+          if (aScore !== bScore) return aScore - bScore;
+          const aGender = isGent ? a.maleCount : a.femaleCount;
+          const bGender = isGent ? b.maleCount : b.femaleCount;
+          return aGender - bGender;
+        })[0];
+
+      if (isGent) target.maleCount++;
+      else target.femaleCount++;
+      target.newCount++;
+
+      assignments.push({
+        member_id: member.id,
+        member_name: member.name,
+        member_gender: member.gender,
+        target_slug: target.slug,
+        target_name: target.name,
+      });
+    }
+  };
+
+  placeGroup(gentMembers, true);
+  placeGroup(ladyMembers, false);
+
+  return assignments;
+};
+
+/**
  * POST /api/v1/jumuiya-members/csa/distribute-preview
  * Run the distribution algorithm and return preview (no DB writes).
  */
 export const csaDistributePreview = async (req, res) => {
   try {
-    const { academic_year } = req.body || {};
+    const { academic_year, strategy } = req.body || {};
     const yearFilter = academic_year ? `AND mi.academic_year = '${academic_year.replace(/'/g, "''")}'` : "";
 
     const pendingResult = await pool.query(
@@ -1314,72 +1528,25 @@ export const csaDistributePreview = async (req, res) => {
       return res.status(400).json({ error: "No pending members to distribute" });
     }
 
-    const jumuiyaRows = [];
-    for (const name of JUMUIYA_NAMES) {
-      const totalResult = await pool.query(
-        `SELECT COUNT(*)::int as total,
-                SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
-                SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
-         FROM members m LEFT JOIN sub_groups sg ON sg.name = $1 WHERE m.jumuiya_id = sg.group_id
-           AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)`,
-        [name]
-      );
-      jumuiyaRows.push({
-        slug: JUMUIYA_SLUG_MAP[name],
-        name,
-        existing: {
-          total: totalResult.rows[0]?.total || 0,
-          male_count: totalResult.rows[0]?.male_count || 0,
-          female_count: totalResult.rows[0]?.female_count || 0,
-        },
-      });
-    }
+    const jumuiyaRows = await fetchDistributionBaselines(strategy, yearFilter);
 
-    const members = pendingResult.rows;
-    const assignments = [];
-    const jumuiyaSlots = jumuiyaRows.map(j => ({
-      ...j,
-      currentTotal: j.existing.total,
-      maleCount: j.existing.male_count,
-      femaleCount: j.existing.female_count,
-      newCount: 0,
-    }));
+const members = pendingResult.rows;
+     const jumuiyaSlots = jumuiyaRows.map(j => ({
+       ...j,
+       currentTotal: j.existing.total,
+       gent_count: j.existing.gent_count,
+       lady_count: j.existing.lady_count,
+       newCount: 0,
+     }));
 
-    const sorted = [...members].sort((a, b) => {
-      if (a.gender === "Male" && b.gender !== "Male") return -1;
-      if (a.gender !== "Male" && b.gender === "Male") return 1;
-      return 0;
-    });
+     const assignments = distributeGenderBalanced(members, jumuiyaSlots);
 
-    for (const member of sorted) {
-      const isMale = member.gender === "Male";
-      const target = jumuiyaSlots
-        .sort((a, b) => {
-          const aScore = a.currentTotal + a.newCount;
-          const bScore = b.currentTotal + b.newCount;
-          if (aScore !== bScore) return aScore - bScore;
-          const aGender = isMale ? a.maleCount : a.femaleCount;
-          const bGender = isMale ? b.maleCount : b.femaleCount;
-          return aGender - bGender;
-        })[0];
-
-      if (isMale) target.maleCount++;
-      else target.femaleCount++;
-      target.newCount++;
-
-      assignments.push({
-        member_id: member.id,
-        member_name: member.name,
-        member_gender: member.gender,
-        target_slug: target.slug,
-        target_name: target.name,
-      });
-    }
-
-    const summary = {
-      totalMembers: members.length,
-      maleCount: members.filter(m => m.gender === "Male").length,
-      femaleCount: members.filter(m => m.gender === "Female").length,
+const summary = {
+       totalMembers: members.length,
+       gentCount: members.filter(m => isGentMember(m.gender)).length,
+        ladyCount: members.filter(m => isLadyMember(m.gender)).length,
+       maleCount: members.filter(m => isGentMember(m.gender)).length,
+       femaleCount: members.filter(m => isLadyMember(m.gender)).length,
       perJumuiya: jumuiyaSlots.map(j => ({
         slug: j.slug,
         name: j.name,
@@ -1389,7 +1556,7 @@ export const csaDistributePreview = async (req, res) => {
       })),
     };
 
-    res.json({ status: "success", data: { assignments, summary } });
+    res.json({ status: "success", data: { assignments, summary, strategy: strategy === "equal-split" ? "equal-split" : "jumuiya-balanced" } });
   } catch (error) {
     logger.error("csaDistributePreview error:", error.message);
     res.status(500).json({ error: error.message });
@@ -1419,83 +1586,37 @@ export const csaDistributeMembers = async (req, res) => {
       return res.status(400).json({ error: "No pending members to distribute" });
     }
 
-    const jumuiyaRows = [];
-    for (const name of JUMUIYA_NAMES) {
-      const totalResult = await pool.query(
-        `SELECT COUNT(*)::int as total,
-                SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
-                SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
-         FROM members m LEFT JOIN sub_groups sg ON sg.name = $1 WHERE m.jumuiya_id = sg.group_id
-           AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)`,
-        [name]
-      );
-      jumuiyaRows.push({
-        slug: JUMUIYA_SLUG_MAP[name],
-        name,
-        existing: totalResult.rows[0] || { total: 0, male_count: 0, female_count: 0 },
-        imported: { total: 0 },
-      });
-    }
+    const jumuiyaRows = await fetchDistributionBaselines(strategy, yearFilter);
 
-    const members = pendingResult.rows;
-    const jumuiyaSlots = jumuiyaRows.map(j => ({
-      slug: j.slug,
-      name: j.name,
-      currentTotal: j.existing?.total || 0,
-      maleCount: j.existing?.male_count || 0,
-      femaleCount: j.existing?.female_count || 0,
-      newCount: 0,
-    }));
+const members = pendingResult.rows;
+     const jumuiyaSlots = jumuiyaRows.map(j => ({
+       slug: j.slug,
+       name: j.name,
+       currentTotal: j.existing?.total || 0,
+       gent_count: j.existing?.gent_count || 0,
+       lady_count: j.existing?.lady_count || 0,
+       newCount: 0,
+     }));
 
-    const sorted = [...members].sort((a, b) => {
-      if (a.gender === "Male" && b.gender !== "Male") return -1;
-      if (a.gender !== "Male" && b.gender === "Male") return 1;
-      return 0;
-    });
+     const assignments = distributeGenderBalanced(members, jumuiyaSlots);
 
-    const assignments = [];
-    for (const member of sorted) {
-      const isMale = member.gender === "Male";
-      const target = jumuiyaSlots
-        .sort((a, b) => {
-          const aScore = a.currentTotal + a.newCount;
-          const bScore = b.currentTotal + b.newCount;
-          if (aScore !== bScore) return aScore - bScore;
-          const aGender = isMale ? a.maleCount : a.femaleCount;
-          const bGender = isMale ? b.maleCount : b.femaleCount;
-          return aGender - bGender;
-        })[0];
+     for (const a of assignments) {
+       await pool.query(
+         `UPDATE import_records SET cleaned_jumuiya = $1 WHERE cleaned_reg_number = $2`,
+         [a.target_name, a.member_id]
+       );
+       await pool.query(
+         `UPDATE members SET jumuiya_id = sg.group_id
+          FROM sub_groups sg
+          WHERE members.member_id = $1 AND sg.name = $2`,
+         [a.member_id, a.target_name]
+       );
+     }
 
-      if (isMale) target.maleCount++;
-      else target.femaleCount++;
-      target.newCount++;
-      target.memberId = member.id;
-
-      assignments.push({
-        member_id: member.id,
-        member_name: member.name,
-        member_gender: member.gender,
-        target_name: target.name,
-      });
-    }
-
-    for (const a of assignments) {
-      await pool.query(
-        `UPDATE import_records SET cleaned_jumuiya = $1 WHERE cleaned_reg_number = $2`,
-        [a.target_name, a.member_id]
-      );
-      await pool.query(
-        `UPDATE members SET jumuiya_id = sg.group_id
-         FROM sub_groups sg
-         WHERE members.member_id = $1 AND sg.name = $2`,
-        [a.member_id, a.target_name]
-      );
-    }
-
-    const summary = {
-      totalMembers: members.length,
-      maleCount: members.filter(m => m.gender === "Male").length,
-      femaleCount: members.filter(m => m.gender === "Female").length,
+     const summary = {
+       totalMembers: members.length,
+gentCount: members.filter(m => isGentMember(m.gender)).length,
+        ladyCount: members.filter(m => isLadyMember(m.gender)).length,
       perJumuiya: jumuiyaSlots.map(j => ({
         slug: j.slug,
         name: j.name,
@@ -1525,13 +1646,11 @@ export const csaDistributeMembers = async (req, res) => {
   }
 };
 
-// ─── Coordinator Approval Workflow ──────────────────────
-
 /**
  * Compute a balanced distribution for pending CSA members.
  * (Reuses the same algorithm as csaDistributePreview.)
  */
-const computeDistributionPlan = async (academicYear) => {
+const computeDistributionPlan = async (academicYear, strategy) => {
   const yearFilter = academicYear ? `AND mi.academic_year = '${academicYear.replace(/'/g, "''")}'` : "";
 
   const pendingResult = await pool.query(
@@ -1546,59 +1665,18 @@ const computeDistributionPlan = async (academicYear) => {
 
   if (!pendingResult.rows.length) return null;
 
-  const jumuiyaRows = [];
-  for (const name of JUMUIYA_NAMES) {
-    const totalResult = await pool.query(
-      `SELECT COUNT(*)::int as total,
-              SUM(CASE WHEN LOWER(m.gender) = 'male' THEN 1 ELSE 0 END)::int as male_count,
-              SUM(CASE WHEN LOWER(m.gender) = 'female' THEN 1 ELSE 0 END)::int as female_count
-       FROM members m LEFT JOIN sub_groups sg ON sg.name = $1 WHERE m.jumuiya_id = sg.group_id`,
-      [name]
-    );
-    jumuiyaRows.push({
-      slug: JUMUIYA_SLUG_MAP[name], name,
-      existing: totalResult.rows[0] || { total: 0, male_count: 0, female_count: 0 },
-      imported: { total: 0 },
-    });
-  }
+  const jumuiyaRows = await fetchDistributionBaselines(strategy, yearFilter);
 
-  const members = pendingResult.rows;
-  const slots = jumuiyaRows.map(j => ({
-    slug: j.slug, name: j.name,
-    currentTotal: j.existing?.total || 0,
-    maleCount: j.existing?.male_count || 0,
-    femaleCount: j.existing?.female_count || 0,
-    newCount: 0,
-  }));
+const members = pendingResult.rows;
+   const slots = jumuiyaRows.map(j => ({
+     slug: j.slug, name: j.name,
+     currentTotal: j.existing?.total || 0,
+     gent_count: j.existing?.gent_count || 0,
+     lady_count: j.existing?.lady_count || 0,
+     newCount: 0,
+   }));
 
-  const sorted = [...members].sort((a, b) => {
-    if (a.gender === "Male" && b.gender !== "Male") return -1;
-    if (a.gender !== "Male" && b.gender === "Male") return 1;
-    return 0;
-  });
-
-  const assignments = [];
-  for (const member of sorted) {
-    const isMale = member.gender === "Male";
-    const target = slots.sort((a, b) => {
-      const aScore = a.currentTotal + a.newCount;
-      const bScore = b.currentTotal + b.newCount;
-      if (aScore !== bScore) return aScore - bScore;
-      const aGender = isMale ? a.maleCount : a.femaleCount;
-      const bGender = isMale ? b.maleCount : b.femaleCount;
-      return aGender - bGender;
-    })[0];
-    if (isMale) target.maleCount++;
-    else target.femaleCount++;
-    target.newCount++;
-    assignments.push({
-      member_id: member.id,
-      member_name: member.name,
-      member_gender: member.gender,
-      target_name: target.name,
-      target_slug: target.slug,
-    });
-  }
+  const assignments = distributeGenderBalanced(members, slots);
 
   const perJumuiya = slots.map(s => ({
     slug: s.slug, name: s.name,
@@ -1616,8 +1694,8 @@ const computeDistributionPlan = async (academicYear) => {
  */
 export const csaSubmitForApproval = async (req, res) => {
   try {
-    const { academic_year } = req.body || {};
-    const plan = await computeDistributionPlan(academic_year);
+    const { academic_year, strategy } = req.body || {};
+    const plan = await computeDistributionPlan(academic_year, strategy);
     if (!plan) return res.status(400).json({ error: "No pending members to distribute" });
 
     const batchResult = await pool.query(
@@ -1635,10 +1713,10 @@ export const csaSubmitForApproval = async (req, res) => {
       );
     }
 
-    const summary = {
-      totalMembers: plan.members.length,
-      maleCount: plan.members.filter(m => m.gender === "Male").length,
-      femaleCount: plan.members.filter(m => m.gender === "Female").length,
+const summary = {
+       totalMembers: plan.members.length,
+       gentCount: plan.members.filter(m => isGentMember(m.gender)).length,
+       ladyCount: plan.members.filter(m => isLadyMember(m.gender)).length,
       perJumuiya: plan.perJumuiya,
     };
 
@@ -1659,14 +1737,9 @@ export const csaSubmitForApproval = async (req, res) => {
 export const csaGetApprovals = async (req, res) => {
   try {
     const { jumuiya_id } = req.params;
-    const slugToName = {
-      "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
-      "st-catherine": "St. Catherine", "st-dominic": "St. Dominic",
-      "st-elizabeth": "St. Elizabeth", "st-maria-goretti": "St. Maria Goretti",
-      "st-monica": "St. Monica",
-    };
-    const jumuiyaName = slugToName[jumuiya_id];
-    if (!jumuiyaName) return res.status(400).json({ error: "Invalid jumuiya_id" });
+    const resolved = await resolveJumuiyaInput(jumuiya_id);
+    if (!resolved) return res.status(400).json({ error: "Invalid jumuiya_id" });
+    const jumuiyaName = resolved.name;
 
     const result = await pool.query(
       `SELECT aa.id, aa.status, aa.rejection_reason, aa.reviewed_at,
@@ -1762,14 +1835,9 @@ export const csaBatchReviewApprovals = async (req, res) => {
       return res.status(400).json({ error: "status must be 'approved' or 'rejected'" });
     }
 
-    const slugToName = {
-      "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
-      "st-catherine": "St. Catherine", "st-dominic": "St. Dominic",
-      "st-elizabeth": "St. Elizabeth", "st-maria-goretti": "St. Maria Goretti",
-      "st-monica": "St. Monica",
-    };
-    const jumuiyaName = slugToName[jumuiya_id];
-    if (!jumuiyaName) return res.status(400).json({ error: "Invalid jumuiya_id" });
+    const resolved = await resolveJumuiyaInput(jumuiya_id);
+    if (!resolved) return res.status(400).json({ error: "Invalid jumuiya_id" });
+    const jumuiyaName = resolved.name;
 
     const result = await pool.query(
       `UPDATE allocation_approvals aa
@@ -1881,80 +1949,76 @@ export const csaFinalizeDistribution = async (req, res) => {
   try {
     const { batchId } = req.params;
 
-    const batch = await pool.query(`SELECT * FROM distribution_batches WHERE id = $1`, [batchId]);
-    if (!batch.rows.length) return res.status(404).json({ error: "Batch not found" });
-    if (batch.rows[0].status === "finalized") {
-      return res.status(400).json({ error: "Already finalized" });
-    }
+    const finalized = await withTransaction(async (tx) => {
+      const batch = await tx.query(`SELECT * FROM distribution_batches WHERE id = $1`, [batchId]);
+      if (!batch.rows.length) throw Object.assign(new Error("Batch not found"), { statusCode: 404 });
+      if (batch.rows[0].status === "finalized") throw Object.assign(new Error("Already finalized"), { statusCode: 400 });
 
-    // Auto-approve any remaining pending allocations so admin can finalize in one click
-    await pool.query(
-      `UPDATE allocation_approvals SET status = 'approved', reviewed_by = $1, reviewed_at = NOW()
-       WHERE distribution_batch_id = $2 AND status = 'pending'`,
-      [req.user?.id || null, batchId]
-    );
+      // Auto-approve any remaining pending allocations so admin can finalize in one click
+      await tx.query(
+        `UPDATE allocation_approvals SET status = 'approved', reviewed_by = $1, reviewed_at = NOW()
+         WHERE distribution_batch_id = $2 AND status = 'pending'`,
+        [req.user?.id || null, batchId]
+      );
 
-    // Get all approved allocations in this batch
-    const approved = await pool.query(
-      `SELECT aa.member_id, aa.target_jumuiya
-       FROM allocation_approvals aa
-       WHERE aa.distribution_batch_id = $1 AND aa.status = 'approved'`,
-      [batchId]
-    );
+      // Get all approved allocations in this batch
+      const approved = await tx.query(
+        `SELECT aa.member_id, aa.target_jumuiya
+         FROM allocation_approvals aa
+         WHERE aa.distribution_batch_id = $1 AND aa.status = 'approved'`,
+        [batchId]
+      );
 
-    if (approved.rows.length === 0) {
-      await pool.query(
+      const approvedRows = approved.rows;
+
+      // Sequential awaits on the SAME transaction client (Promise.all would
+      // interleave statements on a single connection and break atomicity).
+      for (const a of approvedRows) {
+        await tx.query(
+          `UPDATE import_records SET cleaned_jumuiya = $1 WHERE cleaned_reg_number = $2`,
+          [a.target_jumuiya, a.member_id]
+        );
+        await tx.query(
+          `UPDATE members SET jumuiya_id = sg.group_id
+           FROM sub_groups sg
+           WHERE members.member_id = $1 AND sg.name = $2`,
+          [a.member_id, a.target_jumuiya]
+        );
+      }
+
+      await tx.query(
         `UPDATE distribution_batches SET status = 'finalized', finalized_at = NOW() WHERE id = $1`,
         [batchId]
       );
-      return res.json({
-        status: "success",
-        data: {
-          finalized: 0,
-          batch_id: parseInt(batchId),
-          message: "No approved allocations — batch finalized with 0 members",
-        },
-      });
-    }
 
-    for (const a of approved.rows) {
-      await pool.query(
-        `UPDATE import_records SET cleaned_jumuiya = $1 WHERE cleaned_reg_number = $2`,
-        [a.target_jumuiya, a.member_id]
+      // Record distribution history
+      const summary = {
+        totalMembers: approvedRows.length,
+        finalizedAt: new Date().toISOString(),
+      };
+      await tx.query(
+        `INSERT INTO distribution_history (jumuiya_id, algorithm_used, stats)
+         VALUES ($1, $2, $3)`,
+        ["csa", "coordinator-approval", JSON.stringify(summary)]
       );
-      await pool.query(
-        `UPDATE members SET jumuiya_id = sg.group_id
-         FROM sub_groups sg
-         WHERE members.member_id = $1 AND sg.name = $2`,
-        [a.member_id, a.target_jumuiya]
-      );
-    }
 
-    await pool.query(
-      `UPDATE distribution_batches SET status = 'finalized', finalized_at = NOW() WHERE id = $1`,
-      [batchId]
-    );
-
-    // Record distribution history
-    const summary = {
-      totalMembers: approved.rows.length,
-      finalizedAt: new Date().toISOString(),
-    };
-    await pool.query(
-      `INSERT INTO distribution_history (jumuiya_id, algorithm_used, stats)
-       VALUES ($1, $2, $3)`,
-      ["csa", "coordinator-approval", JSON.stringify(summary)]
-    );
+      return approvedRows.length;
+    });
 
     res.json({
       status: "success",
       data: {
-        finalized: approved.rows.length,
+        finalized,
         batch_id: parseInt(batchId),
-        message: `Finalized ${approved.rows.length} member(s) across Jumuiyas`,
+        message: finalized > 0
+          ? `Finalized ${finalized} member(s) across Jumuiyas`
+          : "No approved allocations — batch finalized with 0 members",
       },
     });
   } catch (error) {
+    if (error.statusCode === 404 || error.statusCode === 400) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
     logger.error("csaFinalizeDistribution error:", error.message);
     res.status(500).json({ error: error.message });
   }
@@ -1966,17 +2030,11 @@ export const csaFinalizeDistribution = async (req, res) => {
  */
 export const csaGetJumuiyaMemberList = async (req, res) => {
   try {
-    const { jumuiya_id } = req.params;
+    let { jumuiya_id } = req.params;
     const { batch_id, academic_year } = req.query;
 
-    const slugToName = {
-      "st-anthony": "St. Anthony", "st-augustine": "St. Augustine",
-      "st-catherine": "St. Catherine", "st-dominic": "St. Dominic",
-      "st-elizabeth": "St. Elizabeth", "st-maria-goretti": "St. Maria Goretti",
-      "st-monica": "St. Monica",
-    };
-    const jumuiyaName = slugToName[jumuiya_id];
-    if (!jumuiyaName) return res.status(400).json({ error: "Invalid jumuiya_id" });
+    const resolved = await resolveJumuiyaInput(jumuiya_id);
+    if (!resolved) return res.status(400).json({ error: "Invalid jumuiya_id" });
 
     let query = `
       SELECT CONCAT_WS(' ', m.first_name, m.last_name) as name,
@@ -1991,7 +2049,7 @@ export const csaGetJumuiyaMemberList = async (req, res) => {
       WHERE aa.target_jumuiya = $1 AND aa.status = 'approved'
         AND db.status = 'finalized'
     `;
-    const params = [jumuiyaName];
+    const params = [resolved.name];
     let paramIdx = 2;
 
     if (batch_id) {
@@ -2009,7 +2067,7 @@ export const csaGetJumuiyaMemberList = async (req, res) => {
 
     res.json({
       status: "success",
-      data: { jumuiya: jumuiyaName, members: result.rows, total: result.rows.length },
+      data: { jumuiya: resolved.name, members: result.rows, total: result.rows.length },
     });
   } catch (error) {
     logger.error("csaGetJumuiyaMemberList error:", error.message);
@@ -2023,21 +2081,11 @@ export const csaGetJumuiyaMemberList = async (req, res) => {
  */
 export const getCsaAllocations = async (req, res) => {
   try {
-    const { jumuiya_id } = req.params;
+    let { jumuiya_id } = req.params;
     const { academic_year } = req.query;
 
-    const slugToName = {
-      "st-anthony": "St. Anthony",
-      "st-augustine": "St. Augustine",
-      "st-catherine": "St. Catherine",
-      "st-dominic": "St. Dominic",
-      "st-elizabeth": "St. Elizabeth",
-      "st-maria-goretti": "St. Maria Goretti",
-      "st-monica": "St. Monica",
-    };
-
-    const jumuiyaName = slugToName[jumuiya_id];
-    if (!jumuiyaName) return res.status(400).json({ error: "Invalid jumuiya_id" });
+    const resolved = await resolveJumuiyaInput(jumuiya_id);
+    if (!resolved) return res.status(400).json({ error: "Invalid jumuiya_id" });
 
     const yearFilter = academic_year ? `AND mi.academic_year = '${academic_year.replace(/'/g, "''")}'` : "";
 
@@ -2055,13 +2103,13 @@ export const getCsaAllocations = async (req, res) => {
          AND m.jumuiya_id = sg.group_id
          ${yearFilter}
        ORDER BY m.first_name`,
-      [jumuiyaName]
+      [resolved.name]
     );
 
     res.json({
       status: "success",
       data: {
-        jumuiya: jumuiyaName,
+        jumuiya: resolved.name,
         members: result.rows,
         total: result.rows.length,
       },
@@ -2205,12 +2253,14 @@ export const csaDeleteRejectedMember = async (req, res) => {
  */
 export const lookupMemberByRegNumber = async (req, res) => {
   try {
-    const { search } = req.params;
+    const search = req.query.search || req.params.search;
     if (!search || search.trim().length < 2) {
       return res.status(400).json({ success: false, message: "Search must be at least 2 characters" });
     }
 
     const s = search.trim();
+    // Collapse runs of whitespace so "Grace  Njoki" tokenises like "Grace Njoki".
+    const tokens = s.replace(/\s+/g, " ");
     const result = await pool.query(
       `SELECT m.member_id, m.first_name, m.last_name, m.gender, m.phone, m.email,
               m.year_of_study, m.course,
@@ -2224,9 +2274,26 @@ export const lookupMemberByRegNumber = async (req, res) => {
           OR m.member_id ILIKE $2
           OR m.first_name ILIKE $2
           OR m.last_name ILIKE $2
-       ORDER BY m.member_id
+          OR NOT EXISTS (
+               -- Full-name search. Every word typed must appear in the first
+               -- OR last name, so "Grace Njoki" finds a row stored as
+               -- first_name='Grace', last_name='Njoki' -- which the
+               -- single-column ILIKE checks above can never match.
+               -- NOT EXISTS => no typed word is missing, i.e. all of them hit.
+               SELECT 1
+               FROM unnest(string_to_array(lower($3), ' ')) AS t(word)
+               WHERE t.word <> ''
+                 AND lower(COALESCE(m.first_name, '')) NOT LIKE '%' || t.word || '%'
+                 AND lower(COALESCE(m.last_name,  '')) NOT LIKE '%' || t.word || '%'
+             )
+       -- Exact full-name hits first, then alphabetical so the "many members
+       -- sharing a first name" chooser reads naturally instead of by reg no.
+       ORDER BY
+         CASE WHEN lower(trim(concat_ws(' ', m.first_name, m.last_name))) = lower($1)
+              THEN 0 ELSE 1 END,
+         m.first_name, m.last_name, m.member_id
        LIMIT 10`,
-      [s, `%${s}%`]
+      [s, `%${s}%`, tokens]
     );
 
     res.json({ success: true, data: result.rows });
@@ -2282,7 +2349,7 @@ export const updateMember = async (req, res) => {
  */
 export const flagMember = async (req, res) => {
   try {
-    const { member_id } = req.params;
+    const member_id = req.query.member_id || req.params.member_id;
     const { flagged } = req.body;
 
     if (typeof flagged !== "boolean") {

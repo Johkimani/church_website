@@ -1,15 +1,18 @@
 export const CATEGORY_ORDER = [
-  'Executive', 'Jumuiya Coordinators', 'Bible Coordinators', 'Rosary', 'Pamphlet Managers', 'Project Managers', 'Liturgist', 'Choir Officials', 'Instrument Managers', 'Liturgical Dancers', 'Catechist'
+  'Executive', 'Jumuiya Coordinators', 'Bible Coordinators', 'Rosary Coordinators', 'Pamphlet Managers', 'Project Managers', 'Liturgists', 'Choir Officials', 'Instrument Managers', 'Liturgical Dancers', 'Catechist'
 ];
+
+// Default closing tribute on the public history page when a term has no custom message
+export const DEFAULT_CLOSING_TRIBUTE = 'We gratefully honor these gents and ladies for their devoted service. Their legacy continues to guide and inspire our community today.';
 
 export const CATEGORY_COLORS: Record<string, string> = {
   'Executive': 'from-purple-600 to-purple-700',
   'Jumuiya Coordinators': 'from-blue-600 to-blue-700',
   'Bible Coordinators': 'from-green-600 to-green-700',
-  'Rosary': 'from-pink-600 to-pink-700',
+  'Rosary Coordinators': 'from-pink-600 to-pink-700',
   'Pamphlet Managers': 'from-orange-600 to-orange-700',
   'Project Managers': 'from-indigo-600 to-indigo-700',
-  'Liturgist': 'from-cyan-600 to-cyan-700',
+  'Liturgists': 'from-cyan-600 to-cyan-700',
   'Choir Officials': 'from-red-600 to-red-700',
   'Instrument Managers': 'from-blue-600 to-blue-700',
   'Liturgical Dancers': 'from-blue-600 to-blue-700',
@@ -20,13 +23,13 @@ export const POSITION_BY_CATEGORY: Record<string, string[]> = {
   'Executive': ['Chairperson', 'Vice Chairperson', 'Organizing Secretary', 'Treasurer', 'Secretary', 'Assistant Secretary'],
   'Jumuiya Coordinators': ['Jumuiya Coordinator', 'Assistant Jumuiya Coordinator'],
   'Bible Coordinators': ['Bible Study Coordinator', 'Assistant Bible Study Coordinator'],
-  'Rosary': ['Rosary Coordinator', 'Assistant Rosary Coordinator'],
+  'Rosary Coordinators': ['Rosary Coordinator', 'Assistant Rosary Coordinator'],
   'Pamphlet Managers': ['Pamphlet Manager', 'Assistant Pamphlet Manager'],
   'Project Managers': ['Project Manager', 'Assistant Project Manager'],
-  'Liturgist': ['Liturgist', 'Assistant Liturgist'],
+  'Liturgists': ['Liturgist', 'Assistant Liturgist'],
   'Choir Officials': ['Choir Chairperson', 'Choir Vice Chairperson'],
   'Instrument Managers': ['Instrument Manager', 'Assistant Instrument Manager'],
-  'Liturgical Dancers': ['Dance Coordinator', 'Assistant Dance Coordinator'],
+  'Liturgical Dancers': ['Dance Chairperson', 'Dance Vice Chairperson'],
   'Catechist': ['Catechist']
 };
 
@@ -68,4 +71,36 @@ export const JUMUIYA_COLORS: Record<string, string> = {
   'St. Elizabeth': 'from-green-600 to-green-700',
   'St. Maria Goretti': 'from-blue-600 to-blue-700',
   'St. Monica': 'from-red-600 to-red-700'
+};
+
+export const GROUP_OPTIONS = [
+  'Choir',
+  'Dancers',
+  'Charismatic',
+  'St. Francis',
+  'Mentorship'
+];
+
+export const POSITIONS_BY_GROUP: Record<string, string[]> = {
+  'Choir': ['Choir Master', 'Choir Mistress', 'Secretary', 'Vice Secretary', 'Treasurer', 'Project Manager', 'Gent Representative', 'Lady Representative'],
+  'Dancers': ['Dance Chairperson', 'Dance Vice Chairperson'],
+  'Charismatic': ['Chairperson', 'Vice Chairperson'],
+  'St. Francis': ['Chairperson', 'Vice Chairperson', 'Secretary', 'Treasurer'],
+  'Mentorship': ['Coordinator', 'Vice Coordinator']
+};
+
+export const GROUP_POSITION_RANK: Record<string, Record<string, number>> = {};
+Object.entries(POSITIONS_BY_GROUP).forEach(([group, positions]) => {
+  GROUP_POSITION_RANK[group] = {};
+  positions.forEach((pos, idx) => {
+    GROUP_POSITION_RANK[group][pos] = idx;
+  });
+});
+
+export const GROUP_COLORS: Record<string, string> = {
+  'Choir': 'from-red-600 to-red-700',
+  'Dancers': 'from-cyan-600 to-cyan-700',
+  'Charismatic': 'from-orange-600 to-orange-700',
+  'St. Francis': 'from-teal-600 to-teal-700',
+  'Mentorship': 'from-violet-600 to-violet-700'
 };

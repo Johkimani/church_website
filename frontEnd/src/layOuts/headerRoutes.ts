@@ -10,12 +10,12 @@ export const publicNavLinks: NavLink[] = [
   { name: "Community", path: "/community" },
   { name: "Jumuiya", path: "/jumuiya" },
   { name: "Officials", path: "/officials" },
+  { name: "Projects", path: "/projects" },
   { name: "Gallery", path: "/gallery" },
   { name: "Devotion", path: "/devotions" },
 ];
 
 // Auth-only routes - visible when logged in
 export const authNavLinks: NavLink[] = [
-  { name: "Projects", path: "/projects" },
-  { name: "Activities", path: "/activities" },
+   { name: "Activities", path: "/activities" },
 ];

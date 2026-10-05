@@ -28,7 +28,7 @@ async function enhanceSchema() {
       ADD COLUMN IF NOT EXISTS contributor_id INT,
       ADD COLUMN IF NOT EXISTS public_id VARCHAR(255);
     `);
-    console.log("✔ hub_gallery table updated with new columns.");
+    console.log("hub_gallery table updated with new columns.");
 
     // 2. Create Comments table
     await client.query(`
@@ -42,7 +42,7 @@ async function enhanceSchema() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log("✔ hub_gallery_comments table ready.");
+    console.log("hub_gallery_comments table ready.");
 
     // 3. Create Reactions table
     await client.query(`
@@ -54,7 +54,7 @@ async function enhanceSchema() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log("✔ hub_gallery_reactions table ready.");
+    console.log("hub_gallery_reactions table ready.");
 
     // 4. Mark some existing images as spotlight for teaser
     await client.query(`
@@ -64,11 +64,11 @@ async function enhanceSchema() {
         SELECT id FROM hub_gallery ORDER BY upload_date DESC LIMIT 2
       );
     `);
-    console.log("✔ Annotated latest 2 images as spotlight.");
+    console.log("Annotated latest 2 images as spotlight.");
 
     console.log("--- SCHEMA ENHANCEMENT COMPLETED ---");
   } catch (err) {
-    console.error("❌ ENHANCEMENT FAILED:", err.message);
+    console.error("ENHANCEMENT FAILED:", err.message);
   } finally {
     client.release();
     await pool.end();

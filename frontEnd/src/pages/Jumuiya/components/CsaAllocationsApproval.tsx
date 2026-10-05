@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
+import { genderCode } from "../../../utils/memberYear";
 import {
   CheckCircle, XCircle, AlertTriangle, RefreshCw, Printer, Users, ThumbsUp, ThumbsDown, Eye,
 } from "lucide-react";
@@ -9,16 +10,6 @@ interface Props {
   jumuiyaName: string;
   jumuiyaColor: string;
 }
-
-const JUMUIYA_SLUG_TO_NAME: Record<string, string> = {
-  "st-anthony": "St. Anthony",
-  "st-augustine": "St. Augustine",
-  "st-catherine": "St. Catherine",
-  "st-dominic": "St. Dominic",
-  "st-elizabeth": "St. Elizabeth",
-  "st-maria-goretti": "St. Maria Goretti",
-  "st-monica": "St. Monica",
-};
 
 export default function CsaAllocationsApproval({ jumuiyaId, jumuiyaName, jumuiyaColor }: Props) {
   const [approvals, setApprovals] = useState<any[]>([]);
@@ -101,8 +92,8 @@ export default function CsaAllocationsApproval({ jumuiyaId, jumuiyaName, jumuiya
           table { width: 100%; border-collapse: collapse; }
           th { background: #f1f5f9; text-align: left; padding: 10px 12px; font-size: 12px; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; }
           td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
-          .male { color: #2563eb; }
-          .female { color: #db2777; }
+          .gent { color: #2563eb; }
+          .lady { color: #db2777; }
           .footer { margin-top: 24px; font-size: 11px; color: #94a3b8; text-align: center; }
           @media print { body { padding: 20px; } }
         </style>
@@ -118,7 +109,7 @@ export default function CsaAllocationsApproval({ jumuiyaId, jumuiyaName, jumuiya
                   <td>${i + 1}</td>
                   <td>${m.name || m.member_name || ""}</td>
                   <td>${m.reg_number || ""}</td>
-                  <td class="${m.gender === "Male" ? "male" : "female"}">${m.gender === "Male" ? "M" : "W"}</td>
+                  <td class="${genderCode(m.gender) === "M" ? "gent" : genderCode(m.gender) === "L" ? "lady" : ""}">${m.gender}
                   <td>${m.phone || ""}</td>
                   <td>${m.academic_year || ""}</td>
                 </tr>
@@ -242,9 +233,7 @@ export default function CsaAllocationsApproval({ jumuiyaId, jumuiyaName, jumuiya
                       <td className="py-1.5 px-3 font-medium text-slate-700">{m.name}</td>
                       <td className="py-1.5 px-3 text-slate-600">{m.reg_number}</td>
                       <td className="py-1.5 px-3">
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${m.gender === "Male" ? "bg-blue-50 text-blue-600" : "bg-pink-50 text-pink-600"}`}>
-                          {m.gender === "Male" ? "M" : "W"}
-                        </span>
+                        {(() => { const g = genderCode(m.gender); return g === "—" ? <span className="text-xs text-slate-400">—</span> : <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${g === "M" ? "bg-blue-50 text-blue-600" : "bg-pink-50 text-pink-600"}`}>{g}</span>; })()}
                       </td>
                       <td className="py-1.5 px-3 text-slate-600">{m.phone}</td>
                       <td className="py-1.5 px-3 text-slate-600">{m.academic_year}</td>
@@ -272,18 +261,19 @@ export default function CsaAllocationsApproval({ jumuiyaId, jumuiyaName, jumuiya
         </div>
       ) : (
         <div className="space-y-2">
-          {approvals.map(a => (
+          {approvals.map((a, idx) => (
             <div key={a.id} className={`bg-white rounded-xl border p-4 flex items-center gap-4 ${
               a.status === "approved" ? "border-emerald-200 bg-emerald-50/50" :
               a.status === "rejected" ? "border-red-200 bg-red-50/50" :
               "border-slate-200"
             }`}>
+              <div className="w-6 shrink-0 text-center text-xs font-bold text-slate-400">{idx + 1}</div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-slate-800 text-sm">{a.name}</p>
                 <div className="flex gap-3 text-xs text-slate-500 mt-0.5">
                   <span>{a.reg_number || "—"}</span>
-                  <span className={`font-semibold ${a.gender === "Male" ? "text-blue-600" : "text-pink-600"}`}>
-                    {a.gender === "Male" ? "M" : "W"}
+                  <span className={`font-semibold ${genderCode(a.gender) === "M" ? "text-blue-600" : genderCode(a.gender) === "L" ? "text-pink-600" : "text-slate-400"}`}>
+                    {genderCode(a.gender)}
                   </span>
                   {a.phone && <span>{a.phone}</span>}
                   {a.academic_year && <span>{a.academic_year}</span>}

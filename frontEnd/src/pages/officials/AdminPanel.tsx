@@ -1,13 +1,14 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Download, Share2, History, LayoutDashboard, Search, Archive, Check } from 'lucide-react';
+import { Download, Share2, History, LayoutDashboard, Archive, Check } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSocket } from '../../context/SocketContext';
 
 import { useOfficials } from '../../hooks/useOfficials';
 import type { Official } from '../../hooks/useOfficials';
 import { useJumuiyaOfficials } from '../../hooks/useJumuiyaOfficials';
+import { useGroupOfficials } from '../../hooks/useGroupOfficials';
 import { useTerms } from '../../hooks/useTerms';
-import { API_BASE, API_JUMUIYA_BASE, UPLOAD_BASE } from '../../utils/officialsApi';
+import { API_BASE, API_JUMUIYA_BASE, API_GROUP_BASE, UPLOAD_BASE } from '../../utils/officialsApi';
 import { DEFAULT_AVATAR } from './constants/adminConstants';
 import { ConfirmDialog, type AffectedOfficial } from './components/ConfirmDialog';
 
@@ -30,10 +31,14 @@ export default function AdminPanel() {
     const handleUpdate = () => {
       queryClient.invalidateQueries({ queryKey: ['officials'] });
       queryClient.invalidateQueries({ queryKey: ['jumuiya_officials'] });
+      queryClient.invalidateQueries({ queryKey: ['jumuiya-officials'] });
+      queryClient.invalidateQueries({ queryKey: ['group_officials'] });
+      queryClient.invalidateQueries({ queryKey: ['group-officials'] });
       queryClient.invalidateQueries({ queryKey: ['terms'] });
       queryClient.invalidateQueries({ queryKey: ['currentTerm'] });
       queryClient.invalidateQueries({ queryKey: ['history'] });
       queryClient.invalidateQueries({ queryKey: ['jumuiya_history'] });
+      queryClient.invalidateQueries({ queryKey: ['group_history'] });
     };
 
     socket.on('officialsUpdated', handleUpdate);
@@ -55,14 +60,27 @@ export default function AdminPanel() {
   } = useTerms();
 
   const jumuiyaApi = useJumuiyaOfficials({ termId: currentTerm?.id });
+  const groupApi = useGroupOfficials({ termId: currentTerm?.id });
 
 
   // Local UI State
-  const [adminMode, setAdminMode] = useState<'csa' | 'jumuiya'>(() => {
-    return (localStorage.getItem('admin_mode') as 'csa' | 'jumuiya') || 'csa';
+  const [adminMode, setAdminMode] = useState<'csa' | 'jumuiya' | 'groups'>(() => {
+    return (localStorage.getItem('admin_mode') as 'csa' | 'jumuiya' | 'groups') || 'csa';
   });
 
-  const handleModeChange = (mode: 'csa' | 'jumuiya') => {
+  // Total archived records for the chosen category across ALL terms (not just
+  // the current term), so the dashboard count reflects every archived official.
+  // NOTE: must be declared after `adminMode` (above) to avoid a TDZ error.
+  const totalArchived = useMemo(() => {
+    if (!terms || terms.length === 0) return 0;
+    const key =
+      adminMode === 'csa' ? 'archived_csa_count'
+      : adminMode === 'jumuiya' ? 'archived_jumuiya_count'
+      : 'archived_group_count';
+    return terms.reduce((sum, t) => sum + Number((t as any)[key] || 0), 0);
+  }, [terms, adminMode]);
+
+  const handleModeChange = (mode: 'csa' | 'jumuiya' | 'groups') => {
     setAdminMode(mode);
     localStorage.setItem('admin_mode', mode);
   };
@@ -97,24 +115,24 @@ export default function AdminPanel() {
   });
 
   // Derived State
-  const activeOfficialsList = adminMode === 'csa' ? officials : (jumuiyaApi.officials as Official[]);
-  const isListLoading = adminMode === 'csa' ? isLoadingOfficials : jumuiyaApi.isLoading;
-  const isListAdding = adminMode === 'csa' ? isAdding : jumuiyaApi.isAdding;
-  const isListDeleting = adminMode === 'csa' ? isDeleting : jumuiyaApi.isDeleting;
-  const isListUpdating = adminMode === 'csa' ? isUpdating : jumuiyaApi.isUpdating;
+  const activeOfficialsList = adminMode === 'csa' ? officials : adminMode === 'jumuiya' ? (jumuiyaApi.officials as Official[]) : (groupApi.officials as Official[]);
+  const isListLoading = adminMode === 'csa' ? isLoadingOfficials : adminMode === 'jumuiya' ? jumuiyaApi.isLoading : groupApi.isLoading;
+  const isListAdding = adminMode === 'csa' ? isAdding : adminMode === 'jumuiya' ? jumuiyaApi.isAdding : groupApi.isAdding;
+  const isListDeleting = adminMode === 'csa' ? isDeleting : adminMode === 'jumuiya' ? jumuiyaApi.isDeleting : groupApi.isDeleting;
+  const isListUpdating = adminMode === 'csa' ? isUpdating : adminMode === 'jumuiya' ? jumuiyaApi.isUpdating : groupApi.isUpdating;
 
   const displayTerm = useMemo(() => {
-    // Combine both lists to find the most recent term of service
-    const allAdded = [...officials, ...(jumuiyaApi.officials as Official[])];
+    // Combine all lists to find the most recent term of service
+    const allAdded = [...officials, ...(jumuiyaApi.officials as Official[]), ...(groupApi.officials as Official[])];
     if (allAdded.length > 0) {
       const termStrings = Array.from(new Set(allAdded.map(o => o.term_of_service).filter(Boolean)));
       if (termStrings.length > 0) return termStrings[0];
     }
     return currentTerm?.year || currentTerm?.name || '';
-  }, [officials, jumuiyaApi.officials, currentTerm]);
+  }, [officials, jumuiyaApi.officials, groupApi.officials, currentTerm]);
 
   const jumuiyaCountMap = useMemo(() => {
-    if (adminMode !== 'jumuiya') return {};
+    if (adminMode !== 'jumuiya' && adminMode !== 'groups') return {};
     return activeOfficialsList.reduce((acc: Record<string, number>, official) => {
       const cat = official.category || 'Other';
       acc[cat] = (acc[cat] || 0) + 1;
@@ -129,7 +147,7 @@ export default function AdminPanel() {
       .map(([k, _]) => k)
       .join(',');
 
-    const baseUrl = adminMode === 'csa' ? API_BASE : API_JUMUIYA_BASE;
+    const baseUrl = adminMode === 'csa' ? API_BASE : adminMode === 'jumuiya' ? API_JUMUIYA_BASE : API_GROUP_BASE;
     const url = `${baseUrl}/export?fields=${selectedFields}${displayTerm ? `&term_of_service=${displayTerm}` : ''}`;
     window.open(url, '_blank');
   };
@@ -152,8 +170,10 @@ export default function AdminPanel() {
       onConfirm: async () => {
         if (adminMode === 'csa') {
           await deleteOfficial(official.id);
-        } else {
+        } else if (adminMode === 'jumuiya') {
           await jumuiyaApi.deleteOfficial(official.id);
+        } else {
+          await groupApi.deleteOfficial(official.id);
         }
       }
     });
@@ -162,16 +182,20 @@ export default function AdminPanel() {
   const handleAdd = async (fd: FormData) => {
     if (adminMode === 'csa') {
        await addOfficial(fd);
-    } else {
+    } else if (adminMode === 'jumuiya') {
        await jumuiyaApi.addOfficial(fd);
+    } else {
+       await groupApi.addOfficial(fd);
     }
   };
 
   const handleUpdate = async (id: number, fd: FormData) => {
     if (adminMode === 'csa') {
        await updateOfficial({id, formData: fd});
-    } else {
+    } else if (adminMode === 'jumuiya') {
        await jumuiyaApi.updateOfficial({id, formData: fd});
+    } else {
+       await groupApi.updateOfficial({id, formData: fd});
     }
   };
 
@@ -186,7 +210,7 @@ export default function AdminPanel() {
               <LayoutDashboard className="w-10 h-10 text-blue-600" />
               Officials Dashboard
             </h1>
-            <p className="text-gray-500 font-medium mt-1">Centralized hub for managing and coordinating all church and jumuiya officials.</p>
+            <p className="text-gray-500 font-medium mt-1">Centralized hub for managing and coordinating all church, jumuiya and group officials.</p>
           </div>
           
           <div className="flex items-center gap-2 sm:gap-3">
@@ -211,10 +235,7 @@ export default function AdminPanel() {
         {/* Stats Overview */}
         <DashboardStats 
           officialsCount={activeOfficialsList.length} 
-          archivedCount={adminMode === 'csa' 
-            ? Number(currentTerm?.archived_csa_count || 0) 
-            : Number(currentTerm?.archived_jumuiya_count || 0)
-          } 
+          archivedCount={totalArchived} 
           currentTerm={currentTerm} 
           displayTerm={displayTerm}
         />
@@ -233,6 +254,12 @@ export default function AdminPanel() {
                 className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${adminMode === 'jumuiya' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
               >
                  Jumuiya Officials
+              </button>
+              <button 
+                onClick={() => handleModeChange('groups')}
+                className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${adminMode === 'groups' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
+              >
+                 Groups
               </button>
            </div>
         </div>
@@ -339,6 +366,7 @@ export default function AdminPanel() {
         currentTerm={currentTerm}
         mode={adminMode}
         jumuiyaCountMap={jumuiyaCountMap}
+        groupCountMap={jumuiyaCountMap}
         activeTerm={displayTerm}
       />
 
@@ -348,6 +376,7 @@ export default function AdminPanel() {
         activeOfficials={activeOfficialsList}
         activeTerm={displayTerm}
         mode={adminMode}
+        onEdit={(official) => { setIsHistoryOpen(false); setEditingOfficial(official); }}
       />
 
       <ShareModal 

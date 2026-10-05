@@ -6,6 +6,26 @@ const consolidateMemberData = async () => {
   try {
     logger.info("Starting member data consolidation...");
 
+    // 0. Relax the legacy gender_check constraint (only allowed 'male'/'female')
+    // so cleaned 'gent'/'lady' values can be stored. Added ad-hoc in prod DB.
+    await pool.query(`
+      ALTER TABLE members DROP CONSTRAINT IF EXISTS gender_check
+    `).catch(() => {});
+
+    // 1. Normalize existing gender values to the canonical 'Gent'/'Lady' labels.
+    // Legacy rows still store 'male'/'female'/'M'/'F' etc., which breaks the
+    // strict LOWER(gender)='gent'/'lady' count queries and the JS
+    // gender === "Gent" filters. Idempotent — runs on every boot.
+    await pool.query(`
+      UPDATE members
+      SET gender = CASE
+        WHEN LOWER(TRIM(gender)) IN ('m','male','man','boy','gent') THEN 'Gent'
+        WHEN LOWER(TRIM(gender)) IN ('f','female','woman','girl','lady') THEN 'Lady'
+        ELSE TRIM(gender)
+      END
+      WHERE gender IS NOT NULL AND TRIM(gender) <> ''
+    `);
+
     // 1. Add columns if they don't exist and relax email constraint
     await pool.query(`
       ALTER TABLE members
@@ -21,6 +41,12 @@ const consolidateMemberData = async () => {
     `).catch(() => {});
     await pool.query(`
       ALTER TABLE members ALTER COLUMN jumuiaya_id DROP NOT NULL
+    `).catch(() => {});
+    await pool.query(`
+      ALTER TABLE members ALTER COLUMN last_name DROP NOT NULL
+    `).catch(() => {});
+    await pool.query(`
+      ALTER TABLE members ALTER COLUMN password DROP NOT NULL
     `).catch(() => {});
 
     // 2. Mark existing members as legacy (only if source is not yet set)
@@ -40,7 +66,7 @@ const consolidateMemberData = async () => {
         split_part(ir.cleaned_name, ' ', 1),
         substr(ir.cleaned_name, strpos(ir.cleaned_name || ' ', ' ') + 1),
         ir.cleaned_phone,
-        CASE WHEN LOWER(ir.cleaned_gender) IN ('male', 'female') THEN LOWER(ir.cleaned_gender) ELSE NULL END,
+        CASE WHEN LOWER(ir.cleaned_gender) IN ('gent', 'lady', 'male', 'female', 'm', 'f', 'man', 'woman', 'boy', 'girl') THEN CASE WHEN LOWER(ir.cleaned_gender) IN ('female', 'f', 'woman', 'girl') THEN 'lady' ELSE 'gent' END ELSE NULL END,
         'csa',
         ir.status,
         mi.id,
@@ -71,7 +97,7 @@ const consolidateMemberData = async () => {
         split_part(ir.cleaned_name, ' ', 1),
         substr(ir.cleaned_name, strpos(ir.cleaned_name || ' ', ' ') + 1),
         NULLIF(ir.cleaned_phone, ''),
-        CASE WHEN LOWER(ir.cleaned_gender) IN ('male', 'female') THEN LOWER(ir.cleaned_gender) ELSE NULL END,
+        CASE WHEN LOWER(ir.cleaned_gender) IN ('gent', 'lady', 'male', 'female', 'm', 'f', 'man', 'woman', 'boy', 'girl') THEN CASE WHEN LOWER(ir.cleaned_gender) IN ('female', 'f', 'woman', 'girl') THEN 'lady' ELSE 'gent' END ELSE NULL END,
         'jum',
         ir.status,
         mi.id,

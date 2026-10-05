@@ -2,8 +2,18 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BASE_URL } from '../api/config';
 import { apiClient } from '../api/axiosInstance';
-import { SACRAMENTAL_CATEGORIES } from '../pages/projects/pages/data';
+import { SessionStorage } from '../utils';
 import type { CartItem, SacramentalCategory } from '../pages/projects/pages/data';
+
+// Email of the signed-in account, used to link purchases to "My Receipts".
+const getAccountEmail = (): string => {
+  try {
+    const stored = SessionStorage.get('userdata');
+    return stored?.status === 'success' && stored?.email ? String(stored.email) : '';
+  } catch {
+    return '';
+  }
+};
 
 export interface HireItem {
   id: number;
@@ -11,8 +21,10 @@ export interface HireItem {
   category?: string;
   price: number;
   quantity: number;
+  hireMode?: 'daily' | 'hourly';
+  hours?: number;
 }
-import apiService from '../pages/Landing/services/api';
+import apiService from '../services/api';
 import type { ToastMessage } from '../pages/projects/components/ToastContainer';
 
 interface AppContextType {
@@ -42,12 +54,13 @@ interface AppContextType {
     setCustomerName: (name: string) => void;
     customerPhone: string;
     setCustomerPhone: (phone: string) => void;
+    customerEmail: string;
+    setCustomerEmail: (email: string) => void;
     deliveryAddress: string;
     setDeliveryAddress: (address: string) => void;
     collectionMethod: "pickup" | "delivery";
     setCollectionMethod: (method: "pickup" | "delivery") => void;
     proceedToCheckout: () => Promise<void>;
-    proceedWithCash: () => Promise<void>;
 
     // Payment status (for M-Pesa manual confirmation)
     paymentPending: boolean;
@@ -65,7 +78,7 @@ interface AppContextType {
     sacCategory: SacramentalCategory;
     setSacCategory: (cat: SacramentalCategory) => void;
     sectionBanners: Record<string, { img: string; title: string; subtitle: string }> | null;
-    cashPhone: string;
+    projectManagerPhone: string;
 
     // Hire Cart
     hireItems: HireItem[];
@@ -100,6 +113,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [customerName, setCustomerName] = useState('');
     const [customerPhone, setCustomerPhone] = useState('');
+    const [customerEmail, setCustomerEmail] = useState('');
 
     const [deliveryAddress, setDeliveryAddress] = useState('');
     const [collectionMethod, setCollectionMethod] = useState<"pickup" | "delivery">("pickup");
@@ -224,7 +238,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updateCartQuantity = (indexToUpdate: number, delta: number) => {
         setCart(prev => prev.map((item, index) => {
             if (index !== indexToUpdate) return item;
-            const newQty = (item.quantity || 1) + delta;
+            const newQty = (Number(item.quantity) || 1) + delta;
             if (newQty <= 0) return item;
             return { ...item, quantity: newQty };
         }));
@@ -241,7 +255,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (existingIdx >= 0) {
                 return prev.map((p, i) =>
                     i === existingIdx
-                        ? { ...p, quantity: (p.quantity || 1) + 1 }
+                        ? { ...p, quantity: (Number(p.quantity) || 1) + 1 }
                         : p
                 );
             }
@@ -258,10 +272,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const clearCart = () => setCart([]);
 
     const cartTotal = cart.reduce((total, item) => {
-        return total + (item.price * (item.quantity || item.rentalDays || 1));
+        return total + (item.price * (Number(item.quantity) || item.rentalDays || 1));
     }, 0);
 
-    const cartItemsCount = cart.reduce((count, item) => count + (item.quantity || 1), 0);
+    const cartItemsCount = cart.reduce((count, item) => count + (Number(item.quantity) || 1), 0);
 
     const proceedToCheckout = async () => {
         if (cart.length === 0) return;
@@ -274,7 +288,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         let phone = '254' + phoneDigits.replace(/^0+/, '');
 
         let checkoutId: string | null = null;
-        let orderCreated = false;
 
         try {
             showToast("Initiating M-Pesa payment... Please check your phone.", 'info');
@@ -292,12 +305,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             // If backend already confirmed payment during its polling window
             if (response.result?.status === 'paid') {
                 showToast("Payment successful! Order confirmed.", 'success');
+                localStorage.setItem('csa_receipt_phone', phone);
+                localStorage.removeItem('csa_receipts_seen');
                 setCart([]);
                 setIsCartOpen(false);
                 setCustomerName('');
                 setCustomerPhone('');
+                setCustomerEmail('');
                 setDeliveryAddress('');
-                navigate(`/order-confirmation?order_id=${checkoutId}&method=mpesa`);
+                sessionStorage.setItem('csa_order_phone', phone);
+                navigate(`/order-confirmation?order_id=${checkoutId}&cid=${checkoutId}&method=mpesa`);
                 return;
             }
 
@@ -307,6 +324,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     amount: cartTotal,
                     phone,
                     customer_name: customerName.trim(),
+                    customer_email: customerEmail.trim() || getAccountEmail() || null,
                     payment_method: 'mpesa',
                     collection_method: collectionMethod,
                     delivery_address: collectionMethod === 'delivery' ? deliveryAddress.trim() : null,
@@ -314,7 +332,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     items: cart,
                     status: 'pending',
                 });
-                orderCreated = true;
             } catch (e) {
                 console.error("Failed to create pending order:", e);
                 showToast("Warning: Order record failed, but payment will proceed.", 'warning');
@@ -333,12 +350,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         setPaymentPending(false);
                         showToast("Payment successful! Order confirmed.", 'success');
                         const orderId = statusRes.order_id || statusRes.orderId || checkoutId;
+                        localStorage.setItem('csa_receipt_phone', phone);
+                        localStorage.removeItem('csa_receipts_seen');
                         setCart([]);
                         setIsCartOpen(false);
                         setCustomerName('');
                         setCustomerPhone('');
+                        setCustomerEmail('');
                         setDeliveryAddress('');
-                        navigate(`/order-confirmation?order_id=${orderId}&method=mpesa`);
+                        sessionStorage.setItem('csa_order_phone', phone);
+                        navigate(`/order-confirmation?order_id=${orderId}&cid=${checkoutId}&method=mpesa`);
                     } else if (statusRes.status === 'failed') {
                         clearInterval(pollInterval);
                         showToast(`Payment failed: ${statusRes.result_desc || 'Cancelled'}`, 'error');
@@ -370,13 +391,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 setPaymentPending(false);
                 setPendingCheckoutId(null);
                 setPendingPhone('');
+                localStorage.setItem('csa_receipt_phone', pendingPhone);
+                localStorage.removeItem('csa_receipts_seen');
                 setCart([]);
                 setIsCartOpen(false);
                 setCustomerName('');
                 setCustomerPhone('');
+                setCustomerEmail('');
                 setDeliveryAddress('');
                 showToast("Payment confirmed! Order placed successfully.", 'success');
-                navigate(`/order-confirmation?order_id=${receipt}&method=mpesa`);
+                sessionStorage.setItem('csa_order_phone', pendingPhone);
+                navigate(`/order-confirmation?order_id=${receipt}&cid=${pendingCheckoutId}&method=mpesa`);
             } else {
                 showToast("Could not confirm payment. Check the receipt number and try again.", 'error');
             }
@@ -391,43 +416,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setPendingPhone('');
     };
 
-    const proceedWithCash = async () => {
-        if (cart.length === 0) return;
-        const phoneDigits = customerPhone.replace(/\D/g, '');
-        if (!customerName.trim() || !/^\d{10}$/.test(phoneDigits)) {
-            showToast(!customerName.trim() ? "Please provide your name" : "Enter a valid 10-digit phone number", 'warning');
-            return;
-        }
-
-        let phone = '254' + phoneDigits.replace(/^0+/, '');
-
-        try {
-            const order = await apiService.createRecord('orders', {
-                amount: cartTotal,
-                phone,
-                customer_name: customerName.trim(),
-                payment_method: 'cash',
-                collection_method: collectionMethod,
-                delivery_address: collectionMethod === 'delivery' ? deliveryAddress.trim() : null,
-                items: cart,
-                status: 'pending',
-            });
-
-            const orderRef = order?.order_reference || order?.id;
-            const cashPhone = settings.cash_phone || '254112051739';
-            setCart([]);
-            setIsCartOpen(false);
-            setCustomerName('');
-            setCustomerPhone('');
-            setDeliveryAddress('');
-            setCollectionMethod('pickup');
-            navigate(`/order-confirmation?order_id=${orderRef}&method=cash&phone=${encodeURIComponent(cashPhone)}`);
-        } catch (err: any) {
-            console.error("Cash checkout error:", err);
-            showToast(err?.response?.data?.message || err?.response?.data?.error || "Failed to place order. Try again.", 'error');
-        }
-    };
-
     return (
         <AppContext.Provider value={{
             products, apiMessages, sliderImages, sectionBanners, isLoading,
@@ -435,9 +423,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             cart, addToCart, removeFromCart, updateCartQuantity, clearCart, cartTotal, cartItemsCount,
             isCartOpen, setIsCartOpen,
             customerName, setCustomerName, customerPhone, setCustomerPhone,
+            customerEmail, setCustomerEmail,
             deliveryAddress, setDeliveryAddress,
             collectionMethod, setCollectionMethod,
-            proceedToCheckout, proceedWithCash,
+            proceedToCheckout,
             paymentPending, pendingCheckoutId, pendingPhone,
             confirmMpesaPayment, dismissPaymentPending,
             toasts, showToast, dismissToast,
@@ -445,7 +434,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             hireItems, addToHire, removeFromHire, updateHireQty, clearHire, hireItemsCount,
             isHireModalOpen, setHireModalOpen,
             isAdmin, setIsAdmin,
-            cashPhone: settings.cash_phone || '254112051739'
+            projectManagerPhone: settings.cash_phone || '254112051739'
         }}>
             {children}
         </AppContext.Provider>

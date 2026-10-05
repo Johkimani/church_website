@@ -3,21 +3,27 @@ import {
   createOrder,
   getOrders,
   confirmPayment,
-  updateOrderStatus
+  updateOrderStatus,
+  trackOrder
 } from "../../controllers/orders.controller.js";
+import verifyToken from "../../middlewares/Tokens.js";
+import { requireRole, OFFICIAL_ROLES } from "../../middlewares/requireRole.js";
 
 const router = Router();
 
-// CREATE ORDER
+// CREATE ORDER (public checkout)
 router.post("/", createOrder);
 
-// GET ALL ORDERS
-router.get("/", getOrders);
+// TRACK ORDER (public — customer looks up own order)
+router.get("/track", trackOrder);
 
-// MANUAL PAYMENT CONFIRMATION BY M-PESA RECEIPT
+// GET ALL ORDERS (officials only — contains buyer PII)
+router.get("/", verifyToken, requireRole(...OFFICIAL_ROLES), getOrders);
+
+// MANUAL PAYMENT CONFIRMATION BY M-PESA RECEIPT (public: user confirms own receipt)
 router.post("/confirm-payment", confirmPayment);
 
-// UPDATE ORDER STATUS
-router.patch("/:id", updateOrderStatus);
+// UPDATE ORDER STATUS (admin only)
+router.patch("/:id", verifyToken, requireRole(...OFFICIAL_ROLES), updateOrderStatus);
 
 export default router;

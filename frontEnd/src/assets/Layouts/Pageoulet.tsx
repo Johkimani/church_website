@@ -10,11 +10,12 @@ const Pageoulet = () => {
     cart, isCartOpen, setIsCartOpen, removeFromCart, updateCartQuantity,
     customerName, setCustomerName, customerPhone, setCustomerPhone,
     customerEmail, setCustomerEmail, deliveryAddress, setDeliveryAddress,
+    collectionMethod, setCollectionMethod,
     cartTotal, proceedToCheckout, toasts
   } = useApp();
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen overflow-x-hidden">
       <Headers />
       <ToastContainer toasts={toasts} />
       <CartDrawer
@@ -32,6 +33,8 @@ const Pageoulet = () => {
           setCustomerEmail={setCustomerEmail}
           deliveryAddress={deliveryAddress}
           setDeliveryAddress={setDeliveryAddress}
+          collectionMethod={collectionMethod}
+          setCollectionMethod={setCollectionMethod}
           proceedToCheckout={proceedToCheckout}
       />
       <main className="flex-1">
