@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { Login, refreshAccessToken, firstLoginSetup, verifyEmail } from "../../controllers/Login.js";
+import { Login, refreshAccessToken, firstLoginSetup, verifyEmail, logout } from "../../controllers/Login.js";
 import { OTPverification, Reset, ResendOTP } from "../../controllers/Reset.js";
 import verifyToken from "../../middlewares/Tokens.js";
 import {
@@ -11,7 +11,6 @@ import { handleCallback as callback } from "../../controllers/stkPush/stkControl
 
 import {
   assignPermissionsToRole,
-  deleteAllMembers,
   getPermissionsByRole,
   getRolesAndPermissions,
   getPublicJumuiyaList,
@@ -30,6 +29,18 @@ import {
 } from "../../validators/index.js";
 import { validate } from "../../middlewares/validateRequestBody.js";
 import { payAndWait } from "../../controllers/stkPush/stkHelper.js";
+import { requireRole } from "../../middlewares/requireRole.js";
+import verifyCaptcha from "../../middlewares/captcha.js";
+
+// Executive leadership — only these may change users' roles.
+const EXECUTIVE_ROLES = ["csa_chair", "csa_vice_chair", "csa_secretary"];
+
+// Any approved official may manage the member/role directory.
+const OFFICIAL_ROLES = [
+  "csa_chair", "csa_vice_chair", "csa_secretary", "project_manager",
+  "instrument_manager", "os", "treasurer", "liturgist", "choir_chairperson",
+  "jumuiya_coordinator", "assistant_jumuiya_coordinator", "jumuiya_chairperson", "jumuiya_os", "jumuiya_secretary",
+];
 
 // authRoutes
 // description on login the complete uri will be /authentication/v1/login
@@ -45,18 +56,22 @@ route.post("/reset-email", verifyToken, Reset);
 route.post("/otp/:regNo", OTPverification);
 route.post("/resend-otp/:regNo", ResendOTP);
 // route.post("/log-out", verifyToken, logOut);
+route.post("/log-out", logout);
 route.post("/refresh", refreshAccessToken);
 route.post("/stk-push", verifyToken, stkCalls);
-route.post("/stk-push-guest", stkGuestCalls);
+route.post("/stk-push-guest", verifyCaptcha, stkGuestCalls);
 route.get("/stk-push-status/:checkoutId", checkStatus);
 route.post("/mpesa/callback", callback);
 route.get("/mpesa/callback", callback);
 
-// Admin-only: role & permission management (require auth)
-route.post("/roles", verifyToken, registerRoleValidator, validate, registerRoles);
+// Admin-only: role, permission and member management (auth + role gates).
+// /register and /jumuiya-list stay public for the self-registration form;
+// registerUser itself is locked to the Member role (see controller).
+route.post("/roles", verifyToken, requireRole(...OFFICIAL_ROLES), registerRoleValidator, validate, registerRoles);
 route.post(
   "/permissions",
   verifyToken,
+  requireRole(...OFFICIAL_ROLES),
   registerPermissionValidator,
   validate,
   registerPermissions,
@@ -64,16 +79,16 @@ route.post(
 route.post(
   "/role-permissions",
   verifyToken,
+  requireRole(...OFFICIAL_ROLES),
   assignRolePermissionValidator,
   validate,
   assignPermissionsToRole,
 );
-route.get("/list-roles-permissions", verifyToken, getRolesAndPermissions);
-route.get("/list-permissions-by-role", verifyToken, getPermissionsByRole);
-route.get("/users-role-permissions", verifyToken, getUserRolesAndPermissions);
-route.get("/list-all-memebrs-roles-permisions", verifyToken, listAllUsersRolesPermissions);
-route.get("/list-all-memebrs", verifyToken, listAllMembers);
-route.get("/delete-all-memebers", verifyToken, deleteAllMembers);
-route.post("/update-user-roles", verifyToken, updateUserRoles);
+route.get("/list-roles-permissions", verifyToken, requireRole(...OFFICIAL_ROLES), getRolesAndPermissions);
+route.get("/list-permissions-by-role", verifyToken, requireRole(...OFFICIAL_ROLES), getPermissionsByRole);
+route.get("/users-role-permissions", verifyToken, requireRole(...OFFICIAL_ROLES), getUserRolesAndPermissions);
+route.get("/list-all-memebrs-roles-permisions", verifyToken, requireRole(...OFFICIAL_ROLES), listAllUsersRolesPermissions);
+route.get("/list-all-memebrs", verifyToken, requireRole(...OFFICIAL_ROLES), listAllMembers);
+route.post("/update-user-roles", verifyToken, requireRole(...EXECUTIVE_ROLES), updateUserRoles);
 
 export default route;

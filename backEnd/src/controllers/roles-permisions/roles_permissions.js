@@ -93,9 +93,11 @@ export const registerUser = async (req, res) => {
     const memberResult = await testDb.query(insertMemberQuery, memberValues);
     const newMemberId = memberResult.rows[0].member_id;
 
-    // 7. Assign roles (default to "Member" if none provided)
-    const rolesToAssign = role_names && role_names.length > 0 ? role_names : ["Member"];
-    const uniqueRoles = [...new Set(rolesToAssign)];
+    // 7. Assign roles. This endpoint is PUBLIC (self-registration), so the
+    // caller's role_names must be ignored — otherwise anyone could register
+    // as e.g. csa_chair. Elevation happens only via /update-user-roles,
+    // which is executive-gated.
+    const uniqueRoles = ["Member"];
 
     for (const roleName of uniqueRoles) {
       const roleResult = await testDb.query(
