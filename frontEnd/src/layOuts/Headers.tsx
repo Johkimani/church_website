@@ -73,20 +73,22 @@ const Headers = () => {
             : "bg-white/95 backdrop-blur-sm"
         } px-[6%] lg:px-[8%] py-0 flex justify-between items-center h-16 lg:h-20`}
       >
-        {/* Logo */}
-        <div
-          className="flex items-center gap-2 cursor-pointer group"
-          onClick={() => navigate("/")}
-        >
-          <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-md shadow-blue-200 group-hover:shadow-lg group-hover:shadow-blue-300 transition-shadow">
-            <span className="text-white font-black text-sm lg:text-base">C</span>
+{/* Logo */}
+          <div
+            className="flex items-center gap-2 cursor-pointer group"
+            onClick={() => navigate("/")}
+          >
+            <img
+              src="/images/csa-logo.jpg"
+              alt="CSA Kirinyaga logo"
+              className="w-9 h-9 lg:w-10 lg:h-10 rounded-lg object-cover shadow-sm shadow-blue-200 group-hover:shadow-md group-hover:shadow-blue-300 transition-shadow"
+            />
+            <div className="hidden sm:block">
+              <span className="text-base lg:text-lg font-black text-slate-900 tracking-tight">
+                CSA Kirinyaga
+              </span>
+            </div>
           </div>
-          <div className="hidden sm:block">
-            <span className="text-base lg:text-lg font-black text-slate-900 tracking-tight">
-              CSA Kirinyaga
-            </span>
-          </div>
-        </div>
 
         {/* Right side */}
         <div className="hidden md:flex items-center gap-2 lg:gap-3">
@@ -207,9 +209,11 @@ const Headers = () => {
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-lg">
           <div className="flex justify-between items-center px-4 py-2">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center">
-                <span className="text-white font-black text-xs">C</span>
-              </div>
+              <img
+                src="/images/csa-logo.jpg"
+                alt="CSA Kirinyaga logo"
+                className="w-8 h-8 rounded-lg object-cover"
+              />
               <span className="text-sm font-black text-slate-900">CSA Kirinyaga</span>
             </div>
             
@@ -280,8 +284,12 @@ const Headers = () => {
           {/* Drawer Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                <span className="font-black text-base">C</span>
+              <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center overflow-hidden shadow-md">
+                <img
+                  src="/images/csa-logo.jpg"
+                  alt="CSA Kirinyaga logo"
+                  className="w-9 h-9 object-cover"
+                />
               </div>
               <div>
                 <span className="font-black text-sm leading-tight">CSA Kirinyaga</span>
