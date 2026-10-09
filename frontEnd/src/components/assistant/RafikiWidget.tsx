@@ -175,7 +175,7 @@ export default function RafikiWidget() {
           style={{ bottom: footerLift ? `${footerLift + 20}px` : undefined }}
           className={`${
             atFooter ? "hidden md:inline-flex" : "inline-flex"
-          } fixed bottom-[84px] right-5 md:bottom-6 md:right-6 z-[9999] items-center gap-2 pl-3 pr-4 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-semibold shadow-xl ring-1 ring-white/20 hover:scale-105 active:scale-95 transition-all duration-300`}
+          } fixed bottom-[158px] right-5 md:bottom-6 md:right-6 z-[9999] items-center gap-2 pl-3 pr-4 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-semibold shadow-xl ring-1 ring-white/20 hover:scale-105 active:scale-95 transition-all duration-300`}
         >
           <Sparkles className="w-4 h-4" />
           Ask Rafiki
@@ -191,7 +191,7 @@ export default function RafikiWidget() {
         <div
           role="dialog"
           aria-label="Rafiki assistant"
-          className="rafiki-panel fixed bottom-[84px] right-5 md:bottom-6 md:right-6 z-[9999] w-[calc(100vw-2rem)] max-w-sm h-[min(600px,calc(100dvh-6rem))] flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/10"
+          className="rafiki-panel fixed bottom-[158px] right-5 md:bottom-6 md:right-6 z-[9999] w-[calc(100vw-2rem)] max-w-sm h-[min(560px,calc(100dvh-10.5rem))] flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/10"
           style={footerLift ? { bottom: `${footerLift + 20}px` } : undefined}
         >
           {/* Header */}
