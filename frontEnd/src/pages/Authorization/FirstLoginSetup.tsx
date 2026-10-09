@@ -22,6 +22,7 @@ export default function FirstLoginSetup() {
   const memberName = loginResponse?.name || "";
   const hasEmail = loginResponse?.hasEmail ?? false;
   const currentPassword = location.state?.currentPassword || member_id;
+  const redirectTarget = location.state?.redirect;
 
   const [phase, setPhase] = useState<"form" | "otp">("form");
   const [newPassword, setNewPassword] = useState("");
@@ -56,7 +57,9 @@ export default function FirstLoginSetup() {
     setDone(true);
     const role = loginResponse?.role;
     const hasRole = Array.isArray(role) ? role.length > 0 : !!role;
-    if (hasRole) {
+    if (redirectTarget) {
+      setTimeout(() => navigate(redirectTarget), 1500);
+    } else if (hasRole) {
       const savedPath = sessionStorage.getItem('admin_last_path');
       setTimeout(() => navigate(savedPath && savedPath.startsWith('/admin') ? savedPath : '/admin'), 1500);
     } else {

@@ -62,6 +62,14 @@ const Headers = () => {
     return location.pathname.startsWith(path);
   };
 
+  const openNotifications = () => {
+    if (user) {
+      navigate("/Notification");
+    } else {
+      navigate("/login?redirect=" + encodeURIComponent("/Notification"));
+    }
+  };
+
   return (
     <>
       {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
@@ -136,7 +144,7 @@ const Headers = () => {
           <div className="flex items-center gap-2 lg:gap-3">
             {/* Notifications */}
             <button
-              onClick={() => navigate("/Notification")}
+              onClick={openNotifications}
               className="relative p-2 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
               title="Notifications"
             >
@@ -219,7 +227,7 @@ const Headers = () => {
             
             <div className="flex items-center gap-1">
               <button
-                onClick={() => navigate("/Notification")}
+                onClick={openNotifications}
                 className="relative p-2 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
                 title="Notifications"
               >
@@ -252,10 +260,11 @@ const Headers = () => {
               <button
                 className="p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                aria-label="More Navigation"
+                aria-label="Open Menu"
+                aria-expanded={isMobileMenuOpen}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
             </div>
@@ -277,8 +286,8 @@ const Headers = () => {
         />
 
         <div
-          className={`absolute top-0 right-0 w-[85%] max-w-[350px] h-full bg-white shadow-2xl transition-transform duration-400 ease-out flex flex-col ${
-            isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
+          className={`absolute top-0 left-0 w-[85%] max-w-[350px] h-full bg-white shadow-2xl transition-transform duration-400 ease-out flex flex-col ${
+            isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
           {/* Drawer Header */}
@@ -346,17 +355,26 @@ const Headers = () => {
 
           {/* Drawer Footer */}
           <div className="border-t border-slate-100 p-4 bg-slate-50/50">
-            <div className="flex items-center justify-between px-4 py-3 mb-2 rounded-xl bg-white border border-slate-100 shadow-sm">
+            <button
+              onClick={() => {
+                openNotifications();
+                setIsMobileMenuOpen(false);
+              }}
+              className="flex items-center justify-between w-full px-4 py-3 mb-2 rounded-xl bg-white border border-slate-100 shadow-sm hover:bg-blue-50 hover:border-blue-200 transition-all cursor-pointer"
+            >
               <div className="flex items-center gap-3">
                 <FaBell className="text-sm text-slate-500" />
                 <span className="font-semibold text-sm text-slate-700">Notifications</span>
               </div>
-              {unreadCount > 0 && (
-                <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
-                  {unreadCount}
-                </span>
-              )}
-            </div>
+              <span className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                    {unreadCount}
+                  </span>
+                )}
+                <span className="text-xs text-slate-400 font-bold">Go</span>
+              </span>
+            </button>
 
             {user ? (
               <div className="space-y-2">

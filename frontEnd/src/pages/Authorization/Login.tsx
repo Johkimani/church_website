@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, ArrowRight, ChevronLeft, User } from "lucide-react";
 import { loginApi } from "../../api/axiosInstance";
 import { useAuth } from "../../context/AuthContext";
@@ -11,6 +11,15 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const getRedirectTarget = (): string | null => {
+    const target = searchParams.get("redirect");
+    if (target && target.startsWith("/") && !target.startsWith("//") && !target.startsWith("/\\")) {
+      return target;
+    }
+    return null;
+  };
 
   const submit = async () => {
     if (!userReg || !password) return;
@@ -22,17 +31,26 @@ const Login: React.FC = () => {
       if (response.data.status === "success") {
         if (response.data.forcePasswordChange) {
           navigate("/login/first-login-setup", {
-            state: { loginResponse: response.data, currentPassword: normalizedPassword },
+            state: {
+              loginResponse: response.data,
+              currentPassword: normalizedPassword,
+              redirect: getRedirectTarget(),
+            },
           });
         } else {
           login(response.data);
-          const role = response.data.role;
-          const hasRole = Array.isArray(role) ? role.length > 0 : !!role;
-          if (hasRole) {
-            const savedPath = sessionStorage.getItem('admin_last_path');
-            navigate(savedPath && savedPath.startsWith('/admin') ? savedPath : '/admin');
+          const redirectTarget = getRedirectTarget();
+          if (redirectTarget) {
+            navigate(redirectTarget);
           } else {
-            navigate('/');
+            const role = response.data.role;
+            const hasRole = Array.isArray(role) ? role.length > 0 : !!role;
+            if (hasRole) {
+              const savedPath = sessionStorage.getItem('admin_last_path');
+              navigate(savedPath && savedPath.startsWith('/admin') ? savedPath : '/admin');
+            } else {
+              navigate('/');
+            }
           }
         }
         return;
