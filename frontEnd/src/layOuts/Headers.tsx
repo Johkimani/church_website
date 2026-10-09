@@ -3,6 +3,7 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import { useApp } from "../context/AppContext";
+import { useMobileNav } from "../context/MobileNavContext";
 import { FaBell, FaShoppingCart } from "react-icons/fa";
 import { publicNavLinks, authNavLinks } from "./headerRoutes";
 import AdminPanel from "../pages/Landing/components/AdminPanel";
@@ -24,6 +25,10 @@ const Headers = () => {
   const [animateBadge, setAnimateBadge] = useState(false);
   const [animateCart, setAnimateCart] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { entry } = useMobileNav();
+  const [drawerTab, setDrawerTab] = useState<"context" | "csa">("csa");
+  const closeDrawer = () => setIsMobileMenuOpen(false);
+  const showContextNav = !!(entry && drawerTab === "context");
 
   useEffect(() => {
     if (unreadCount > 0) {
@@ -55,6 +60,10 @@ const Headers = () => {
       document.body.style.overflow = previous;
     };
   }, [isMobileMenuOpen]);
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = () => {
     logout();
@@ -268,7 +277,11 @@ const Headers = () => {
               )}
               <button
                 className="p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                onClick={() => {
+                  const next = !isMobileMenuOpen;
+                  setIsMobileMenuOpen(next);
+                  if (next) setDrawerTab(entry ? "context" : "csa");
+                }}
                 aria-label="Open Menu"
                 aria-expanded={isMobileMenuOpen}
               >
@@ -324,45 +337,78 @@ const Headers = () => {
             </button>
           </div>
 
-          {/* Navigation Links */}
-          <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y">
-            <nav className="p-4 space-y-1">
-              {navLinks.map((link, idx) => {
-                const active = isActive(link.path);
-                return (
-                  <Link
-                    key={link.path}
-                    to={link.path}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
-                      active
-                        ? "bg-blue-50 text-blue-700 border border-blue-100"
-                        : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
-                    }`}
-                    style={{
-                      animationDelay: `${idx * 30}ms`,
-                    }}
-                  >
-                    <span className="flex items-center gap-3">
-                      <span
-                        className={`w-2 h-2 rounded-full transition-all ${
-                          active ? "bg-blue-600 scale-125" : "bg-slate-300"
-                        }`}
-                      />
-                      {link.name}
-                    </span>
-                    <span className={`text-xs px-2 py-0.5 rounded-md transition-colors ${
-                      active ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-400"
-                    }`}>
-                      {isActive(link.path) ? "Active" : "Go"}
-                    </span>
-                  </Link>
-                );
-              })}
-            </nav>
+          {/* Context Tabs (section | CSA) */}
+          {entry && (
+            <div className="px-3 pt-3 bg-white">
+              <div className="flex rounded-xl bg-slate-100 p-1 gap-1">
+                <button
+                  onClick={() => setDrawerTab("context")}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
+                    drawerTab === "context"
+                      ? "bg-white text-blue-700 shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  {entry.label}
+                </button>
+                <button
+                  onClick={() => setDrawerTab("csa")}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
+                    drawerTab === "csa"
+                      ? "bg-white text-blue-700 shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  CSA
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Navigation Body */}
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y">
+            {showContextNav && entry ? (
+              entry.render(closeDrawer)
+            ) : (
+              <nav className="p-4 space-y-1">
+                {navLinks.map((link, idx) => {
+                  const active = isActive(link.path);
+                  return (
+                    <Link
+                      key={link.path}
+                      to={link.path}
+                      onClick={closeDrawer}
+                      className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                        active
+                          ? "bg-blue-50 text-blue-700 border border-blue-100"
+                          : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                      }`}
+                      style={{
+                        animationDelay: `${idx * 30}ms`,
+                      }}
+                    >
+                      <span className="flex items-center gap-3">
+                        <span
+                          className={`w-2 h-2 rounded-full transition-all ${
+                            active ? "bg-blue-600 scale-125" : "bg-slate-300"
+                          }`}
+                        />
+                        {link.name}
+                      </span>
+                      <span className={`text-xs px-2 py-0.5 rounded-md transition-colors ${
+                        active ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-400"
+                      }`}>
+                        {isActive(link.path) ? "Active" : "Go"}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
           </div>
 
           {/* Drawer Footer */}
+          {!showContextNav && (
           <div className="border-t border-slate-100 p-4 bg-slate-50/50">
             <button
               onClick={() => {
@@ -435,6 +481,7 @@ const Headers = () => {
               CSA Kirinyaga &bull; 2026
             </p>
           </div>
+          )}
         </div>
       </div>
     </>

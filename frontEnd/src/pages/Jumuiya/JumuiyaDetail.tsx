@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useData } from './context/DataContext';
 import AboutTab from './components/AboutTab';
@@ -12,10 +12,11 @@ import NotificationsTab from './components/NotificationsTab';
 import TshirtsTab from './components/TshirtsTab';
 import SettingsTab from './components/SettingsTab';
 import PrayerPartnersTab from './components/PrayerPartnersTab';
-import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaUserPlus, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaKey, FaStamp, FaPrayingHands } from "react-icons/fa";
+import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaUserPlus, FaShareAlt, FaBell, FaTshirt, FaArrowLeft, FaKey, FaStamp, FaPrayingHands } from "react-icons/fa";
 import { useAuth } from '../../context/AuthContext';
 import { useJumuiyaOfficials } from '../../hooks/useJumuiyaOfficials';
 import { useTerms } from '../../hooks/useTerms';
+import { useMobileNavEntry } from '../../context/MobileNavContext';
 import './JumuiyaDetail.css';
 import { FaTimes } from 'react-icons/fa';
 
@@ -26,7 +27,6 @@ const JumuiyaDetail: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [activeTab, setActiveTab] = useState<TabType>('about');
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const { getJumuiyaById } = useData();
     const { user } = useAuth();
     const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -34,6 +34,7 @@ const JumuiyaDetail: React.FC = () => {
 
     const jumuiyaId = id ? id.toLowerCase().replace(/[^a-z0-9]/g, '-') : '';
     const jumuiya = getJumuiyaById(jumuiyaId);
+    const detailColor = jumuiya?.color || '#2c3e50';
     const isMemberOfThisJumuiya = !!(user?.jumuiya_id && jumuiya?.group_id && user.jumuiya_id === jumuiya.group_id);
 
     const isAdmin = user?.role === 'admin' || (Array.isArray(user?.role) && user.role.includes('admin'));
@@ -48,6 +49,92 @@ const JumuiyaDetail: React.FC = () => {
         !userRoles.some(r => ['jumuiya_os', 'jumuiya_chairperson', 'jumuiya_secretary', 'admin'].includes(String(r).toLowerCase()));
     // Every member of the jumuiya can view the posted prayer partner list.
     const isPrayerPartnersAllowed = isMemberOfThisJumuiya;
+
+    const tabs = [
+        { id: 'about' as TabType, label: 'About', icon: <FaInfoCircle /> },
+        { id: 'officials' as TabType, label: 'Officials', icon: <FaUserTie /> },
+        ...(isMemberOfThisJumuiya ? [
+          { id: 'members' as TabType, label: 'Members', icon: <FaUsers /> },
+          ...(isPureLiturgist ? [] : [
+            { id: 'registration' as TabType, label: 'Registration', icon: <FaUserPlus /> },
+            { id: 'stampcard' as TabType, label: 'Stamp Card', icon: <FaStamp /> },
+          ]),
+        ] : []),
+        ...(isPrayerPartnersAllowed ? [{ id: 'prayerpartners' as TabType, label: 'Prayer Partners', icon: <FaPrayingHands /> }] : []),
+        { id: 'activities' as TabType, label: 'Activities', icon: <FaCalendarAlt /> },
+        { id: 'channels' as TabType, label: 'Channels & Gallery', icon: <FaShareAlt /> },
+        { id: 'tshirts' as TabType, label: 'T-Shirts', icon: <FaTshirt /> },
+        ...(isMemberOfThisJumuiya && !isPureLiturgist ? [{ id: 'settings' as TabType, label: 'Settings', icon: <FaKey /> }] : []),
+    ];
+
+    // Shared sidebar content used by the desktop aside and the mobile drawer.
+    const renderSidebarNav = (onNavigateComplete?: () => void) => (
+        <>
+            <div className="sidebar-header">
+                <div
+                    className="sidebar-icon"
+                    style={{
+                        color: 'blue',
+                        backgroundImage: `url(${jumuiya?.saintImage})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat'
+                    }}
+                >
+                </div>
+                <h2 className="sidebar-title">{jumuiya?.name}</h2>
+            </div>
+
+            <nav className="sidebar-nav">
+                {tabs.map(tab => (
+                    <button
+                        key={tab.id}
+                        className={`nav-item ${activeTab === tab.id ? 'active' : ''}`}
+                        onClick={() => {
+                            setTabWithUrl(tab.id);
+                            onNavigateComplete?.();
+                        }}
+                        style={activeTab === tab.id ? {
+                            borderLeftColor: detailColor,
+                            color: detailColor,
+                            background: `linear-gradient(90deg, ${detailColor}10 0%, transparent 100%)`
+                        } : {}}
+                    >
+                        <span className="nav-icon" style={activeTab === tab.id ? { color: detailColor } : {}}>{tab.icon}</span>
+                        <span className="nav-label">{tab.label}</span>
+                    </button>
+                ))}
+            </nav>
+
+            <div className="sidebar-footer">
+                <button
+                    className="btn-premium"
+                    onClick={() => {
+                        navigate('/jumuiya');
+                        onNavigateComplete?.();
+                    }}
+                    style={{ width: '100%', justifyContent: 'center' }}
+                >
+                    <FaArrowLeft style={{ marginRight: '8px' }} /> All Jumuiyas
+                </button>
+            </div>
+        </>
+    );
+
+    // Register the jumuiya's nav menu in the mobile drawer (context tab).
+    const mobileNavRenderRef = useRef<(close: () => void) => React.ReactNode>(() => null);
+    mobileNavRenderRef.current = (close) => (
+        <aside
+            className="sidebar sidebar-drawer"
+            style={{
+                '--jumuiya-color': detailColor,
+                '--jumuiya-color-light': `${detailColor}20`,
+            } as React.CSSProperties}
+        >
+            {renderSidebarNav(close)}
+        </aside>
+    );
+    useMobileNavEntry(jumuiya?.id || null, jumuiya?.name || null, mobileNavRenderRef);
 
     const setTabWithUrl = (tab: TabType) => {
         setActiveTab(tab);
@@ -92,16 +179,7 @@ const JumuiyaDetail: React.FC = () => {
     const { currentTerm } = useTerms();
 
     // Lock background page scroll when mobile menu is open
-    useEffect(() => {
-        if (isSidebarOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
-        }
-        return () => {
-            document.body.style.overflow = '';
-        };
-    }, [isSidebarOpen]);
+    // (body scroll is locked by the Header drawer while it is open)
 
     // Derive term info dynamically
     const dynamicTerm = (() => {
@@ -184,23 +262,6 @@ const JumuiyaDetail: React.FC = () => {
         );
     }
 
-    const tabs = [
-        { id: 'about' as TabType, label: 'About', icon: <FaInfoCircle /> },
-        { id: 'officials' as TabType, label: 'Officials', icon: <FaUserTie /> },
-        ...(isMemberOfThisJumuiya ? [
-          { id: 'members' as TabType, label: 'Members', icon: <FaUsers /> },
-          ...(isPureLiturgist ? [] : [
-            { id: 'registration' as TabType, label: 'Registration', icon: <FaUserPlus /> },
-            { id: 'stampcard' as TabType, label: 'Stamp Card', icon: <FaStamp /> },
-          ]),
-        ] : []),
-        ...(isPrayerPartnersAllowed ? [{ id: 'prayerpartners' as TabType, label: 'Prayer Partners', icon: <FaPrayingHands /> }] : []),
-        { id: 'activities' as TabType, label: 'Activities', icon: <FaCalendarAlt /> },
-        { id: 'channels' as TabType, label: 'Channels & Gallery', icon: <FaShareAlt /> },
-        { id: 'tshirts' as TabType, label: 'T-Shirts', icon: <FaTshirt /> },
-        ...(isMemberOfThisJumuiya && !isPureLiturgist ? [{ id: 'settings' as TabType, label: 'Settings', icon: <FaKey /> }] : []),
-    ];
-
     const renderTabContent = () => {
         switch (activeTab) {
             case 'about':
@@ -246,8 +307,6 @@ case 'prayerpartners':
       }
     }, [isMemberOfThisJumuiya, isPrayerPartnersAllowed, isPureLiturgist, activeTab]);
 
-    const detailColor = jumuiya.color || '#2c3e50';
-
     return (
         <div
             className="detail-page"
@@ -258,62 +317,9 @@ case 'prayerpartners':
                 '--jumuiya-color-dark': `${detailColor}dd`,
             } as React.CSSProperties}
         >
-            {/* Mobile Menu Toggle */}
-            <button
-                className="mobile-menu-toggle"
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                aria-label="Toggle menu"
-            >
-                <FaBars />
-            </button>
-
-            {/* Sidebar Navigation */}
-            <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
-                <div className="sidebar-header">
-                    <div
-                        className="sidebar-icon"
-                        style={{
-                            color: 'blue',
-                            backgroundImage: `url(${jumuiya.saintImage})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            backgroundRepeat: 'no-repeat'
-                        }}
-                    >
-                    </div>
-                    <h2 className="sidebar-title">{jumuiya.name}</h2>
-                </div>
-
-                <nav className="sidebar-nav">
-                    {tabs.map(tab => (
-                        <button
-                            key={tab.id}
-                            className={`nav-item ${activeTab === tab.id ? 'active' : ''}`}
-                            onClick={() => {
-                                setTabWithUrl(tab.id);
-                                setIsSidebarOpen(false);
-                            }}
-                            style={activeTab === tab.id ? {
-                                borderLeftColor: jumuiya.color,
-                                color: jumuiya.color,
-                                background: `linear-gradient(90deg, ${jumuiya.color}10 0%, transparent 100%)`
-                            } : {}}
-                        >
-                            <span className="nav-icon" style={activeTab === tab.id ? { color: jumuiya.color } : {}}>{tab.icon}</span>
-                            <span className="nav-label">{tab.label}</span>
-                        </button>
-                    ))}
-                </nav>
-
-                <div className="sidebar-footer">
-                    <button
-                        className="btn-premium"
-                        onClick={() => navigate('/jumuiya')}
-                        style={{ width: '100%', justifyContent: 'center' }}
-                    >
-                        <FaArrowLeft style={{ marginRight: '8px' }} /> All Jumuiyas
-                    </button>
-                </div>
+            {/* Sidebar Navigation (desktop aside; mobile uses the header drawer) */}
+            <aside className="sidebar">
+                {renderSidebarNav()}
             </aside>
 
             {/* Main Content Area */}
@@ -355,14 +361,11 @@ case 'prayerpartners':
                 </div>
             )}
 
-            {/* Overlay for mobile */}
-            {(isSidebarOpen || (isNotifOpen && window.innerWidth < 768)) && (
+            {/* Overlay for mobile notifications panel */}
+            {isNotifOpen && window.innerWidth < 768 && (
                 <div
                     className="sidebar-overlay"
-                    onClick={() => {
-                        setIsSidebarOpen(false);
-                        setIsNotifOpen(false);
-                    }}
+                    onClick={() => setIsNotifOpen(false)}
                 />
             )}
         </div>

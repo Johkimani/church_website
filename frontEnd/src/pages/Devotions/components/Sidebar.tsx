@@ -110,7 +110,7 @@ function QuickLinks() {
   );
 }
 
-export default function Sidebar() {
+export default function Sidebar({ fillWidth = false }: { fillWidth?: boolean }) {
   const { isAuthenticated } = useAuth();
   const [prayersOpen, setPrayersOpen] = useState(false);
   const [liturgyOpen, setLiturgyOpen] = useState(false);
@@ -122,7 +122,7 @@ export default function Sidebar() {
     <>
       {/* Sidebar - shown as fixed column on desktop (via Layout), slide-in drawer on mobile */}
       <aside
-        className="flex flex-col w-60 h-full flex-shrink-0"
+        className={`flex flex-col h-full flex-shrink-0 ${fillWidth ? 'w-full' : 'w-60'}`}
         style={{
           background: "rgba(255, 255, 255, 0.7)",
           backdropFilter: "blur(24px) saturate(1.5)",

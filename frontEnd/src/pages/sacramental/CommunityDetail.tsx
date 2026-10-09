@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useCommunityData } from './context/CommunityDataContext';
@@ -17,8 +17,9 @@ import CommunitySuggestionsTab from './components/tabs/CommunitySuggestionsTab';
 import CommunityNoticeBoardTab from './components/tabs/CommunityNoticeBoardTab';
 import CommunitySongsTab from './components/tabs/CommunitySongsTab';
 import CommunityVideosTab from './components/tabs/CommunityVideosTab';
-import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaBars, FaBell, FaTshirt, FaArrowLeft, FaKey, FaTimes, FaUserPlus, FaHandPaper, FaCommentDots, FaBullhorn, FaMusic, FaVideo } from 'react-icons/fa';
+import { FaInfoCircle, FaUserTie, FaUsers, FaCalendarAlt, FaShareAlt, FaBell, FaTshirt, FaArrowLeft, FaKey, FaTimes, FaUserPlus, FaHandPaper, FaCommentDots, FaBullhorn, FaMusic, FaVideo } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
+import { useMobileNavEntry } from '../../context/MobileNavContext';
 import '../Jumuiya/JumuiyaDetail.css';
 
 type TabType = 'about' | 'songs' | 'noticeboard' | 'officials' | 'activities' | 'members' | 'channels' | 'videos' | 'tshirts' | 'suggestions' | 'settings' | 'request';
@@ -91,7 +92,6 @@ const CommunityDetail: React.FC = () => {
   const { getModuleById } = useCommunityData();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('about');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   const moduleIdClean = moduleId ? moduleId.toLowerCase().replace(/[^a-z0-9-]/g, '-') : '';
@@ -152,6 +152,131 @@ const CommunityDetail: React.FC = () => {
     ? ['about', 'noticeboard', 'officials', 'activities', 'members', 'channels', 'videos', 'tshirts', 'suggestions']
     : DEFAULT_TAB_ORDER;
 
+  // Shared sidebar content used by the desktop aside and the mobile drawer.
+  const renderSidebarNav = (onNavigateComplete?: () => void) => (
+    <>
+      <div
+        className="sidebar-header relative overflow-hidden"
+        style={{
+          background: `linear-gradient(135deg, ${detailColor} 0%, ${detailColor}ee 40%, ${detailColor}cc 100%)`,
+        }}
+      >
+        <div
+          className="sidebar-icon relative z-10"
+          style={{
+            color: 'white',
+            backgroundImage: `url(${moduleData?.saint_image_url || moduleData?.image_url || COMMUNITY_IMAGES[moduleIdClean || ''] || DEFAULT_COMMUNITY_IMAGE})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            backgroundColor: 'rgba(255,255,255,0.15)',
+            border: '3px solid rgba(255,255,255,0.3)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+          }}
+        />
+        <h2 className="sidebar-title text-white drop-shadow-md relative z-10">{moduleData?.title}</h2>
+      </div>
+
+      <nav className="sidebar-nav">
+        {tabOrder.map((tabId) => {
+          const isActive = activeTab === tabId;
+          return (
+            <button
+              key={tabId}
+              className={`nav-item ${isActive ? 'active' : ''}`}
+              onClick={() => {
+                setTabWithUrl(tabId);
+                onNavigateComplete?.();
+              }}
+              style={isActive ? {
+                borderLeftColor: 'white',
+                color: 'white',
+                background: 'rgba(255, 255, 255, 0.1)',
+              } : {}}
+            >
+              <span
+                className="nav-icon"
+                style={{ color: isActive ? 'white' : 'rgba(255,255,255,0.65)' }}
+              >
+                {TAB_ICONS[tabId]}
+              </span>
+              <span className="nav-label">{TAB_LABELS[tabId]}</span>
+              {isActive && (
+                <span
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full transition-all duration-300"
+                  style={{ background: 'white' }}
+                />
+              )}
+            </button>
+          );
+        })}
+        {isAdmin && (
+          <button
+            className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => {
+              setTabWithUrl('settings');
+              onNavigateComplete?.();
+            }}
+            style={activeTab === 'settings' ? {
+              borderLeftColor: 'white',
+              color: 'white',
+              background: 'rgba(255, 255, 255, 0.1)',
+            } : {}}
+          >
+            <span
+              className="nav-icon"
+              style={{ color: activeTab === 'settings' ? 'white' : 'rgba(255,255,255,0.65)' }}
+            >
+              {TAB_ICONS.settings}
+            </span>
+            <span className="nav-label">{TAB_LABELS.settings}</span>
+            {activeTab === 'settings' && (
+              <span
+                className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full transition-all duration-300"
+                style={{ background: 'white' }}
+              />
+            )}
+          </button>
+        )}
+      </nav>
+
+      <div className="sidebar-footer">
+        <button
+          className="w-full py-3 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.02] shadow-lg cursor-pointer mb-2"
+          style={{ background: detailColor }}
+          onClick={() => {
+            navigate(`/community/${moduleIdClean}/join`);
+            onNavigateComplete?.();
+          }}
+        >
+          <FaUserPlus size={14} /> Join This Community
+        </button>
+        <button
+          className="btn-premium"
+          onClick={() => {
+            navigate('/community');
+            onNavigateComplete?.();
+          }}
+          style={{ width: '100%', justifyContent: 'center' }}
+        >
+          <FaArrowLeft style={{ marginRight: '8px' }} /> All Communities
+        </button>
+      </div>
+    </>
+  );
+
+  // Register the community's nav menu in the mobile drawer (context tab).
+  const mobileNavRenderRef = useRef<(close: () => void) => React.ReactNode>(() => null);
+  mobileNavRenderRef.current = (close) => (
+    <aside
+      className="sidebar sidebar-drawer"
+      style={{ '--jumuiya-color': detailColor } as React.CSSProperties}
+    >
+      {renderSidebarNav(close)}
+    </aside>
+  );
+  useMobileNavEntry(moduleData?.id || moduleIdClean || null, moduleData?.title || null, mobileNavRenderRef);
+
   // Sync activeTab with URL query parameter (e.g. ?tab=members)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -160,15 +285,6 @@ const CommunityDetail: React.FC = () => {
       setActiveTab(tabParam);
     }
   }, [location.search]);
-
-  useEffect(() => {
-    if (isSidebarOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [isSidebarOpen]);
 
 
   const renderTabContent = () => {
@@ -253,118 +369,9 @@ const CommunityDetail: React.FC = () => {
         '--bg-soft': '#f0f0f0',
       } as React.CSSProperties}
     >
-      {/* Mobile Menu Toggle */}
-      <button
-        className="mobile-menu-toggle"
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        aria-label="Toggle menu"
-      >
-        <FaBars />
-      </button>
-
-      {/* Sidebar Navigation */}
-      <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
-        <div
-          className="sidebar-header relative overflow-hidden"
-          style={{
-            background: `linear-gradient(135deg, ${detailColor} 0%, ${detailColor}ee 40%, ${detailColor}cc 100%)`,
-          }}
-        >
-          <div
-            className="sidebar-icon relative z-10"
-            style={{
-              color: 'white',
-              backgroundImage: `url(${moduleData.saint_image_url || moduleData.image_url || COMMUNITY_IMAGES[moduleIdClean] || DEFAULT_COMMUNITY_IMAGE})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-              backgroundColor: 'rgba(255,255,255,0.15)',
-              border: '3px solid rgba(255,255,255,0.3)',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
-            }}
-          />
-          <h2 className="sidebar-title text-white drop-shadow-md relative z-10">{moduleData.title}</h2>
-        </div>
-
-        <nav className="sidebar-nav">
-          {tabOrder.map((tabId, idx) => {
-            const isActive = activeTab === tabId;
-            return (
-              <button
-                key={tabId}
-                className={`nav-item ${isActive ? 'active' : ''}`}
-                onClick={() => {
-                  setTabWithUrl(tabId);
-                  setIsSidebarOpen(false);
-                }}
-                style={isActive ? {
-                  borderLeftColor: 'white',
-                  color: 'white',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                } : {}}
-              >
-                <span
-                  className="nav-icon"
-                  style={{ color: isActive ? 'white' : 'rgba(255,255,255,0.65)' }}
-                >
-                  {TAB_ICONS[tabId]}
-                </span>
-                <span className="nav-label">{TAB_LABELS[tabId]}</span>
-                {isActive && (
-                  <span
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full transition-all duration-300"
-                    style={{ background: 'white' }}
-                  />
-                )}
-              </button>
-            );
-          })}
-          {isAdmin && (
-            <button
-              className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
-              onClick={() => {
-                setTabWithUrl('settings');
-                setIsSidebarOpen(false);
-              }}
-              style={activeTab === 'settings' ? {
-                borderLeftColor: 'white',
-                color: 'white',
-                background: 'rgba(255, 255, 255, 0.1)',
-              } : {}}
-            >
-              <span
-                className="nav-icon"
-                style={{ color: activeTab === 'settings' ? 'white' : 'rgba(255,255,255,0.65)' }}
-              >
-                {TAB_ICONS.settings}
-              </span>
-              <span className="nav-label">{TAB_LABELS.settings}</span>
-              {activeTab === 'settings' && (
-                <span
-                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full transition-all duration-300"
-                  style={{ background: 'white' }}
-                />
-              )}
-            </button>
-          )}
-        </nav>
-
-        <div className="sidebar-footer">
-            <button
-              className="w-full py-3 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.02] shadow-lg cursor-pointer mb-2"
-              style={{ background: detailColor }}
-              onClick={() => navigate(`/community/${moduleIdClean}/join`)}
-            >
-              <FaUserPlus size={14} /> Join This Community
-            </button>
-          <button
-            className="btn-premium"
-            onClick={() => navigate('/community')}
-            style={{ width: '100%', justifyContent: 'center' }}
-          >
-            <FaArrowLeft style={{ marginRight: '8px' }} /> All Communities
-          </button>
-        </div>
+{/* Sidebar Navigation (desktop aside; mobile uses the header drawer) */}
+      <aside className="sidebar">
+        {renderSidebarNav()}
       </aside>
 
       {/* Main Content Area */}
@@ -394,14 +401,11 @@ const CommunityDetail: React.FC = () => {
       )}
 
 
-      {/* Overlay for mobile */}
-      {(isSidebarOpen || (isNotifOpen && window.innerWidth < 768)) && (
+      {/* Overlay for mobile notifications panel */}
+      {isNotifOpen && window.innerWidth < 768 && (
         <div
           className="sidebar-overlay"
-          onClick={() => {
-            setIsSidebarOpen(false);
-            setIsNotifOpen(false);
-          }}
+          onClick={() => setIsNotifOpen(false)}
         />
       )}
     </div>
