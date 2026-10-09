@@ -168,9 +168,9 @@
 /* Notification FAB Styles */
 .notif-fab-container {
     position: fixed;
-    bottom: var(--space-2xl);
+    bottom: 100px;
     right: var(--space-2xl);
-    z-index: 1000;
+    z-index: 10000;
 }
 
 .notif-fab {
@@ -230,15 +230,19 @@
     bottom: 80px;
     right: 0;
     width: 400px;
-    max-height: 600px;
-    background: white;
+    height: min(72vh, 560px);
+    max-height: 560px;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--jumuiya-color), black 20%) 0%, color-mix(in srgb, var(--jumuiya-color), black 30%) 100%) !important;
     border-radius: var(--rl);
     box-shadow: var(--shadow-2xl);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    z-index: 1000;
-    border: 1px solid var(--border-light);
+    z-index: 10010;
+    border: 1px solid color-mix(in srgb, var(--jumuiya-color), transparent 60%);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
 }
 
 .notif-panel-header {
@@ -246,20 +250,22 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 2px solid;
-    background: var(--bg-soft);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--jumuiya-color), black 15%), color-mix(in srgb, var(--jumuiya-color), black 25%));
+    box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.1);
 }
 
 .notif-panel-header h3 {
     margin: 0;
     font-size: 1.1rem;
-    color: var(--text-primary);
+    color: white;
+    font-weight: 800;
 }
 
 .close-panel {
     background: transparent;
     border: none;
-    color: var(--text-muted);
+    color: rgba(255, 255, 255, 0.6);
     cursor: pointer;
     padding: 4px;
     display: flex;
@@ -267,14 +273,46 @@
 }
 
 .close-panel:hover {
-    color: var(--text-primary);
+    color: white;
     transform: scale(1.1);
 }
 
 .notif-panel-content {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: var(--space-md);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--jumuiya-color), black 45%) 0%, color-mix(in srgb, var(--jumuiya-color), black 55%) 100%);
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+.notif-panel-content .tab-system-content,
+.notif-panel-content .tab-card,
+.notif-panel-content .glass-card,
+.notif-panel-content .empty-tab-state {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+    box-shadow: none !important;
+}
+
+.notif-panel-content .tab-card {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%) !important;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.15) !important;
+    border-left: 4px solid var(--notif-color, var(--info));
+    color: white;
+}
+
+.notif-panel-content .tab-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
 }
 
 /* Hide some overhead in the floating panel version */
@@ -286,6 +324,9 @@
 
 .notif-panel-content .tab-system-content {
     padding-bottom: 0px;
+    --text-secondary: rgba(255, 255, 255, 0.85);
+    --text-muted: rgba(255, 255, 255, 0.55);
+    --border-light: rgba(255, 255, 255, 0.12);
 }
 
 .notif-panel-content .tab-grid {
@@ -295,16 +336,62 @@
 
 @media (max-width: 768px) {
     .notif-panel-floating {
-        position: fixed;
-        inset: var(--space-lg);
-        width: auto;
-        max-height: none;
-        bottom: 100px;
+        position: fixed !important;
+        left: 16px !important;
+        right: 16px !important;
+        top: auto !important;
+        bottom: 130px !important;
+        width: auto !important;
+        height: min(62vh, 560px) !important;
+        max-height: min(62vh, 560px) !important;
+        min-height: 260px !important;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--jumuiya-color), black 20%) 0%, color-mix(in srgb, var(--jumuiya-color), black 30%) 100%) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        filter: none !important;
+        box-shadow: 0 24px 52px rgba(0, 0, 0, 0.3) !important;
+        border: 1px solid color-mix(in srgb, var(--jumuiya-color), transparent 60%) !important;
+        border-radius: 22px !important;
+        z-index: 10020;
+    }
+
+    .notif-panel-content {
+        flex: 1 1 auto;
+        min-height: 0;
+        height: auto;
+        max-height: calc(62vh - 64px);
+        overflow-y: auto;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--jumuiya-color), black 45%) 0%, color-mix(in srgb, var(--jumuiya-color), black 55%) 100%) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        filter: none !important;
+    }
+
+    .notif-panel-content .tab-card,
+    .notif-panel-content .empty-tab-state,
+    .notif-panel-content .tab-system-content,
+    .notif-panel-content .glass-card {
+        background: rgba(255, 255, 255, 0.06) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        filter: none !important;
+        box-shadow: none !important;
+    }
+
+    .notif-panel-content .tab-card {
+        padding: 16px !important;
+        border-radius: 16px !important;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15) !important;
     }
     
     .notif-fab-container {
-        bottom: var(--space-lg);
-        right: var(--space-lg);
+        bottom: 95px !important;
+        right: 20px !important;
+        z-index: 10000;
+    }
+
+    .notif-panel-floating {
+        z-index: 10020;
     }
 }
 

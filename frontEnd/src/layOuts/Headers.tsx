@@ -47,6 +47,15 @@ const Headers = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [isMobileMenuOpen]);
+
   const handleLogout = () => {
     logout();
     navigate("/");
@@ -274,7 +283,7 @@ const Headers = () => {
 
       {/* Mobile Navigation Drawer */}
       <div
-        className={`fixed inset-0 z-[100] md:hidden transition-all duration-500 overflow-hidden ${
+        className={`fixed inset-0 z-[100] md:hidden transition-all duration-500 overflow-hidden overscroll-contain ${
           isMobileMenuOpen ? "visible opacity-100" : "invisible opacity-0"
         }`}
       >
@@ -286,7 +295,7 @@ const Headers = () => {
         />
 
         <div
-          className={`absolute top-0 left-0 w-[85%] max-w-[350px] h-full bg-white shadow-2xl transition-transform duration-400 ease-out flex flex-col ${
+          className={`absolute top-0 left-0 w-[72%] max-w-[300px] h-full bg-white shadow-2xl transition-transform duration-300 ease-out flex flex-col ${
             isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
@@ -316,7 +325,7 @@ const Headers = () => {
           </div>
 
           {/* Navigation Links */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y">
             <nav className="p-4 space-y-1">
               {navLinks.map((link, idx) => {
                 const active = isActive(link.path);
