@@ -175,7 +175,7 @@ export default function RafikiWidget() {
           style={{ bottom: footerLift ? `${footerLift + 20}px` : undefined }}
           className={`${
             atFooter ? "hidden md:inline-flex" : "inline-flex"
-          } fixed bottom-[158px] right-5 md:bottom-6 md:right-6 z-[9999] items-center gap-2 pl-3 pr-4 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-semibold shadow-xl ring-1 ring-white/20 hover:scale-105 active:scale-95 transition-all duration-300`}
+          } fixed bottom-[50px] right-5 md:bottom-6 md:right-6 z-[9999] items-center gap-2 pl-3 pr-4 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-semibold shadow-xl ring-1 ring-white/20 hover:scale-105 active:scale-95 transition-all duration-300`}
         >
           <Sparkles className="w-4 h-4" />
           Ask Rafiki
