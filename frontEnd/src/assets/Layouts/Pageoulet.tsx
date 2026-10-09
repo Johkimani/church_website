@@ -4,6 +4,7 @@ import Footers from "../../layOuts/Footers";
 import { CartDrawer } from "../../pages/projects/components/CartDrawer";
 import { ToastContainer } from "../../pages/projects/components/ToastContainer";
 import { useApp } from "../../context/AppContext";
+import { MobileNavProvider } from "../../context/MobileNavContext";
 
 const Pageoulet = () => {
   const {
@@ -16,31 +17,33 @@ const Pageoulet = () => {
 
   return (
     <div className="flex flex-col min-h-screen overflow-x-hidden">
-      <Headers />
-      <ToastContainer toasts={toasts} />
-      <CartDrawer
-          isOpen={isCartOpen}
-          onClose={() => setIsCartOpen(false)}
-          cart={cart}
-          cartTotal={cartTotal}
-          removeFromCart={removeFromCart}
-          updateCartQuantity={updateCartQuantity}
-          customerName={customerName}
-          setCustomerName={setCustomerName}
-          customerPhone={customerPhone}
-          setCustomerPhone={setCustomerPhone}
-          customerEmail={customerEmail}
-          setCustomerEmail={setCustomerEmail}
-          deliveryAddress={deliveryAddress}
-          setDeliveryAddress={setDeliveryAddress}
-          collectionMethod={collectionMethod}
-          setCollectionMethod={setCollectionMethod}
-          proceedToCheckout={proceedToCheckout}
-      />
-      <main className="flex-1">
-        <Outlet />
-      </main>
-      <Footers />
+      <MobileNavProvider>
+        <Headers />
+        <ToastContainer toasts={toasts} />
+        <CartDrawer
+            isOpen={isCartOpen}
+            onClose={() => setIsCartOpen(false)}
+            cart={cart}
+            cartTotal={cartTotal}
+            removeFromCart={removeFromCart}
+            updateCartQuantity={updateCartQuantity}
+            customerName={customerName}
+            setCustomerName={setCustomerName}
+            customerPhone={customerPhone}
+            setCustomerPhone={setCustomerPhone}
+            customerEmail={customerEmail}
+            setCustomerEmail={setCustomerEmail}
+            deliveryAddress={deliveryAddress}
+            setDeliveryAddress={setDeliveryAddress}
+            collectionMethod={collectionMethod}
+            setCollectionMethod={setCollectionMethod}
+            proceedToCheckout={proceedToCheckout}
+        />
+        <main className="flex-1">
+          <Outlet />
+        </main>
+        <Footers />
+      </MobileNavProvider>
     </div>
   );
 };
