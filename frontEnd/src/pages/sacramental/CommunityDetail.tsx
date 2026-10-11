@@ -203,24 +203,18 @@ const CommunityDetail: React.FC = () => {
                 onNavigateComplete?.();
               }}
               style={isActive ? {
-                borderLeftColor: 'white',
-                color: 'white',
-                background: 'rgba(255, 255, 255, 0.1)',
+                borderLeftColor: detailColor,
+                color: detailColor,
+                background: `linear-gradient(90deg, ${detailColor}10 0%, transparent 100%)`,
               } : {}}
             >
               <span
                 className="nav-icon"
-                style={{ color: isActive ? 'white' : 'rgba(255,255,255,0.65)' }}
+                style={{ color: isActive ? detailColor : 'rgba(28,25,23,0.45)' }}
               >
                 {TAB_ICONS[tabId]}
               </span>
               <span className="nav-label">{TAB_LABELS[tabId]}</span>
-              {isActive && (
-                <span
-                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full transition-all duration-300"
-                  style={{ background: 'white' }}
-                />
-              )}
             </button>
           );
         })}
@@ -232,24 +226,18 @@ const CommunityDetail: React.FC = () => {
               onNavigateComplete?.();
             }}
             style={activeTab === 'settings' ? {
-              borderLeftColor: 'white',
-              color: 'white',
-              background: 'rgba(255, 255, 255, 0.1)',
+              borderLeftColor: detailColor,
+              color: detailColor,
+              background: `linear-gradient(90deg, ${detailColor}10 0%, transparent 100%)`,
             } : {}}
           >
             <span
               className="nav-icon"
-              style={{ color: activeTab === 'settings' ? 'white' : 'rgba(255,255,255,0.65)' }}
+              style={{ color: activeTab === 'settings' ? detailColor : 'rgba(28,25,23,0.45)' }}
             >
               {TAB_ICONS.settings}
             </span>
             <span className="nav-label">{TAB_LABELS.settings}</span>
-            {activeTab === 'settings' && (
-              <span
-                className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full transition-all duration-300"
-                style={{ background: 'white' }}
-              />
-            )}
           </button>
         )}
       </nav>
