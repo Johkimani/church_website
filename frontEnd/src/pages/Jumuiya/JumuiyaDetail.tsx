@@ -70,8 +70,8 @@ const JumuiyaDetail: React.FC = () => {
     // Shared sidebar content used by the desktop aside and the mobile drawer.
     const renderSidebarNav = (onNavigateComplete?: () => void, compact = false) => (
         <>
-            <div className={`sidebar-header ${compact ? 'sidebar-header-compact' : ''}`}>
-                {!compact && (
+            {!compact && (
+                <div className="sidebar-header">
                     <div
                         className="sidebar-icon"
                         style={{
@@ -83,9 +83,9 @@ const JumuiyaDetail: React.FC = () => {
                         }}
                     >
                     </div>
-                )}
-                <h2 className="sidebar-title">{jumuiya?.name}</h2>
-            </div>
+                    <h2 className="sidebar-title">{jumuiya?.name}</h2>
+                </div>
+            )}
 
             <nav className="sidebar-nav">
                 {tabs.map(tab => (

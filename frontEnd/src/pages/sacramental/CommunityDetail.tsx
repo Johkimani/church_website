@@ -167,13 +167,13 @@ const CommunityDetail: React.FC = () => {
   // Shared sidebar content used by the desktop aside and the mobile drawer.
   const renderSidebarNav = (onNavigateComplete?: () => void, compact = false) => (
     <>
-      <div
-        className={`sidebar-header relative overflow-hidden ${compact ? 'sidebar-header-compact' : ''}`}
-        style={{
-          background: `linear-gradient(135deg, ${detailColor} 0%, ${detailColor}ee 40%, ${detailColor}cc 100%)`,
-        }}
-      >
-        {!compact && (
+      {!compact && (
+        <div
+          className="sidebar-header relative overflow-hidden"
+          style={{
+            background: `linear-gradient(135deg, ${detailColor} 0%, ${detailColor}ee 40%, ${detailColor}cc 100%)`,
+          }}
+        >
           <div
             className="sidebar-icon relative z-10"
             style={{
@@ -187,9 +187,9 @@ const CommunityDetail: React.FC = () => {
               boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
             }}
           />
-        )}
-        <h2 className="sidebar-title text-white drop-shadow-md relative z-10">{compact ? mobileNavLabel : moduleData?.title}</h2>
-      </div>
+          <h2 className="sidebar-title text-white drop-shadow-md relative z-10">{moduleData?.title}</h2>
+        </div>
+      )}
 
       <nav className="sidebar-nav">
         {tabOrder.map((tabId) => {

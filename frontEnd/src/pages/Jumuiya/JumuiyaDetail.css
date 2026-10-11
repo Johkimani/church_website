@@ -179,17 +179,6 @@
     box-shadow: none;
 }
 
-/* Compact header for the drawer: no photo so nav items get priority */
-.sidebar-header.sidebar-header-compact {
-    padding: var(--space-md) var(--space-lg);
-    text-align: center;
-}
-.sidebar-header-compact .sidebar-title {
-    font-size: 1.05rem;
-    line-height: 1.3;
-    word-break: break-word;
-}
-
 /* Notification FAB Styles */
 .notif-fab-container {
     position: fixed;
