@@ -29,6 +29,7 @@ type ChapletData = {
   beforeTheRosary?: { title: string; prayers: { label: string; text: string }[] };
   preliminaryPrayers?: PrayerSection[];
   decades: Decade[];
+  sorrows?: Decade[];
   eternalFather?: string;
   decadePrayer?: string;
   holyGod?: string;
@@ -44,6 +45,10 @@ export default function ChapletViewer({ data }: { data: ChapletData }) {
   const [view, setView] = useState<"guide" | "prayers">("guide");
   const [expandedDecade, setExpandedDecade] = useState<number | null>(null);
   const [expandedPrayer, setExpandedPrayer] = useState<string | null>(null);
+
+  // Seven Sorrows-style data exposes the decades as "sorrows" — normalize it so
+  // both guide and prayers views always have an array to render.
+  const decades = data.decades ?? data.sorrows ?? [] ;
 
   const toggleDecade = (i: number) => setExpandedDecade(expandedDecade === i ? null : i);
   const togglePrayer = (title: string) => setExpandedPrayer(expandedPrayer === title ? null : title);
@@ -99,7 +104,7 @@ export default function ChapletViewer({ data }: { data: ChapletData }) {
           <div className="rounded-2xl p-6 bg-white" style={{ border: "1px solid rgba(28,25,23,0.08)" }}>
             <h3 className="text-sm font-bold tracking-[0.2em] uppercase mb-4" style={{ fontFamily: "'Cinzel', serif", color: data.color }}>How to Pray</h3>
             <div className="space-y-3">
-              {data.howToPray.map((step, i) => (
+              {(data.howToPray || []).map((step, i) => (
                 <div key={i} className="flex gap-3 items-start">
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold" style={{ background: `${data.color}15`, color: data.color }}>
                     {i + 1}
@@ -126,7 +131,7 @@ export default function ChapletViewer({ data }: { data: ChapletData }) {
             <div className="rounded-2xl p-6 bg-white" style={{ border: "1px solid rgba(28,25,23,0.08)" }}>
               <h3 className="text-sm font-bold tracking-wider uppercase text-stone-700 mb-4">{data.beforeTheRosary.title}</h3>
               <div className="space-y-3">
-                {data.beforeTheRosary.prayers.map((prayer) => (
+                {(data.beforeTheRosary?.prayers || []).map((prayer) => (
                   <div key={prayer.label} className="rounded-xl p-4" style={{ background: "#FAF8F5", border: "1px solid rgba(28,25,23,0.06)" }}>
                     <p className="text-[10px] font-bold tracking-wider uppercase mb-2" style={{ color: data.color }}>{prayer.label}</p>
                     <p className="text-sm text-stone-700 leading-relaxed italic" style={{ fontFamily: "'Cormorant Garamond', 'Times New Roman', serif" }}>
@@ -143,7 +148,7 @@ export default function ChapletViewer({ data }: { data: ChapletData }) {
             <div className="rounded-2xl p-6 bg-white" style={{ border: "1px solid rgba(28,25,23,0.08)" }}>
               <h3 className="text-sm font-bold tracking-wider uppercase text-stone-700 mb-4">Preliminary Prayers</h3>
               <div className="space-y-3">
-                {data.preliminaryPrayers.map((prayer) => (
+                {(data.preliminaryPrayers || []).map((prayer) => (
                   <div key={prayer.title} className="rounded-xl p-4" style={{ background: "#FAF8F5", border: "1px solid rgba(28,25,23,0.06)" }}>
                     <p className="text-[10px] font-bold tracking-wider uppercase mb-2" style={{ color: data.color }}>{prayer.title}</p>
                     <p className="text-sm text-stone-700 leading-relaxed italic" style={{ fontFamily: "'Cormorant Garamond', 'Times New Roman', serif" }}>
@@ -161,7 +166,7 @@ export default function ChapletViewer({ data }: { data: ChapletData }) {
               The Decades
             </h3>
             <div className="space-y-3">
-              {data.decades.map((decade, i) => {
+              {decades.map((decade, i) => {
                 const isExpanded = expandedDecade === i;
                 return (
                   <div key={i} className="rounded-2xl overflow-hidden bg-white transition-all" style={{ border: `1px solid ${isExpanded ? `${data.color}40` : "rgba(28,25,23,0.08)"}` }}>
@@ -300,7 +305,7 @@ export default function ChapletViewer({ data }: { data: ChapletData }) {
           {/* Closing Prayers (if present) */}
           {data.closingPrayers && (
             <div className="space-y-3">
-              {data.closingPrayers.map((prayer) => {
+              {(data.closingPrayers || []).map((prayer) => {
                 const isOpen = expandedPrayer === prayer.title;
                 return (
                   <div key={prayer.title} className="rounded-2xl overflow-hidden bg-white" style={{ border: `1px solid ${isOpen ? `${data.color}40` : "rgba(28,25,23,0.08)"}` }}>
@@ -348,7 +353,7 @@ export default function ChapletViewer({ data }: { data: ChapletData }) {
             </p>
           </div>
 
-          {data.beforeTheRosary?.prayers.map((prayer) => (
+          {(data.beforeTheRosary?.prayers || []).map((prayer) => (
             <div key={prayer.label} className="rounded-2xl p-6 bg-white" style={{ border: "1px solid rgba(28,25,23,0.08)" }}>
               <h3 className="text-sm font-bold tracking-wider uppercase text-amber-700 mb-3">{prayer.label}</h3>
               <p className="text-sm text-stone-700 leading-relaxed italic" style={{ fontFamily: "'Cormorant Garamond', 'Times New Roman', serif", fontSize: "15px" }}>
@@ -357,7 +362,7 @@ export default function ChapletViewer({ data }: { data: ChapletData }) {
             </div>
           ))}
 
-          {data.decades.map((decade, i) => (
+          {decades.map((decade, i) => (
             <div key={i} className="rounded-2xl p-6 bg-white" style={{ border: `1px solid ${data.color}15` }}>
               <p className="text-[10px] font-bold tracking-widest uppercase mb-2" style={{ color: data.color }}>Decade {i + 1}</p>
               <h3 className="text-base font-bold text-stone-900 mb-3" style={{ fontFamily: "'Cinzel', serif" }}>{decade.title}</h3>
@@ -417,7 +422,7 @@ export default function ChapletViewer({ data }: { data: ChapletData }) {
             </div>
           )}
 
-          {data.closingPrayers?.map((prayer) => (
+          {(data.closingPrayers || []).map((prayer) => (
             <div key={prayer.title} className="rounded-2xl p-6 bg-white" style={{ border: `1px solid ${data.color}20` }}>
               <h3 className="text-sm font-bold tracking-wider uppercase mb-3" style={{ color: data.color }}>{prayer.title}</h3>
               <p className="text-sm text-stone-700 leading-relaxed italic whitespace-pre-line" style={{ fontFamily: "'Cormorant Garamond', 'Times New Roman', serif", fontSize: "15px" }}>{prayer.text}</p>
