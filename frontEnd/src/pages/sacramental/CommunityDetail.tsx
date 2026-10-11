@@ -33,6 +33,16 @@ const MINISTRY_COLORS: Record<string, string> = {
   mentorship: '#6d28d9',
 };
 
+// Short labels used on the mobile drawer tab (full titles are too long for a pill).
+const SHORT_MODULE_LABELS: Record<string, string> = {
+  choir: 'Choir',
+  dancers: 'Dancers',
+  charismatic: 'Charismatic',
+  'st-francis': 'St. Francis',
+  youth: 'Youth',
+  mentorship: 'Mentorship',
+};
+
 
 const COMMUNITY_IMAGES: Record<string, string> = {
   choir: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&q=80&w=800',
@@ -114,6 +124,8 @@ const CommunityDetail: React.FC = () => {
 
   const detailColor = MINISTRY_COLORS[moduleIdClean || ''] || moduleData?.color || '#7c2d12';
 
+  const mobileNavLabel = SHORT_MODULE_LABELS[moduleIdClean || ''] || moduleData?.title || 'Community';
+
   const isGlobalAdmin = user?.role === 'admin' || (Array.isArray(user?.role) && user.role.includes('admin'));
   const groupRoles = moduleIdClean ? (GROUP_ROLES_BY_MODULE[moduleIdClean] || []) : [];
   const userRoles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
@@ -153,28 +165,30 @@ const CommunityDetail: React.FC = () => {
     : DEFAULT_TAB_ORDER;
 
   // Shared sidebar content used by the desktop aside and the mobile drawer.
-  const renderSidebarNav = (onNavigateComplete?: () => void) => (
+  const renderSidebarNav = (onNavigateComplete?: () => void, compact = false) => (
     <>
       <div
-        className="sidebar-header relative overflow-hidden"
+        className={`sidebar-header relative overflow-hidden ${compact ? 'sidebar-header-compact' : ''}`}
         style={{
           background: `linear-gradient(135deg, ${detailColor} 0%, ${detailColor}ee 40%, ${detailColor}cc 100%)`,
         }}
       >
-        <div
-          className="sidebar-icon relative z-10"
-          style={{
-            color: 'white',
-            backgroundImage: `url(${moduleData?.saint_image_url || moduleData?.image_url || COMMUNITY_IMAGES[moduleIdClean || ''] || DEFAULT_COMMUNITY_IMAGE})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            backgroundColor: 'rgba(255,255,255,0.15)',
-            border: '3px solid rgba(255,255,255,0.3)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
-          }}
-        />
-        <h2 className="sidebar-title text-white drop-shadow-md relative z-10">{moduleData?.title}</h2>
+        {!compact && (
+          <div
+            className="sidebar-icon relative z-10"
+            style={{
+              color: 'white',
+              backgroundImage: `url(${moduleData?.saint_image_url || moduleData?.image_url || COMMUNITY_IMAGES[moduleIdClean || ''] || DEFAULT_COMMUNITY_IMAGE})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              backgroundColor: 'rgba(255,255,255,0.15)',
+              border: '3px solid rgba(255,255,255,0.3)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+            }}
+          />
+        )}
+        <h2 className="sidebar-title text-white drop-shadow-md relative z-10">{compact ? mobileNavLabel : moduleData?.title}</h2>
       </div>
 
       <nav className="sidebar-nav">
@@ -272,10 +286,10 @@ const CommunityDetail: React.FC = () => {
       className="sidebar sidebar-drawer"
       style={{ '--jumuiya-color': detailColor } as React.CSSProperties}
     >
-      {renderSidebarNav(close)}
+      {renderSidebarNav(close, true)}
     </aside>
   );
-  useMobileNavEntry(moduleData?.id || moduleIdClean || null, moduleData?.title || null, mobileNavRenderRef);
+  useMobileNavEntry(moduleData?.id || moduleIdClean || null, mobileNavLabel, mobileNavRenderRef);
 
   // Sync activeTab with URL query parameter (e.g. ?tab=members)
   useEffect(() => {

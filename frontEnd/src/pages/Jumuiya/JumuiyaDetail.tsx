@@ -68,20 +68,22 @@ const JumuiyaDetail: React.FC = () => {
     ];
 
     // Shared sidebar content used by the desktop aside and the mobile drawer.
-    const renderSidebarNav = (onNavigateComplete?: () => void) => (
+    const renderSidebarNav = (onNavigateComplete?: () => void, compact = false) => (
         <>
-            <div className="sidebar-header">
-                <div
-                    className="sidebar-icon"
-                    style={{
-                        color: 'blue',
-                        backgroundImage: `url(${jumuiya?.saintImage})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                        backgroundRepeat: 'no-repeat'
-                    }}
-                >
-                </div>
+            <div className={`sidebar-header ${compact ? 'sidebar-header-compact' : ''}`}>
+                {!compact && (
+                    <div
+                        className="sidebar-icon"
+                        style={{
+                            color: 'blue',
+                            backgroundImage: `url(${jumuiya?.saintImage})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            backgroundRepeat: 'no-repeat'
+                        }}
+                    >
+                    </div>
+                )}
                 <h2 className="sidebar-title">{jumuiya?.name}</h2>
             </div>
 
@@ -131,7 +133,7 @@ const JumuiyaDetail: React.FC = () => {
                 '--jumuiya-color-light': `${detailColor}20`,
             } as React.CSSProperties}
         >
-            {renderSidebarNav(close)}
+            {renderSidebarNav(close, true)}
         </aside>
     );
     useMobileNavEntry(jumuiya?.id || null, jumuiya?.name || null, mobileNavRenderRef);
