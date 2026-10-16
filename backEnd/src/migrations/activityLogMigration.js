@@ -56,6 +56,33 @@ const activityLogMigration = async () => {
     });
   }
 
+  // Legacy schema guard: an earlier version of this table declared
+  // `member_id NOT NULL` with no default, but the current writer records the
+  // actor under `actor_id` and never sets `member_id`. Every INSERT therefore
+  // failed with a 23502 not-null violation, so the audit trail stayed empty.
+  // Drop the constraint so inserts succeed. The column is kept (nullable) so
+  // the member reg-edit re-pointing in regEdit.js keeps working.
+  try {
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'activity_logs'
+            AND column_name = 'member_id'
+            AND is_nullable = 'NO'
+        ) THEN
+          ALTER TABLE activity_logs ALTER COLUMN member_id DROP NOT NULL;
+        END IF;
+      END $$;
+    `);
+  } catch (error) {
+    logger.error("activity_logs member_id constraint fix failed:", {
+      message: error.message,
+      code: error.code,
+    });
+  }
+
   // Repair a table left half-created by a previous failed run: each column is
   // added idempotently, so a rerun converges to the full schema.
   for (const def of columns) {
