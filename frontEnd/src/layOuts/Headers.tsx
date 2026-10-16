@@ -97,11 +97,11 @@ const Headers = () => {
           scrolled
             ? "bg-white/90 backdrop-blur-lg shadow-sm border-b border-slate-100/50"
             : "bg-white/95 backdrop-blur-sm"
-        } px-[6%] lg:px-[8%] py-0 flex justify-between items-center h-16 lg:h-20`}
+        } px-3 sm:px-4 lg:px-6 py-0 flex justify-between items-center gap-3 h-16 lg:h-20`}
       >
 {/* Logo */}
           <div
-            className="flex items-center gap-2 cursor-pointer group"
+            className="flex items-center gap-2 cursor-pointer group flex-shrink-0"
             onClick={() => navigate("/")}
           >
             <img
@@ -110,7 +110,7 @@ const Headers = () => {
               className="w-9 h-9 lg:w-10 lg:h-10 rounded-lg object-cover shadow-sm shadow-blue-200 group-hover:shadow-md group-hover:shadow-blue-300 transition-shadow"
             />
             <div className="hidden sm:block">
-              <span className="text-base lg:text-lg font-black text-slate-900 tracking-tight">
+              <span className="text-base lg:text-lg font-black text-slate-900 tracking-tight whitespace-nowrap">
                 CSA Kirinyaga
               </span>
             </div>
