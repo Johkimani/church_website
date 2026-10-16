@@ -18,33 +18,33 @@ import {
 } from "react-icons/fa";
 
 const PRAYER_SUBITEMS = [
-  { to: "readings", label: "Prayer Book", icon: <FaBook size={14} /> },
-  { to: "prayer-module", label: "Novenas & Litanies", icon: <FaBookOpen size={14} /> },
-  { to: "rosary", label: "Holy Rosary", icon: <FaPrayingHands size={14} /> },
-  { to: "seven-sorrows", label: "Seven Sorrows", icon: <FaPrayingHands size={14} /> },
-  { to: "divine-mercy", label: "Divine Mercy", icon: <FaPrayingHands size={14} /> },
-  { to: "st-michael", label: "St. Michael Chaplet", icon: <FaPrayingHands size={14} /> },
-  { to: "reparation", label: "Rosary of Reparation", icon: <FaPrayingHands size={14} /> },
+  { to: "/devotions/readings", label: "Prayer Book", icon: <FaBook size={14} /> },
+  { to: "/devotions/prayer-module", label: "Novenas & Litanies", icon: <FaBookOpen size={14} /> },
+  { to: "/devotions/rosary", label: "Holy Rosary", icon: <FaPrayingHands size={14} /> },
+  { to: "/devotions/seven-sorrows", label: "Seven Sorrows", icon: <FaPrayingHands size={14} /> },
+  { to: "/devotions/divine-mercy", label: "Divine Mercy", icon: <FaPrayingHands size={14} /> },
+  { to: "/devotions/st-michael", label: "St. Michael Chaplet", icon: <FaPrayingHands size={14} /> },
+  { to: "/devotions/reparation", label: "Rosary of Reparation", icon: <FaPrayingHands size={14} /> },
 ];
 
 const LITURGY_SUBITEMS = [
-  { to: "liturgy", label: "Liturgy Guide", icon: <FaChurch size={14} /> },
-  { to: "daily-liturgy", label: "Liturgy Session", icon: <FaChurch size={14} /> },
-  { to: "prayers-of-the-mass", label: "Prayers of the Mass", icon: <FaPrayingHands size={14} /> },
-  { to: "liturgical-seasons", label: "Liturgical Seasons", icon: <FaCross size={14} /> },
-  { to: "sacra-liturgia-page", label: "Sacra Liturgia", icon: <FaBookOpen size={14} /> },
+  { to: "/devotions/liturgy", label: "Liturgy Guide", icon: <FaChurch size={14} /> },
+  { to: "/devotions/daily-liturgy", label: "Liturgy Session", icon: <FaChurch size={14} /> },
+  { to: "/devotions/prayers-of-the-mass", label: "Prayers of the Mass", icon: <FaPrayingHands size={14} /> },
+  { to: "/devotions/liturgical-seasons", label: "Liturgical Seasons", icon: <FaCross size={14} /> },
+  { to: "/devotions/sacra-liturgia-page", label: "Sacra Liturgia", icon: <FaBookOpen size={14} /> },
 ];
 
 const otherItems = [
-  { to: "bible", label: "Holy Bible", icon: <FaBible size={16} /> },
-  { to: "challenge", label: "Daily Challenge", icon: <FaStar size={16} /> },
-  { to: "comparison", label: "Jumuiya Comparison", icon: <FaChartBar size={16} /> },
-  { to: "progress", label: "My Progress", icon: <FaUserGraduate size={16} /> },
-  { to: "daily-liturgy", label: "Daily Missal", icon: <FaCross size={16} /> },
+  { to: "/devotions/bible", label: "Holy Bible", icon: <FaBible size={16} /> },
+  { to: "/devotions/challenge", label: "Daily Challenge", icon: <FaStar size={16} /> },
+  { to: "/devotions/comparison", label: "Jumuiya Comparison", icon: <FaChartBar size={16} /> },
+  { to: "/devotions/progress", label: "My Progress", icon: <FaUserGraduate size={16} /> },
+  { to: "/devotions/daily-liturgy", label: "Daily Missal", icon: <FaCross size={16} /> },
 ];
 
 // Personal tabs — only visible to authenticated members.
-const PROTECTED_ITEM_TO = new Set(["challenge", "comparison", "progress"]);
+const PROTECTED_ITEM_TO = new Set(["/devotions/challenge", "/devotions/comparison", "/devotions/progress"]);
 
 const quickLinks = [
   { title: "Explore the Mass", description: "Deepen your understanding", link: "/devotions/liturgy", icon: <FaChurch size={14} /> },
