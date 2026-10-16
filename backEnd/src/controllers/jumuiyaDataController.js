@@ -1,4 +1,4 @@
-import { testDb as pool } from "../Configs/dbConfig.js";
+import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
 
 /**
