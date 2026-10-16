@@ -11,9 +11,12 @@
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
+    position: -webkit-sticky;
     position: sticky;
     top: 72px;
     /* Clears the sticky header */
+    align-self: flex-start;
+    max-height: calc(100vh - 72px);
     z-index: 40;
     transition: transform var(--t-base);
 }

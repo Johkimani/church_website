@@ -16,7 +16,7 @@ const Pageoulet = () => {
   } = useApp();
 
   return (
-    <div className="flex flex-col min-h-screen overflow-x-hidden">
+    <div className="flex flex-col min-h-screen overflow-x-clip">
       <MobileNavProvider>
         <Headers />
         <ToastContainer toasts={toasts} />

@@ -127,7 +127,7 @@ const Headers = () => {
                   {link.path.includes("#") ? (
                     <a
                       href={link.path}
-                      className={`relative px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                      className={`relative inline-flex items-center px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                         active
                           ? "text-blue-700 bg-blue-50"
                           : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
@@ -141,7 +141,7 @@ const Headers = () => {
                   ) : (
                     <Link
                       to={link.path}
-                      className={`relative px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                      className={`relative inline-flex items-center px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                         active
                           ? "text-blue-700 bg-blue-50"
                           : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
