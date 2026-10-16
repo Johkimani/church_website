@@ -132,7 +132,7 @@ export default function Dashboard() {
 
   return (
     <div
-      className="min-h-screen pb-24 md:pb-8"
+      className="min-h-screen pb-24 lg:pb-8"
       style={{ backgroundColor: "#FAF8F5" }}
     >
       <style>{`

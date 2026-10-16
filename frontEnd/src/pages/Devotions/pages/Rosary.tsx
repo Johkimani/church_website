@@ -709,7 +709,7 @@ export default function Rosary() {
   ];
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-6 pb-32 md:pb-8 max-w-6xl mx-auto min-h-screen">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 pb-32 lg:pb-8 max-w-6xl mx-auto min-h-screen">
       <div
         className="rounded-3xl relative overflow-hidden mb-8"
         style={{

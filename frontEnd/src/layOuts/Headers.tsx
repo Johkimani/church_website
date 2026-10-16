@@ -117,7 +117,7 @@ const Headers = () => {
           </div>
 
         {/* Right side */}
-        <div className="hidden md:flex items-center gap-2 lg:gap-3">
+        <div className="hidden lg:flex items-center gap-2 lg:gap-3">
           {/* Desktop Nav - Full horizontal layout */}
           <ul className="flex items-center gap-1">
             {navLinks.map((link) => {
@@ -232,7 +232,7 @@ const Headers = () => {
         </div>
 
         {/* Mobile Bottom Navigation */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-lg">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-lg">
           <div className="flex justify-between items-center px-4 py-2">
             <div className="flex items-center gap-2">
               <img
@@ -296,7 +296,7 @@ const Headers = () => {
 
       {/* Mobile Navigation Drawer */}
       <div
-        className={`fixed inset-0 z-[100] md:hidden transition-all duration-500 overflow-hidden overscroll-contain ${
+        className={`fixed inset-0 z-[100] lg:hidden transition-all duration-500 overflow-hidden overscroll-contain ${
           isMobileMenuOpen ? "visible opacity-100" : "invisible opacity-0"
         }`}
       >

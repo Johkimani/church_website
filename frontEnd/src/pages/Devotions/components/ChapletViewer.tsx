@@ -54,7 +54,7 @@ export default function ChapletViewer({ data }: { data: ChapletData }) {
   const togglePrayer = (title: string) => setExpandedPrayer(expandedPrayer === title ? null : title);
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-6 pb-32 md:pb-8 max-w-4xl mx-auto min-h-screen">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 pb-32 lg:pb-8 max-w-4xl mx-auto min-h-screen">
       {/* Hero Banner */}
       <div
         className="rounded-3xl relative overflow-hidden mb-8"
