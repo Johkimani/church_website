@@ -97,7 +97,7 @@ const Headers = () => {
           scrolled
             ? "bg-white/90 backdrop-blur-lg shadow-sm border-b border-slate-100/50"
             : "bg-white/95 backdrop-blur-sm"
-        } px-3 sm:px-4 lg:px-6 py-0 flex justify-between items-center gap-3 h-16 lg:h-20`}
+        } px-3 sm:px-4 lg:px-6 py-0 flex justify-between items-center gap-2 lg:gap-3 h-16 lg:h-20`}
       >
 {/* Logo */}
           <div
@@ -110,7 +110,7 @@ const Headers = () => {
               className="w-9 h-9 lg:w-10 lg:h-10 rounded-lg object-cover shadow-sm shadow-blue-200 group-hover:shadow-md group-hover:shadow-blue-300 transition-shadow"
             />
             <div className="hidden sm:block">
-              <span className="text-base lg:text-lg font-black text-slate-900 tracking-tight whitespace-nowrap">
+              <span className="text-base xl:text-lg font-black text-slate-900 tracking-tight whitespace-nowrap">
                 CSA Kirinyaga
               </span>
             </div>
@@ -127,7 +127,7 @@ const Headers = () => {
                   {link.path.includes("#") ? (
                     <a
                       href={link.path}
-                      className={`relative inline-flex items-center px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                      className={`relative inline-flex items-center px-2.5 lg:px-3 xl:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                         active
                           ? "text-blue-700 bg-blue-50"
                           : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
@@ -141,7 +141,7 @@ const Headers = () => {
                   ) : (
                     <Link
                       to={link.path}
-                      className={`relative inline-flex items-center px-3 lg:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                      className={`relative inline-flex items-center px-2.5 lg:px-3 xl:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                         active
                           ? "text-blue-700 bg-blue-50"
                           : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
@@ -202,7 +202,7 @@ const Headers = () => {
                 <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-xs shadow-sm">
                     {user.name?.charAt(0) || "U"}
                 </div>
-                <span className="text-sm font-semibold text-slate-700 hidden lg:block truncate max-w-[100px]">
+                <span className="text-sm font-semibold text-slate-700 hidden xl:block truncate max-w-[100px]">
                   {user.name}
                 </span>
                 {isAdminRole(user?.role) && (
