@@ -1,6 +1,8 @@
 import { Outlet } from "react-router-dom";
+import { Suspense } from "react";
 import Headers from "../../layOuts/Headers";
 import Footers from "../../layOuts/Footers";
+import RouteFallback from "./RouteFallback";
 import { CartDrawer } from "../../pages/projects/components/CartDrawer";
 import { ToastContainer } from "../../pages/projects/components/ToastContainer";
 import { useApp } from "../../context/AppContext";
@@ -40,7 +42,9 @@ const Pageoulet = () => {
             proceedToCheckout={proceedToCheckout}
         />
         <main className="flex-1">
-          <Outlet />
+          <Suspense fallback={<RouteFallback />}>
+            <Outlet />
+          </Suspense>
         </main>
         <Footers />
       </MobileNavProvider>

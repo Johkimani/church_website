@@ -34,10 +34,11 @@ import { useAuth } from '../../context/AuthContext';
 import NotificationDropdown, { type Notification } from './components/NotificationDropdown';
 import apiService from '../../services/api';
 import { apiClient } from '../../api/axiosInstance';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, Suspense } from 'react';
 import { timeAgo } from '../../utils';
 import { ArtDeco404 } from './components/ArtDeco404';
 import { checkAccess, normalizeRoles } from '../../utils/adminAccess';
+import RouteFallback from '../../assets/Layouts/RouteFallback';
 
 interface SubNavItem {
   id: string;
@@ -527,7 +528,11 @@ export default function UniversalAdmin() {
         {/* Dynamic Content */}
         <main className="flex-1 overflow-y-auto bg-slate-50">
           <div className="p-3 sm:p-5 lg:p-8 w-full max-w-[1600px] mx-auto">
-            {hasAccess ? <Outlet /> : <ArtDeco404 />}
+            {hasAccess ? (
+              <Suspense fallback={<RouteFallback />}>
+                <Outlet />
+              </Suspense>
+            ) : <ArtDeco404 />}
           </div>
         </main>
       </div>

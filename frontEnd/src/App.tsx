@@ -1,7 +1,8 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Routes, Route, Outlet, useLocation } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import PageLoader from "./assets/Layouts/PageLoader";
+import RouteFallback from "./assets/Layouts/RouteFallback";
 
 // Core Infrastructure & Critical Pillars (Standard Imports)
 import { Home } from "./pages/Landing/components/page/Home";
@@ -135,13 +136,21 @@ const NotificationPage = lazy(() => import("./pages/Devotions/pages/Notification
 // Fallback component
 const FallBack: React.FC = () => <PageLoader message="Loading..." fullScreen />;
 
+// Tracks whether the app has completed its very first render/boot.
+// The branded full-screen loader is reserved for that first boot (e.g. a hard
+// refresh); all in-app navigations keep the page chrome and show an inline loader.
+let appBooted = false;
 
 const App: React.FC = () => {
   const { pathname } = useLocation();
   const hideRafiki = pathname.startsWith("/join") || pathname.startsWith("/register");
 
+  useEffect(() => {
+    appBooted = true;
+  }, []);
+
   return (
-    <Suspense fallback={<FallBack />}>
+    <Suspense fallback={appBooted ? <RouteFallback /> : <FallBack />}>
       <Toaster position="top-right" reverseOrder={false} />
       {!hideRafiki && <RafikiWidget />}
       {!hideRafiki && <WhatsAppWidget />}

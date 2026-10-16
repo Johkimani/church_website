@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom'
-import { useEffect, useRef, type ReactNode } from 'react'
+import { Suspense, useEffect, useRef, type ReactNode } from 'react'
 import Sidebar from './Sidebar'
+import RouteFallback from '../../../assets/Layouts/RouteFallback'
 import { useMobileNavEntry } from '../../../context/MobileNavContext'
 
 export default function Layout() {
@@ -41,7 +42,9 @@ export default function Layout() {
 
         {/* Main content */}
         <main className="flex-1 min-w-0 overflow-y-auto pb-8">
-          <Outlet />
+          <Suspense fallback={<RouteFallback />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

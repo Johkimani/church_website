@@ -6,6 +6,7 @@ import { useApp } from "../context/AppContext";
 import { useMobileNav } from "../context/MobileNavContext";
 import { FaBell, FaShoppingCart } from "react-icons/fa";
 import { publicNavLinks, authNavLinks } from "./headerRoutes";
+import { prefetchRoute } from "./routePrefetch";
 import AdminPanel from "../pages/Landing/components/AdminPanel";
 
 const isAdminRole = (role: string | string[] | undefined): boolean => {
@@ -127,6 +128,8 @@ const Headers = () => {
                   {link.path.includes("#") ? (
                     <a
                       href={link.path}
+                      onMouseEnter={() => prefetchRoute(link.path)}
+                      onFocus={() => prefetchRoute(link.path)}
                       className={`relative inline-flex items-center px-2.5 lg:px-3 xl:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                         active
                           ? "text-blue-700 bg-blue-50"
@@ -141,6 +144,8 @@ const Headers = () => {
                   ) : (
                     <Link
                       to={link.path}
+                      onMouseEnter={() => prefetchRoute(link.path)}
+                      onFocus={() => prefetchRoute(link.path)}
                       className={`relative inline-flex items-center px-2.5 lg:px-3 xl:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                         active
                           ? "text-blue-700 bg-blue-50"
@@ -378,6 +383,8 @@ const Headers = () => {
                       key={link.path}
                       to={link.path}
                       onClick={closeDrawer}
+                      onMouseEnter={() => prefetchRoute(link.path)}
+                      onFocus={() => prefetchRoute(link.path)}
                       className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
                         active
                           ? "bg-blue-50 text-blue-700 border border-blue-100"
