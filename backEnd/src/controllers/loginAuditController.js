@@ -145,7 +145,11 @@ export const getMemberSignInRollup = async (req, res) => {
     const data = listRes.rows.map((r) => ({
       ...r,
       locked: r.locked_until ? new Date(r.locked_until).getTime() > now : false,
-      setup_complete: Boolean(r.email) && Boolean(r.password_changed_at),
+      // A member is considered set up once they have a contact email and have
+      // successfully signed in at least once. (password_changed_at is NOT used:
+      // it is only recorded from the sign-ins release onward, so it would flag
+      // every long-standing member as "setup incomplete".)
+      setup_complete: Boolean(r.email) && r.logins > 0,
       approx_session_seconds: approxSessionSeconds(r.last_login, r.last_seen_at),
     }));
 
