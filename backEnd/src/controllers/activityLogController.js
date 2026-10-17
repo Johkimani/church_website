@@ -13,11 +13,15 @@ export const getActivityLogs = async (req, res) => {
     const params = [];
     const add = (clause, value) => {
       params.push(value);
-      where.push(clause.replace("?", `$${params.length}`));
+      const ph = `$${params.length}`;
+      where.push(clause.replace(/\?/g, ph));
     };
 
     if (req.query.search) {
-      add(`(actor_name ILIKE ? OR actor_role ILIKE ? OR action ILIKE ? OR jumuiya_name ILIKE ?)`, `%${req.query.search}%`);
+      add(
+        `(actor_name ILIKE ? OR actor_role ILIKE ? OR action ILIKE ? OR jumuiya_name ILIKE ? OR details->'target'->>'name' ILIKE ? OR details->'target'->>'id' ILIKE ?)`,
+        `%${req.query.search}%`
+      );
     }
     if (req.query.action) add(`action = ?`, req.query.action);
     if (req.query.jumuiya_id) add(`(jumuiya_id = ? OR jumuiya_name ILIKE ?)`, req.query.jumuiya_id);

@@ -12,6 +12,7 @@ import {
   X,
   ShieldCheck,
   Users,
+  UserRound,
   Filter,
   Trash2,
   Sparkles,
@@ -19,6 +20,13 @@ import {
   Layers,
 } from "lucide-react";
 import toast from "react-hot-toast";
+
+interface LogTarget {
+  name?: string | null;
+  id?: string | null;
+  type?: string | null;
+  note?: string | null;
+}
 
 interface LogEntry {
   id: number;
@@ -30,7 +38,7 @@ interface LogEntry {
   action: string;
   entity_type: string | null;
   entity_id: string | null;
-  details: Record<string, any>;
+  details: { target?: LogTarget; method?: string; path?: string; query?: any } & Record<string, any>;
   ip_address: string | null;
   created_at: string;
 }
@@ -278,7 +286,7 @@ export default function ActivityLog() {
             <input
               value={search}
               onChange={(e) => resetPageAndFetch(setSearch)(e.target.value)}
-              placeholder="Search official, role, action..."
+              placeholder="Search official, member, role, action..."
               className="w-full pl-9 pr-8 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
             />
             {search && (
@@ -366,6 +374,7 @@ export default function ActivityLog() {
             {logs.map((log) => {
               const roleStyle = getRoleBadgeStyle(log.actor_role);
               const jumuiyaStyle = getJumuiyaBadgeStyle(log.jumuiya_name);
+              const target = log.details?.target;
 
               return (
                 <div
@@ -406,11 +415,27 @@ export default function ActivityLog() {
                       >
                         {log.action}
                       </span>
-                      {log.entity_id && (
+                      {target?.name ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg">
+                          <UserRound size={13} className="text-slate-400" />
+                          {target.name}
+                          {target.id && (
+                            <span className="text-slate-400 font-normal">· {target.id}</span>
+                          )}
+                        </span>
+                      ) : target?.id ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg">
+                          <UserRound size={13} className="text-slate-400" />
+                          {target.id}
+                        </span>
+                      ) : log.entity_id ? (
                         <span className="flex items-center gap-1 text-xs text-slate-500 font-medium">
                           <ShieldCheck size={13} className="text-slate-400" />
                           {log.entity_type || "record"} #{log.entity_id}
                         </span>
+                      ) : null}
+                      {target?.note && (
+                        <span className="text-xs text-slate-400 italic">{target.note}</span>
                       )}
                     </div>
 

@@ -2160,7 +2160,7 @@ export const csaUpdateRejectedMember = async (req, res) => {
     const { name, reg_number, gender, phone, email, assign_jumuiya } = req.body;
 
     const existing = await pool.query(
-      `SELECT aa.member_id, m.member_id, m.import_batch_id
+      `SELECT aa.member_id, m.member_id, m.import_batch_id, m.first_name, m.last_name
        FROM allocation_approvals aa
        LEFT JOIN members m ON m.member_id = aa.member_id
        WHERE aa.member_id = $1 AND aa.status = 'rejected'
@@ -2168,6 +2168,12 @@ export const csaUpdateRejectedMember = async (req, res) => {
       [id]
     );
     if (!existing.rows.length) return res.status(404).json({ error: "Rejected member not found" });
+
+    req._activityTarget = {
+      name: name || `${existing.rows[0].first_name || ""} ${existing.rows[0].last_name || ""}`.trim() || null,
+      id: reg_number || id,
+      type: "rejected member",
+    };
 
     const memUpdates = [];
     const irUpdates = [];
@@ -2229,12 +2235,20 @@ export const csaDeleteRejectedMember = async (req, res) => {
     const { id } = req.params;
 
     const existing = await pool.query(
-      `SELECT aa.member_id FROM allocation_approvals aa
+      `SELECT aa.member_id, m.first_name, m.last_name
+       FROM allocation_approvals aa
+       LEFT JOIN members m ON m.member_id = aa.member_id
        WHERE aa.member_id = $1 AND aa.status = 'rejected'
          AND aa.distribution_batch_id IN (SELECT id FROM distribution_batches WHERE status = 'finalized')`,
       [id]
     );
     if (!existing.rows.length) return res.status(404).json({ error: "Rejected member not found" });
+
+    req._activityTarget = {
+      name: `${existing.rows[0].first_name || ""} ${existing.rows[0].last_name || ""}`.trim() || null,
+      id,
+      type: "rejected member",
+    };
 
     await pool.query(`DELETE FROM allocation_approvals WHERE member_id = $1`, [id]);
     await pool.query(`DELETE FROM import_records WHERE cleaned_reg_number = $1`, [id]);
@@ -2313,12 +2327,14 @@ export const updateMember = async (req, res) => {
     const allowed = ["first_name", "last_name", "gender", "course", "phone", "year_of_study"];
     const updates = [];
     const values = [];
+    const changedFields = [];
     let idx = 1;
 
     for (const field of allowed) {
       if (req.body[field] !== undefined) {
         updates.push(`${field} = $${idx++}`);
         values.push(req.body[field]);
+        changedFields.push(field);
       }
     }
 
@@ -2335,6 +2351,14 @@ export const updateMember = async (req, res) => {
     if (!result.rows.length) {
       return res.status(404).json({ error: "Member not found" });
     }
+
+    const updated = result.rows[0];
+    req._activityTarget = {
+      name: `${updated.first_name || ""} ${updated.last_name || ""}`.trim() || null,
+      id: updated.member_id,
+      type: "jumuiya member",
+      note: changedFields.length ? `changed: ${changedFields.join(", ")}` : null,
+    };
 
     res.json({ status: "success", data: result.rows[0] });
   } catch (error) {
@@ -2357,13 +2381,21 @@ export const flagMember = async (req, res) => {
     }
 
     const result = await pool.query(
-      `UPDATE members SET flagged_inactive = $1 WHERE member_id = $2 RETURNING member_id, flagged_inactive`,
+      `UPDATE members SET flagged_inactive = $1 WHERE member_id = $2 RETURNING member_id, first_name, last_name, flagged_inactive`,
       [flagged, member_id]
     );
 
     if (!result.rows.length) {
       return res.status(404).json({ error: "Member not found" });
     }
+
+    const flaggedRow = result.rows[0];
+    req._activityTarget = {
+      name: `${flaggedRow.first_name || ""} ${flaggedRow.last_name || ""}`.trim() || null,
+      id: flaggedRow.member_id,
+      type: "jumuiya member",
+      note: flagged ? "flagged inactive" : "unflagged",
+    };
 
     res.json({ status: "success", data: result.rows[0] });
   } catch (error) {

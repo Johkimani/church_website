@@ -67,6 +67,7 @@ const SPECIAL_ACTIONS = [
   { match: /\/jumuiya-members\/.*\/csa-allocations/, label: "Managed allocations", type: "member allocation" },
   { match: /\/suggestions\/.*\/reply/, label: "Replied to suggestion", type: "suggestion" },
 { match: /\/suggestions\/.*\/category/, label: "Updated suggestion category", type: "suggestion" },
+  { match: /\/jumuiya-members\/unregister/, label: "Unregistered member from jumuiya", type: "jumuiya member" },
    { match: /\/attendance\//, label: "Updated attendance tally", type: "attendance tally" },
   { match: /\/publish-stats/, label: "Published statistics", type: "statistics" },
   { match: /\/admin\/activities\/bookings\/\d+\/payment$/, label: "Recorded cash payment", type: "activity payment" },
@@ -83,6 +84,43 @@ const SPECIAL_ACTIONS = [
 ];
 
 const isIdSegment = (seg) => /^\d+$/.test(seg) || /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(seg);
+
+const asTrimmed = (v) => (typeof v === "string" && v.trim() ? v.trim() : null);
+
+const TARGET_NAME_KEYS = [
+  "name", "full_name", "fullName", "title", "subject", "label",
+  "role_name", "group_name", "activity_name", "project_name", "jumuiya_name",
+];
+
+// Controllers may attach `req._activityTarget` (a string or object) describing
+// the SUBJECT of the action — e.g. the member that was deleted or edited — so
+// the audit entry records *who/what* was acted on, not just the actor.
+const normalizeTarget = (raw) => {
+  if (!raw) return null;
+  if (typeof raw === "string") {
+    const name = asTrimmed(raw);
+    return name ? { name, id: null, type: null, note: null } : null;
+  }
+  const full = `${raw.first_name || raw.firstName || ""} ${raw.last_name || raw.lastName || ""}`.trim();
+  const name = asTrimmed(raw.name) || asTrimmed(full);
+  const id = raw.id ?? raw.member_id ?? raw.memberId ?? raw.reg_number ?? raw.entity_id ?? null;
+  const note = asTrimmed(raw.note) || null;
+  if (!name && id == null && !note) return null;
+  return { name, id: id != null ? String(id) : null, type: raw.type ?? null, note };
+};
+
+// Best-effort subject extraction from the request body for entities the
+// controller did not annotate (covers most create/update payloads).
+const extractTargetFromBody = (body) => {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return null;
+  const full = `${body.first_name || body.firstName || ""} ${body.last_name || body.lastName || ""}`.trim();
+  if (full) return { name: full, id: body.member_id ?? body.id ?? null, type: null, note: null };
+  for (const key of TARGET_NAME_KEYS) {
+    const v = asTrimmed(body[key]);
+    if (v) return { name: v, id: body.id ?? body.member_id ?? null, type: null, note: null };
+  }
+  return null;
+};
 
 const describe = (req, method) => {
   const path = (req.originalUrl || req.path || "")
@@ -143,15 +181,17 @@ const activityLogger = (req, res, next) => {
       if (SKIP_PREFIXES.some((prefix) => path.startsWith(prefix))) return;
 
       const { action, entityType, entityId } = describe(req, method);
+      const target = normalizeTarget(req._activityTarget) || extractTargetFromBody(req.body);
       logActivity({
         actor: { ...req.user, ip: req.ip },
         action,
         entityType,
-        entityId,
+        entityId: entityId ?? target?.id ?? null,
         details: {
           method,
           path,
           query: Object.keys(req.query || {}).length > 0 ? req.query : undefined,
+          target: target || undefined,
         },
       }).catch(() => {});
     } catch { /* audit must never break the request */ }

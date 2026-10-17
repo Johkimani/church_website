@@ -336,6 +336,14 @@ export const updateJumuiyaMember = async (req, res) => {
         const oldFirstName = currentRes.rows[0].first_name;
         const oldLastName = currentRes.rows[0].last_name;
 
+        // Record the edited member's identity for the audit log.
+        req._activityTarget = {
+          name: `${first_name || oldFirstName || ""} ${last_name || oldLastName || ""}`.trim() || null,
+          id: effectiveId || id,
+          type: "jumuiya member",
+          note: memberIdChanged ? `reg ${id} → ${newMemberId}` : null,
+        };
+
         if (memberIdChanged) {
           await client.query("UPDATE members SET member_id = $1 WHERE member_id = $2", [newMemberId, id]);
         }
@@ -655,6 +663,12 @@ export const changeMemberReg = async (req, res) => {
       return res.json({ success: true, dryRun: true, newReg });
     }
     const { member, touched, passwordReset, revokedTokens } = result;
+    req._activityTarget = {
+      name: member?.name || `${member?.first_name || ""} ${member?.last_name || ""}`.trim() || null,
+      id: newReg,
+      type: "jumuiya member",
+      note: `reg ${id} → ${newReg}`,
+    };
     return res.json({ success: true, message: "Registration number updated", data: member, touched, passwordReset, revokedTokens });
   } catch (error) {
     if (error.isDryRunPlan) {
@@ -685,12 +699,20 @@ export const deleteJumuiyaMember = async (req, res) => {
       // DELETE FROM members after it — that would always match 0 rows and
       // roll back the whole deletion with a bogus "Member not found".
       const exists = await client.query(
-        "SELECT 1 FROM members WHERE member_id = $1",
+        "SELECT member_id, first_name, last_name FROM members WHERE member_id = $1",
         [id]
       );
       if (exists.rows.length === 0) {
         throw new HttpError(404, "Member not found");
       }
+
+      // Record the deleted member's identity for the audit log.
+      const deleted = exists.rows[0];
+      req._activityTarget = {
+        name: `${deleted.first_name || ""} ${deleted.last_name || ""}`.trim() || null,
+        id: deleted.member_id,
+        type: "jumuiya member",
+      };
 
       await cascadeDeleteRow(client, 'members', 'member_id', id);
 
@@ -1511,6 +1533,13 @@ export const unregisterJumuiyaMember = async (req, res) => {
 
       return result.rows[0];
     });
+
+    req._activityTarget = {
+      name: `${row.first_name || ""} ${row.last_name || ""}`.trim() || null,
+      id: row.member_id,
+      type: "jumuiya member",
+      note: "unregistered from jumuiya",
+    };
 
     res.json({ 
       success: true, 
