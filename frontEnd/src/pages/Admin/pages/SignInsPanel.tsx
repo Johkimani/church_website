@@ -136,6 +136,17 @@ const focusTitle = (focus: MemberFocus) =>
   }[focus] ||
     "Members");
 
+const focusFooter = (focus: MemberFocus) =>
+  ({
+    signed_in: "These members have activated access to the members portal.",
+    never: "Please help these members get set up on the members portal.",
+    failed: "These members have had trouble signing in — please help them access the portal.",
+    locked: "These accounts are currently locked — please help the members regain access.",
+    password: "These members recently changed their password on the members portal.",
+    "": "Member sign-in summary for the members portal.",
+  }[focus] ||
+    "");
+
 const formatDate = (iso: string | null) => {
   if (!iso) return "—";
   try {
@@ -266,7 +277,7 @@ export default function SignInsPanel() {
         `*CSA Kirinyaga — ${focusTitle(memberFocus)}*\n` +
         `${scopeName}: ${total} ${total === 1 ? "member" : "members"}\n\n` +
         `${lines.join("\n")}${more}\n\n` +
-        `Please help these members get set up on the members portal.`;
+        focusFooter(memberFocus);
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
     } catch (err) {
       console.error("Failed to build share list", err);
