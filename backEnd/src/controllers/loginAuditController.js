@@ -161,7 +161,9 @@ export const getSignInSummary = async (req, res) => {
 // changes and account status. Paginated + searchable.
 export const getMemberSignInRollup = async (req, res) => {
   try {
-    const limit = Math.min(Math.max(Number(req.query.limit) || 30, 1), 200);
+    // Upper bound is generous so the "Share list" action can pull the whole
+    // filtered roster (up to ~1000) in one request.
+    const limit = Math.min(Math.max(Number(req.query.limit) || 30, 1), 1000);
     const offset = Math.max(Number(req.query.offset) || 0, 0);
 
     const where = [ACTIVE_SCOPE];

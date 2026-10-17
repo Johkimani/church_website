@@ -20,6 +20,7 @@ import {
   Phone,
   MessageCircle,
   Filter,
+  Share2,
 } from "lucide-react";
 
 interface SignInStats {
@@ -124,6 +125,17 @@ const ACTIONS_LABEL: Record<string, string> = {
   [PASSWORD_ACTIONS]: "Password changes",
 };
 
+const focusTitle = (focus: MemberFocus) =>
+  ({
+    signed_in: "Members who have signed in",
+    never: "Members yet to sign in",
+    failed: "Members with failed sign-in attempts",
+    locked: "Members with locked accounts",
+    password: "Members who changed their password",
+    "": "All members",
+  }[focus] ||
+    "Members");
+
 const formatDate = (iso: string | null) => {
   if (!iso) return "—";
   try {
@@ -195,6 +207,7 @@ export default function SignInsPanel() {
   const [eventsLoading, setEventsLoading] = useState(true);
 
   const [flash, setFlash] = useState<"" | "members" | "events">("");
+  const [sharing, setSharing] = useState(false);
   const membersRef = useRef<HTMLDivElement | null>(null);
   const eventsRef = useRef<HTMLDivElement | null>(null);
   const flashTimer = useRef<number | null>(null);
@@ -224,6 +237,42 @@ export default function SignInsPanel() {
     setEventAction("");
     setEventsPage(1);
     flashPanel("events");
+  };
+
+  // Compose the currently filtered member list into a WhatsApp message so a
+  // jumuiya coordinator can forward it to their officials for follow-up.
+  const SHARE_CAP = 300;
+  const shareOnWhatsApp = async () => {
+    setSharing(true);
+    try {
+      const params: any = { limit: 1000, offset: 0 };
+      if (memberFocus) params.focus = memberFocus;
+      if (jumuiyaFilter) params.jumuiya_id = jumuiyaFilter;
+      const res = await apiClient.get("/activity-logs/sign-ins/members", { params });
+      const rows: MemberRow[] = res.data.data || [];
+      const total = res.data.total || rows.length;
+      const scopeName = jumuiyaFilter
+        ? jumuiyas.find((j) => j.jumuiya_id === jumuiyaFilter)?.jumuiya_name || "Jumuiya"
+        : "All Jumuiyas";
+      const shown = rows.slice(0, SHARE_CAP);
+      const lines = shown.map(
+        (r, i) =>
+          `${i + 1}. ${r.name}${r.phone ? ` — ${r.phone}` : ""}${
+            !jumuiyaFilter && r.jumuiya_name ? ` (${r.jumuiya_name})` : ""
+          }`
+      );
+      const more = total > shown.length ? `\n…and ${total - shown.length} more.` : "";
+      const text =
+        `*CSA Kirinyaga — ${focusTitle(memberFocus)}*\n` +
+        `${scopeName}: ${total} ${total === 1 ? "member" : "members"}\n\n` +
+        `${lines.join("\n")}${more}\n\n` +
+        `Please help these members get set up on the members portal.`;
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+    } catch (err) {
+      console.error("Failed to build share list", err);
+    } finally {
+      setSharing(false);
+    }
   };
 
   const fetchSummary = useCallback(async () => {
@@ -515,34 +564,45 @@ export default function SignInsPanel() {
             flash === "members" ? "border-indigo-400 ring-2 ring-indigo-300" : "border-slate-200/80"
           }`}
         >
-          <div className="flex items-center justify-between gap-3 p-5 border-b border-slate-100">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-5 border-b border-slate-100">
             <div className="flex items-center gap-2">
               <Users size={16} className="text-indigo-500" />
               <h3 className="text-sm font-black text-slate-800">Member sign-in summary</h3>
               <span className="text-xs font-bold text-slate-400">{membersTotal}</span>
             </div>
-            <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                value={memberSearch}
-                onChange={(e) => {
-                  setMemberSearch(e.target.value);
-                  setMembersPage(1);
-                }}
-                placeholder="Search member..."
-                className="w-44 pl-8 pr-7 py-2 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-              />
-              {memberSearch && (
-                <button
-                  onClick={() => {
-                    setMemberSearch("");
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={memberSearch}
+                  onChange={(e) => {
+                    setMemberSearch(e.target.value);
                     setMembersPage(1);
                   }}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  <X size={13} />
-                </button>
-              )}
+                  placeholder="Search member..."
+                  className="w-40 sm:w-44 pl-8 pr-7 py-2 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                />
+                {memberSearch && (
+                  <button
+                    onClick={() => {
+                      setMemberSearch("");
+                      setMembersPage(1);
+                    }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={shareOnWhatsApp}
+                disabled={sharing || membersTotal === 0}
+                title="Share this list on WhatsApp"
+                className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-[#25D366] text-white hover:bg-[#1eb355] disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+              >
+                <Share2 size={13} />
+                {sharing ? "Preparing…" : "Share"}
+              </button>
             </div>
           </div>
 
