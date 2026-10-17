@@ -5,6 +5,13 @@ const JUMUIYA_EXPR = `(SELECT sg.name FROM sub_groups sg
     WHERE sg.group_id::text = m.jumuiya_id::text OR LOWER(sg.slug) = LOWER(m.jumuiya_id::text)
     LIMIT 1)`;
 
+// Active-roster predicate. Mirrors the admin dashboard's "total members"
+// definition (jumuiyaMemberController.getBatchStatistics) so the sign-in
+// numbers reconcile with the member counts shown everywhere else.
+const ACTIVE_SCOPE = `(m.migrated_to_associates IS NULL OR m.migrated_to_associates = false)
+    AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)
+    AND m.source IN ('jum', 'csa')`;
+
 // A session is a member's time on the system, estimated as the gap between
 // their most recent login and their most recent recorded activity. Capped at
 // the 20h refresh-token lifetime; anything outside that is reported as unknown.
@@ -72,13 +79,36 @@ export const getSignInSummary = async (req, res) => {
     );
 
     const jumuiyasPromise = db.query(
-      `SELECT group_id::text AS jumuiya_id, name AS jumuiya_name FROM sub_groups ORDER BY name ASC`
+      // St. Thomas Aquinas is the patron of the CSA family, not a jumuiya, so
+      // it never appears as a filter option.
+      `SELECT group_id::text AS jumuiya_id, name AS jumuiya_name
+       FROM sub_groups
+       WHERE name <> 'St. Thomas Aquinas' AND LOWER(COALESCE(slug, '')) <> 'st-thomas'
+       ORDER BY name ASC`
     );
 
-    const [statsRes, strugglingRes, jumuiyasRes] = await Promise.all([
+    // Roster-based counts so "Members who signed in" + "Never signed in" add up
+    // to the dashboard's total members for the same scope.
+    const rosterParams = [];
+    const rosterScope = jumuiyaWhere(rosterParams, req.query.jumuiya_id);
+    const rosterPromise = db.query(
+      `SELECT
+         COUNT(*)::int AS total_members,
+         COUNT(*) FILTER (WHERE EXISTS (
+           SELECT 1 FROM login_audit_log l
+           WHERE l.member_id = m.member_id AND l.action = 'login_success'
+         ))::int AS members_signed_in
+       FROM members m
+       WHERE ${ACTIVE_SCOPE}
+       ${rosterScope ? `AND ${rosterScope}` : ""}`,
+      rosterParams
+    );
+
+    const [statsRes, strugglingRes, jumuiyasRes, rosterRes] = await Promise.all([
       statsPromise,
       strugglingPromise,
       jumuiyasPromise,
+      rosterPromise,
     ]);
 
     const now = Date.now();
@@ -107,8 +137,17 @@ export const getSignInSummary = async (req, res) => {
       .filter((r) => r.needs_help)
       .slice(0, 50);
 
+    const eventStats = statsRes.rows[0] || {};
+    const roster = rosterRes.rows[0] || { total_members: 0, members_signed_in: 0 };
+    const stats = {
+      ...eventStats,
+      total_members: roster.total_members,
+      members_signed_in: roster.members_signed_in,
+      never_signed_in: Math.max(0, roster.total_members - roster.members_signed_in),
+    };
+
     return res.json({
-      stats: statsRes.rows[0],
+      stats,
       struggling,
       jumuiyas: jumuiyasRes.rows,
     });
@@ -125,7 +164,7 @@ export const getMemberSignInRollup = async (req, res) => {
     const limit = Math.min(Math.max(Number(req.query.limit) || 30, 1), 200);
     const offset = Math.max(Number(req.query.offset) || 0, 0);
 
-    const where = [];
+    const where = [ACTIVE_SCOPE];
     const params = [];
     const jScope = jumuiyaWhere(params, req.query.jumuiya_id);
     if (jScope) where.push(jScope);
@@ -133,22 +172,51 @@ export const getMemberSignInRollup = async (req, res) => {
       params.push(`%${req.query.search}%`);
       const ph = `$${params.length}`;
       where.push(
-        `(l.member_id ILIKE ${ph} OR m.first_name ILIKE ${ph} OR m.last_name ILIKE ${ph} OR m.email ILIKE ${ph} OR m.phone ILIKE ${ph})`
+        `(m.member_id ILIKE ${ph} OR m.first_name ILIKE ${ph} OR m.last_name ILIKE ${ph} OR m.email ILIKE ${ph} OR m.phone ILIKE ${ph})`
       );
     }
     if (req.query.onlyIncomplete === "true") {
       where.push(`(m.email IS NULL OR m.email = '')`);
     }
-    const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
+
+    // Focus tabs drive which slice of the roster is listed. Because these all
+    // aggregate over the audit log they are HAVING clauses, not WHERE clauses.
+    const having = [];
+    switch (req.query.focus) {
+      case "signed_in":
+        having.push(`COUNT(l.id) FILTER (WHERE l.action = 'login_success') > 0`);
+        break;
+      case "never":
+        having.push(`COUNT(l.id) FILTER (WHERE l.action = 'login_success') = 0`);
+        break;
+      case "failed":
+        having.push(`COUNT(l.id) FILTER (WHERE l.action LIKE 'login_failed%') > 0`);
+        break;
+      case "locked":
+        having.push(
+          `(COUNT(l.id) FILTER (WHERE l.action LIKE 'login_%locked') > 0
+             OR MAX(m.locked_until) > NOW())`
+        );
+        break;
+      case "password":
+        having.push(`COUNT(l.id) FILTER (WHERE l.action = 'password_changed') > 0`);
+        break;
+      default:
+        break;
+    }
+
+    const whereSql = `WHERE ${where.join(" AND ")}`;
+    const havingSql = having.length ? `HAVING ${having.join(" AND ")}` : "";
+    const groupBy = `GROUP BY m.member_id, m.first_name, m.last_name, m.jumuiya_id, m.last_seen_at, m.email, m.phone, m.locked_until`;
 
     const listPromise = db.query(
       `SELECT
-         l.member_id,
-         ${NAME_EXPR} AS name,
+         m.member_id,
+         COALESCE(NULLIF(TRIM(COALESCE(m.first_name, '') || ' ' || COALESCE(m.last_name, '')), ''), m.member_id) AS name,
          ${JUMUIYA_EXPR} AS jumuiya_name,
-         (COUNT(*) FILTER (WHERE l.action = 'login_success'))::int AS logins,
-         (COUNT(*) FILTER (WHERE l.action LIKE 'login_failed%'))::int AS failed,
-         (COUNT(*) FILTER (WHERE l.action LIKE 'login_%locked'))::int AS lockouts,
+         (COUNT(l.id) FILTER (WHERE l.action = 'login_success'))::int AS logins,
+         (COUNT(l.id) FILTER (WHERE l.action LIKE 'login_failed%'))::int AS failed,
+         (COUNT(l.id) FILTER (WHERE l.action LIKE 'login_%locked'))::int AS lockouts,
          MIN(l.created_at) FILTER (WHERE l.action = 'login_success') AS first_login,
          MAX(l.created_at) FILTER (WHERE l.action = 'login_success') AS last_login,
          MAX(l.created_at) FILTER (WHERE l.action = 'logout') AS last_logout,
@@ -157,20 +225,26 @@ export const getMemberSignInRollup = async (req, res) => {
          m.email,
          m.phone,
          m.locked_until
-       FROM login_audit_log l
-       LEFT JOIN members m ON m.member_id = l.member_id
+       FROM members m
+       LEFT JOIN login_audit_log l ON l.member_id = m.member_id
        ${whereSql}
-       GROUP BY l.member_id, m.first_name, m.last_name, m.jumuiya_id, m.last_seen_at, m.email, m.phone, m.locked_until
-       ORDER BY MAX(l.created_at) FILTER (WHERE l.action = 'login_success') DESC NULLS LAST, l.member_id
+       ${groupBy}
+       ${havingSql}
+       ORDER BY MAX(l.created_at) FILTER (WHERE l.action = 'login_success') DESC NULLS LAST,
+                m.first_name ASC NULLS LAST, m.last_name ASC NULLS LAST, m.member_id
        LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
       [...params, limit, offset]
     );
 
     const countPromise = db.query(
-      `SELECT COUNT(DISTINCT l.member_id)::int AS total
-       FROM login_audit_log l
-       LEFT JOIN members m ON m.member_id = l.member_id
-       ${whereSql}`,
+      `SELECT COUNT(*)::int AS total FROM (
+         SELECT m.member_id
+         FROM members m
+         LEFT JOIN login_audit_log l ON l.member_id = m.member_id
+         ${whereSql}
+         ${groupBy}
+         ${havingSql}
+       ) t`,
       params
     );
 
@@ -210,7 +284,22 @@ export const getLoginEvents = async (req, res) => {
       where.push(clause.replace(/\?/g, ph));
     };
 
-    if (req.query.action) add(`l.action = ?`, req.query.action);
+    // A single action (?action=) or a card-driven set (?actions=a,b,c).
+    if (req.query.actions) {
+      const list = String(req.query.actions)
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (list.length) {
+        const phs = list.map((a) => {
+          params.push(a);
+          return `$${params.length}`;
+        });
+        where.push(`l.action IN (${phs.join(", ")})`);
+      }
+    } else if (req.query.action) {
+      add(`l.action = ?`, req.query.action);
+    }
     if (req.query.jumuiya_id) add(`m.jumuiya_id::text = ?`, String(req.query.jumuiya_id));
     if (req.query.search) {
       add(

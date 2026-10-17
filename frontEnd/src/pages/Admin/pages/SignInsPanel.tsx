@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { apiClient } from "../../../api/axiosInstance";
 import { timeAgo } from "../../../utils";
 import {
@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   UserCheck,
+  UserX,
   Phone,
   MessageCircle,
   Filter,
@@ -29,6 +30,9 @@ interface SignInStats {
   lockouts: number;
   logouts: number;
   password_changes: number;
+  total_members: number;
+  members_signed_in: number;
+  never_signed_in: number;
 }
 
 interface Struggling {
@@ -96,6 +100,30 @@ const ACTION_META: Record<string, { label: string; cls: string; icon: any }> = {
 const actionMeta = (action: string) =>
   ACTION_META[action] || { label: action.replace(/_/g, " "), cls: "bg-slate-100 text-slate-600 border-slate-200", icon: Clock };
 
+type MemberFocus = "" | "signed_in" | "never" | "failed" | "locked" | "password";
+
+const FOCUS_TABS: { key: MemberFocus; label: string }[] = [
+  { key: "signed_in", label: "Signed in" },
+  { key: "never", label: "Never signed in" },
+  { key: "failed", label: "Failed attempts" },
+  { key: "locked", label: "Locked" },
+  { key: "password", label: "Password changed" },
+  { key: "", label: "All" },
+];
+
+// Event-feed action groups used by the clickable stat cards.
+const SUCCESS_ACTIONS = "login_success";
+const FAILED_ACTIONS = "login_failed_unknown,login_failed_wrong_password";
+const LOCKED_ACTIONS = "login_blocked_locked,login_account_locked";
+const PASSWORD_ACTIONS = "password_changed";
+
+const ACTIONS_LABEL: Record<string, string> = {
+  [SUCCESS_ACTIONS]: "Successful sign-ins",
+  [FAILED_ACTIONS]: "Failed attempts",
+  [LOCKED_ACTIONS]: "Lockouts",
+  [PASSWORD_ACTIONS]: "Password changes",
+};
+
 const formatDate = (iso: string | null) => {
   if (!iso) return "—";
   try {
@@ -156,16 +184,47 @@ export default function SignInsPanel() {
   const [membersTotal, setMembersTotal] = useState(0);
   const [membersPage, setMembersPage] = useState(1);
   const [memberSearch, setMemberSearch] = useState("");
+  const [memberFocus, setMemberFocus] = useState<MemberFocus>("signed_in");
   const [membersLoading, setMembersLoading] = useState(true);
 
   const [events, setEvents] = useState<LoginEvent[]>([]);
   const [eventsTotal, setEventsTotal] = useState(0);
   const [eventsPage, setEventsPage] = useState(1);
   const [eventAction, setEventAction] = useState("");
+  const [eventActions, setEventActions] = useState("");
   const [eventsLoading, setEventsLoading] = useState(true);
+
+  const [flash, setFlash] = useState<"" | "members" | "events">("");
+  const membersRef = useRef<HTMLDivElement | null>(null);
+  const eventsRef = useRef<HTMLDivElement | null>(null);
+  const flashTimer = useRef<number | null>(null);
 
   const membersLimit = 15;
   const eventsLimit = 20;
+
+  const flashPanel = (which: "members" | "events") => {
+    setFlash(which);
+    if (flashTimer.current) window.clearTimeout(flashTimer.current);
+    flashTimer.current = window.setTimeout(() => setFlash(""), 1400);
+    (which === "members" ? membersRef : eventsRef).current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
+
+  // Clicking a stat card narrows the matching panel to exactly the members /
+  // events it counted, and scrolls that panel into view.
+  const focusMembers = (focus: MemberFocus) => {
+    setMemberFocus(focus);
+    setMembersPage(1);
+    flashPanel("members");
+  };
+  const focusEvents = (actions: string) => {
+    setEventActions(eventActions === actions ? "" : actions);
+    setEventAction("");
+    setEventsPage(1);
+    flashPanel("events");
+  };
 
   const fetchSummary = useCallback(async () => {
     setSummaryLoading(true);
@@ -190,6 +249,7 @@ export default function SignInsPanel() {
     try {
       const params: any = { limit: membersLimit, offset: (membersPage - 1) * membersLimit };
       if (memberSearch) params.search = memberSearch;
+      if (memberFocus) params.focus = memberFocus;
       if (jumuiyaFilter) params.jumuiya_id = jumuiyaFilter;
       const res = await apiClient.get("/activity-logs/sign-ins/members", { params });
       setMembers(res.data.data || []);
@@ -201,13 +261,14 @@ export default function SignInsPanel() {
     } finally {
       setMembersLoading(false);
     }
-  }, [membersPage, memberSearch, jumuiyaFilter]);
+  }, [membersPage, memberSearch, memberFocus, jumuiyaFilter]);
 
   const fetchEvents = useCallback(async () => {
     setEventsLoading(true);
     try {
       const params: any = { limit: eventsLimit, offset: (eventsPage - 1) * eventsLimit };
-      if (eventAction) params.action = eventAction;
+      if (eventActions) params.actions = eventActions;
+      else if (eventAction) params.action = eventAction;
       if (jumuiyaFilter) params.jumuiya_id = jumuiyaFilter;
       const res = await apiClient.get("/activity-logs/sign-ins/events", { params });
       setEvents(res.data.data || []);
@@ -219,7 +280,7 @@ export default function SignInsPanel() {
     } finally {
       setEventsLoading(false);
     }
-  }, [eventsPage, eventAction, jumuiyaFilter]);
+  }, [eventsPage, eventAction, eventActions, jumuiyaFilter]);
 
   useEffect(() => {
     fetchSummary();
@@ -242,11 +303,62 @@ export default function SignInsPanel() {
 
   const statCards = stats
     ? [
-        { label: "Successful sign-ins", value: stats.total_logins, icon: LogIn, cls: "text-emerald-600 bg-emerald-50" },
-        { label: "Members who signed in", value: stats.distinct_members, icon: UserCheck, cls: "text-indigo-600 bg-indigo-50" },
-        { label: "Failed attempts", value: stats.failed_unknown + stats.failed_wrong_password, icon: AlertTriangle, cls: "text-amber-600 bg-amber-50" },
-        { label: "Lockouts", value: stats.lockouts, icon: ShieldAlert, cls: "text-rose-600 bg-rose-50" },
-        { label: "Password changes", value: stats.password_changes, icon: KeyRound, cls: "text-violet-600 bg-violet-50" },
+        {
+          key: "success",
+          label: "Successful sign-ins",
+          value: stats.total_logins,
+          icon: LogIn,
+          cls: "text-emerald-600 bg-emerald-50",
+          active: eventActions === SUCCESS_ACTIONS,
+          onClick: () => focusEvents(SUCCESS_ACTIONS),
+        },
+        {
+          key: "members",
+          label: "Members who signed in",
+          value: stats.members_signed_in,
+          icon: UserCheck,
+          cls: "text-indigo-600 bg-indigo-50",
+          active: memberFocus === "signed_in",
+          onClick: () => focusMembers("signed_in"),
+          hint: `of ${stats.total_members} members`,
+        },
+        {
+          key: "failed",
+          label: "Failed attempts",
+          value: stats.failed_unknown + stats.failed_wrong_password,
+          icon: AlertTriangle,
+          cls: "text-amber-600 bg-amber-50",
+          active: eventActions === FAILED_ACTIONS,
+          onClick: () => focusEvents(FAILED_ACTIONS),
+        },
+        {
+          key: "locked",
+          label: "Lockouts",
+          value: stats.lockouts,
+          icon: ShieldAlert,
+          cls: "text-rose-600 bg-rose-50",
+          active: eventActions === LOCKED_ACTIONS,
+          onClick: () => focusEvents(LOCKED_ACTIONS),
+        },
+        {
+          key: "password",
+          label: "Password changes",
+          value: stats.password_changes,
+          icon: KeyRound,
+          cls: "text-violet-600 bg-violet-50",
+          active: eventActions === PASSWORD_ACTIONS,
+          onClick: () => focusEvents(PASSWORD_ACTIONS),
+        },
+        {
+          key: "never",
+          label: "Never signed in",
+          value: stats.never_signed_in,
+          icon: UserX,
+          cls: "text-slate-600 bg-slate-100",
+          active: memberFocus === "never",
+          onClick: () => focusMembers("never"),
+          hint: `of ${stats.total_members} members`,
+        },
       ]
     : [];
 
@@ -290,10 +402,22 @@ export default function SignInsPanel() {
         </span>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {(summaryLoading ? Array.from({ length: 5 }) : statCards).map((c: any, i) => (
-          <div key={i} className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm">
+      {/* Stat cards — click a card to jump to the members / events it counts */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {(summaryLoading ? Array.from({ length: 6 }) : statCards).map((c: any, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={summaryLoading ? undefined : c.onClick}
+            disabled={summaryLoading}
+            className={`text-left bg-white rounded-2xl border p-4 shadow-sm transition-all ${
+              summaryLoading
+                ? "border-slate-200/80"
+                : `cursor-pointer hover:shadow-md hover:-translate-y-0.5 ${
+                    c.active ? "border-indigo-400 ring-2 ring-indigo-200" : "border-slate-200/80"
+                  }`
+            }`}
+          >
             {summaryLoading ? (
               <div className="space-y-2">
                 <div className="h-8 w-8 rounded-xl skeleton-shimmer" />
@@ -306,9 +430,10 @@ export default function SignInsPanel() {
                 </div>
                 <p className="text-2xl font-black text-slate-800 mt-2 leading-none">{c.value}</p>
                 <p className="text-[11px] font-semibold text-slate-500 mt-1 uppercase tracking-wide">{c.label}</p>
+                {c.hint && <p className="text-[10px] font-medium text-slate-400 mt-0.5">{c.hint}</p>}
               </>
             )}
-          </div>
+          </button>
         ))}
       </div>
 
@@ -384,7 +509,12 @@ export default function SignInsPanel() {
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Member rollup */}
-        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div
+          ref={membersRef}
+          className={`bg-white rounded-3xl border shadow-sm overflow-hidden scroll-mt-24 transition-all ${
+            flash === "members" ? "border-indigo-400 ring-2 ring-indigo-300" : "border-slate-200/80"
+          }`}
+        >
           <div className="flex items-center justify-between gap-3 p-5 border-b border-slate-100">
             <div className="flex items-center gap-2">
               <Users size={16} className="text-indigo-500" />
@@ -416,6 +546,26 @@ export default function SignInsPanel() {
             </div>
           </div>
 
+          {/* Focus chips — mirror the stat cards */}
+          <div className="flex items-center gap-1.5 px-5 pt-3 flex-wrap">
+            {FOCUS_TABS.map((t) => (
+              <button
+                key={t.key || "all"}
+                onClick={() => {
+                  setMemberFocus(t.key);
+                  setMembersPage(1);
+                }}
+                className={`text-[11px] font-bold px-2.5 py-1 rounded-full border transition-colors ${
+                  memberFocus === t.key
+                    ? "bg-indigo-600 text-white border-indigo-600"
+                    : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
           {membersLoading ? (
             <div className="p-5 space-y-3">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -444,7 +594,29 @@ export default function SignInsPanel() {
                         {m.name !== m.member_id && (
                           <p className="text-[10px] font-mono text-slate-400">{m.member_id}</p>
                         )}
-                        {m.jumuiya_name && <p className="text-[10px] text-slate-400">{m.jumuiya_name}</p>}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {m.jumuiya_name && <p className="text-[10px] text-slate-400">{m.jumuiya_name}</p>}
+                          {m.phone && (
+                            <span className="flex items-center gap-0.5">
+                              <a
+                                href={telHref(m.phone)}
+                                title={`Call ${m.name}`}
+                                className="w-5 h-5 flex items-center justify-center rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                              >
+                                <Phone size={10} />
+                              </a>
+                              <a
+                                href={whatsappHref(m.phone, m.name)}
+                                target="_blank"
+                                rel="noreferrer"
+                                title={`WhatsApp ${m.name}`}
+                                className="w-5 h-5 flex items-center justify-center rounded-md bg-[#25D366]/10 text-[#128C7E] border border-[#25D366]/30 hover:bg-[#25D366]/20 transition-colors"
+                              >
+                                <MessageCircle size={10} />
+                              </a>
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-2 py-3 text-center">
                         <span className="font-black text-slate-700">{m.logins}</span>
@@ -509,17 +681,34 @@ export default function SignInsPanel() {
         </div>
 
         {/* Recent events feed */}
-        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div
+          ref={eventsRef}
+          className={`bg-white rounded-3xl border shadow-sm overflow-hidden scroll-mt-24 transition-all ${
+            flash === "events" ? "border-indigo-400 ring-2 ring-indigo-300" : "border-slate-200/80"
+          }`}
+        >
           <div className="flex items-center justify-between gap-3 p-5 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <Clock size={16} className="text-indigo-500" />
+            <div className="flex items-center gap-2 min-w-0">
+              <Clock size={16} className="text-indigo-500 shrink-0" />
               <h3 className="text-sm font-black text-slate-800">Recent sign-in activity</h3>
               <span className="text-xs font-bold text-slate-400">{eventsTotal}</span>
+              {eventActions && (
+                <button
+                  onClick={() => {
+                    setEventActions("");
+                    setEventsPage(1);
+                  }}
+                  className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100"
+                >
+                  {ACTIONS_LABEL[eventActions] || "Filtered"} <X size={10} />
+                </button>
+              )}
             </div>
             <select
               value={eventAction}
               onChange={(e) => {
                 setEventAction(e.target.value);
+                setEventActions("");
                 setEventsPage(1);
               }}
               className="text-xs font-semibold bg-slate-50/70 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer"
