@@ -16,23 +16,38 @@ const approxSessionSeconds = (lastLogin, lastSeen) => {
   return Math.round(seconds);
 };
 
-// Overall sign-in counters plus the members who appear to be struggling.
-export const getSignInSummary = async (_req, res) => {
-  try {
-    const statsRes = await db.query(`
-      SELECT
-        (COUNT(*) FILTER (WHERE action = 'login_success'))::int                 AS total_logins,
-        (COUNT(DISTINCT member_id) FILTER (WHERE action = 'login_success'))::int AS distinct_members,
-        (COUNT(*) FILTER (WHERE action = 'login_failed_unknown'))::int          AS failed_unknown,
-        (COUNT(*) FILTER (WHERE action = 'login_failed_wrong_password'))::int   AS failed_wrong_password,
-        (COUNT(*) FILTER (WHERE action LIKE 'login_%locked'))::int              AS lockouts,
-        (COUNT(*) FILTER (WHERE action = 'logout'))::int                        AS logouts,
-        (COUNT(*) FILTER (WHERE action = 'password_changed'))::int              AS password_changes
-      FROM login_audit_log
-    `);
+// Optional jumuiya scope shared by all three endpoints. members.jumuiya_id holds
+// the sub_groups.group_id UUID, so compare as text (and tolerate a stray slug).
+const jumuiyaWhere = (params, jumuiyaId) => {
+  if (!jumuiyaId) return "";
+  params.push(String(jumuiyaId));
+  return `m.jumuiya_id::text = $${params.length}`;
+};
 
-    const strugglingRes = await db.query(`
-      SELECT
+// Overall sign-in counters plus the members who appear to be struggling.
+export const getSignInSummary = async (req, res) => {
+  try {
+    const statsParams = [];
+    const statsScope = jumuiyaWhere(statsParams, req.query.jumuiya_id);
+    const statsPromise = db.query(
+      `SELECT
+        (COUNT(*) FILTER (WHERE l.action = 'login_success'))::int                 AS total_logins,
+        (COUNT(DISTINCT l.member_id) FILTER (WHERE l.action = 'login_success'))::int AS distinct_members,
+        (COUNT(*) FILTER (WHERE l.action = 'login_failed_unknown'))::int          AS failed_unknown,
+        (COUNT(*) FILTER (WHERE l.action = 'login_failed_wrong_password'))::int   AS failed_wrong_password,
+        (COUNT(*) FILTER (WHERE l.action LIKE 'login_%locked'))::int              AS lockouts,
+        (COUNT(*) FILTER (WHERE l.action = 'logout'))::int                        AS logouts,
+        (COUNT(*) FILTER (WHERE l.action = 'password_changed'))::int              AS password_changes
+       FROM login_audit_log l
+       LEFT JOIN members m ON m.member_id = l.member_id
+       ${statsScope ? `WHERE ${statsScope}` : ""}`,
+      statsParams
+    );
+
+    const strugglingParams = [];
+    const strugglingScope = jumuiyaWhere(strugglingParams, req.query.jumuiya_id);
+    const strugglingPromise = db.query(
+      `SELECT
         l.member_id,
         ${NAME_EXPR} AS name,
         (COUNT(*) FILTER (WHERE l.action LIKE 'login_failed%'))::int AS failed,
@@ -41,16 +56,30 @@ export const getSignInSummary = async (_req, res) => {
         MAX(l.created_at) FILTER (WHERE l.action = 'login_success') AS last_login,
         (m.member_id IS NOT NULL) AS is_member,
         m.email,
+        m.phone,
         m.locked_until,
-        m.last_seen_at
-      FROM login_audit_log l
-      LEFT JOIN members m ON m.member_id = l.member_id
-      WHERE l.action IN ('login_failed_unknown', 'login_failed_wrong_password',
-                         'login_blocked_locked', 'login_account_locked')
-      GROUP BY l.member_id, m.first_name, m.last_name, m.member_id, m.email, m.locked_until, m.last_seen_at
-      ORDER BY failed DESC, last_event_at DESC
-      LIMIT 100
-    `);
+        m.last_seen_at,
+        ${JUMUIYA_EXPR} AS jumuiya_name
+       FROM login_audit_log l
+       LEFT JOIN members m ON m.member_id = l.member_id
+       WHERE l.action IN ('login_failed_unknown', 'login_failed_wrong_password',
+                          'login_blocked_locked', 'login_account_locked')
+       ${strugglingScope ? `AND ${strugglingScope}` : ""}
+       GROUP BY l.member_id, m.first_name, m.last_name, m.member_id, m.email, m.phone, m.locked_until, m.last_seen_at, m.jumuiya_id
+       ORDER BY failed DESC, last_event_at DESC
+       LIMIT 100`,
+      strugglingParams
+    );
+
+    const jumuiyasPromise = db.query(
+      `SELECT group_id::text AS jumuiya_id, name AS jumuiya_name FROM sub_groups ORDER BY name ASC`
+    );
+
+    const [statsRes, strugglingRes, jumuiyasRes] = await Promise.all([
+      statsPromise,
+      strugglingPromise,
+      jumuiyasPromise,
+    ]);
 
     const now = Date.now();
     const struggling = strugglingRes.rows
@@ -68,6 +97,8 @@ export const getSignInSummary = async (_req, res) => {
           last_login: r.last_login,
           is_member: r.is_member,
           email: r.email,
+          phone: r.phone,
+          jumuiya_name: r.jumuiya_name,
           locked,
           never_signed_in: neverSignedIn,
           needs_help: locked || neverSignedIn || failingAfterSuccess,
@@ -79,6 +110,7 @@ export const getSignInSummary = async (_req, res) => {
     return res.json({
       stats: statsRes.rows[0],
       struggling,
+      jumuiyas: jumuiyasRes.rows,
     });
   } catch (error) {
     console.error("[loginAudit] summary error:", error.message);
@@ -95,11 +127,13 @@ export const getMemberSignInRollup = async (req, res) => {
 
     const where = [];
     const params = [];
+    const jScope = jumuiyaWhere(params, req.query.jumuiya_id);
+    if (jScope) where.push(jScope);
     if (req.query.search) {
       params.push(`%${req.query.search}%`);
       const ph = `$${params.length}`;
       where.push(
-        `(l.member_id ILIKE ${ph} OR m.first_name ILIKE ${ph} OR m.last_name ILIKE ${ph} OR m.email ILIKE ${ph})`
+        `(l.member_id ILIKE ${ph} OR m.first_name ILIKE ${ph} OR m.last_name ILIKE ${ph} OR m.email ILIKE ${ph} OR m.phone ILIKE ${ph})`
       );
     }
     if (req.query.onlyIncomplete === "true") {
@@ -121,11 +155,12 @@ export const getMemberSignInRollup = async (req, res) => {
          MAX(l.created_at) FILTER (WHERE l.action = 'password_changed') AS password_changed_at,
          m.last_seen_at,
          m.email,
+         m.phone,
          m.locked_until
        FROM login_audit_log l
        LEFT JOIN members m ON m.member_id = l.member_id
        ${whereSql}
-       GROUP BY l.member_id, m.first_name, m.last_name, m.jumuiya_id, m.last_seen_at, m.email, m.locked_until
+       GROUP BY l.member_id, m.first_name, m.last_name, m.jumuiya_id, m.last_seen_at, m.email, m.phone, m.locked_until
        ORDER BY MAX(l.created_at) FILTER (WHERE l.action = 'login_success') DESC NULLS LAST, l.member_id
        LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
       [...params, limit, offset]
@@ -176,6 +211,7 @@ export const getLoginEvents = async (req, res) => {
     };
 
     if (req.query.action) add(`l.action = ?`, req.query.action);
+    if (req.query.jumuiya_id) add(`m.jumuiya_id::text = ?`, String(req.query.jumuiya_id));
     if (req.query.search) {
       add(
         `(l.member_id ILIKE ? OR l.email ILIKE ? OR ${NAME_EXPR} ILIKE ? OR l.ip_address ILIKE ?)`,

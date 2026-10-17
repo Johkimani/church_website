@@ -16,6 +16,9 @@ import {
   ChevronLeft,
   ChevronRight,
   UserCheck,
+  Phone,
+  MessageCircle,
+  Filter,
 } from "lucide-react";
 
 interface SignInStats {
@@ -37,6 +40,8 @@ interface Struggling {
   last_login: string | null;
   is_member: boolean;
   email: string | null;
+  phone: string | null;
+  jumuiya_name: string | null;
   locked: boolean;
   never_signed_in: boolean;
   needs_help: boolean;
@@ -55,9 +60,15 @@ interface MemberRow {
   password_changed_at: string | null;
   last_seen_at: string | null;
   email: string | null;
+  phone: string | null;
   locked: boolean;
   setup_complete: boolean;
   approx_session_seconds: number | null;
+}
+
+interface JumuiyaOption {
+  jumuiya_id: string;
+  jumuiya_name: string;
 }
 
 interface LoginEvent {
@@ -109,7 +120,34 @@ const formatDuration = (seconds: number | null) => {
   return `${Math.round(seconds)}s`;
 };
 
+// Normalize a Kenyan phone number to international digits for wa.me/tel links.
+const toIntlDigits = (raw: string | null) => {
+  const digits = String(raw || "").replace(/[^\d]/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("254")) return digits;
+  if (digits.startsWith("0")) return `254${digits.slice(1)}`;
+  if (digits.length === 9 && (digits.startsWith("7") || digits.startsWith("1"))) return `254${digits}`;
+  return digits;
+};
+
+const whatsappHref = (raw: string | null, name: string) => {
+  const intl = toIntlDigits(raw);
+  if (!intl) return "";
+  const msg = encodeURIComponent(
+    `Hello ${name}, this is the CSA Kirinyaga office. We noticed you may be having trouble signing in to the members portal and we'd like to help you get access.`
+  );
+  return `https://wa.me/${intl}?text=${msg}`;
+};
+
+const telHref = (raw: string | null) => {
+  const intl = toIntlDigits(raw);
+  return intl ? `tel:+${intl}` : "";
+};
+
 export default function SignInsPanel() {
+  const [jumuiyas, setJumuiyas] = useState<JumuiyaOption[]>([]);
+  const [jumuiyaFilter, setJumuiyaFilter] = useState("");
+
   const [stats, setStats] = useState<SignInStats | null>(null);
   const [struggling, setStruggling] = useState<Struggling[]>([]);
   const [summaryLoading, setSummaryLoading] = useState(true);
@@ -132,9 +170,12 @@ export default function SignInsPanel() {
   const fetchSummary = useCallback(async () => {
     setSummaryLoading(true);
     try {
-      const res = await apiClient.get("/activity-logs/sign-ins/summary");
+      const params: any = {};
+      if (jumuiyaFilter) params.jumuiya_id = jumuiyaFilter;
+      const res = await apiClient.get("/activity-logs/sign-ins/summary", { params });
       setStats(res.data.stats || null);
       setStruggling(res.data.struggling || []);
+      setJumuiyas(res.data.jumuiyas || []);
     } catch (err) {
       console.error("Failed to fetch sign-in summary", err);
       setStats(null);
@@ -142,13 +183,14 @@ export default function SignInsPanel() {
     } finally {
       setSummaryLoading(false);
     }
-  }, []);
+  }, [jumuiyaFilter]);
 
   const fetchMembers = useCallback(async () => {
     setMembersLoading(true);
     try {
       const params: any = { limit: membersLimit, offset: (membersPage - 1) * membersLimit };
       if (memberSearch) params.search = memberSearch;
+      if (jumuiyaFilter) params.jumuiya_id = jumuiyaFilter;
       const res = await apiClient.get("/activity-logs/sign-ins/members", { params });
       setMembers(res.data.data || []);
       setMembersTotal(res.data.total || 0);
@@ -159,13 +201,14 @@ export default function SignInsPanel() {
     } finally {
       setMembersLoading(false);
     }
-  }, [membersPage, memberSearch]);
+  }, [membersPage, memberSearch, jumuiyaFilter]);
 
   const fetchEvents = useCallback(async () => {
     setEventsLoading(true);
     try {
       const params: any = { limit: eventsLimit, offset: (eventsPage - 1) * eventsLimit };
       if (eventAction) params.action = eventAction;
+      if (jumuiyaFilter) params.jumuiya_id = jumuiyaFilter;
       const res = await apiClient.get("/activity-logs/sign-ins/events", { params });
       setEvents(res.data.data || []);
       setEventsTotal(res.data.total || 0);
@@ -176,7 +219,7 @@ export default function SignInsPanel() {
     } finally {
       setEventsLoading(false);
     }
-  }, [eventsPage, eventAction]);
+  }, [eventsPage, eventAction, jumuiyaFilter]);
 
   useEffect(() => {
     fetchSummary();
@@ -209,6 +252,44 @@ export default function SignInsPanel() {
 
   return (
     <div className="space-y-6">
+      {/* Jumuiya filter */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-sm">
+          <Filter size={14} className="text-slate-400" />
+          <select
+            value={jumuiyaFilter}
+            onChange={(e) => {
+              setJumuiyaFilter(e.target.value);
+              setMembersPage(1);
+              setEventsPage(1);
+            }}
+            className="text-sm font-semibold bg-transparent text-slate-700 focus:outline-none cursor-pointer"
+          >
+            <option value="">All Jumuiyas</option>
+            {jumuiyas.map((j) => (
+              <option key={j.jumuiya_id} value={j.jumuiya_id}>
+                {j.jumuiya_name}
+              </option>
+            ))}
+          </select>
+        </div>
+        {jumuiyaFilter && (
+          <button
+            onClick={() => {
+              setJumuiyaFilter("");
+              setMembersPage(1);
+              setEventsPage(1);
+            }}
+            className="flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-700 px-2 py-1"
+          >
+            <X size={12} /> Clear
+          </button>
+        )}
+        <span className="text-xs text-slate-400 font-medium ml-auto hidden sm:block">
+          Filter by jumuiya to share with that jumuiya's officials
+        </span>
+      </div>
+
       {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {(summaryLoading ? Array.from({ length: 5 }) : statCards).map((c: any, i) => (
@@ -271,6 +352,29 @@ export default function SignInsPanel() {
                   <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200">
                     no account
                   </span>
+                )}
+                {s.is_member && s.jumuiya_name && (
+                  <span className="text-[10px] font-semibold text-slate-400">{s.jumuiya_name}</span>
+                )}
+                {s.is_member && s.phone && (
+                  <div className="flex items-center gap-1 ml-0.5">
+                    <a
+                      href={telHref(s.phone)}
+                      title={`Call ${s.name}`}
+                      className="w-6 h-6 flex items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                    >
+                      <Phone size={12} />
+                    </a>
+                    <a
+                      href={whatsappHref(s.phone, s.name)}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={`WhatsApp ${s.name}`}
+                      className="w-6 h-6 flex items-center justify-center rounded-lg bg-[#25D366]/10 text-[#128C7E] border border-[#25D366]/30 hover:bg-[#25D366]/20 transition-colors"
+                    >
+                      <MessageCircle size={12} />
+                    </a>
+                  </div>
                 )}
               </div>
             ))}
