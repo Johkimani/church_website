@@ -10,6 +10,7 @@ import {
   MAX_OTP_ATTEMPTS,
   RESEND_OTP_COOLDOWN_SECONDS,
 } from "../utils/passwordPolicy.js";
+import { logAuthEvent } from "../utils/authAudit.js";
 
 export const Reset = async (req, res) => {
   let { email, password, purpose } = req.body;
@@ -187,6 +188,14 @@ export const OTPverification = async (req, res) => {
     ]);
 
     await client.query("COMMIT");
+
+    await logAuthEvent({
+      member_id: resetData.member_id,
+      email: resetData.email,
+      action: "password_changed",
+      req,
+      details: { method: "otp_reset" },
+    });
 
     logger.info(`Password reset successful for user: ${reg}`);
 

@@ -18,26 +18,10 @@ import {
   MAX_LOGIN_ATTEMPTS,
   LOGIN_LOCK_MINUTES,
 } from "../utils/passwordPolicy.js";
+import { logAuthEvent } from "../utils/authAudit.js";
 dotenv.config();
 
-const logLoginAttempt = async ({ member_id, email, action, req }) => {
-  try {
-    await pool.query(
-      `INSERT INTO login_audit_log (member_id, email, action, ip_address, user_agent, details)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [
-        member_id || null,
-        email || null,
-        action,
-        req?.ip || null,
-        req?.get?.("user-agent") || null,
-        JSON.stringify({ path: req?.originalUrl || req?.path }),
-      ]
-    );
-  } catch {
-    // audit logging must never block the request
-  }
-};
+const logLoginAttempt = logAuthEvent;
 
 // The refresh token lives in an httpOnly cookie so injected JS (XSS) can't read
 // it. SameSite=None is required because the frontend (Vercel) and API (Render)
@@ -164,9 +148,9 @@ export const Login = async (req, res) => {
       });
     }
 
-    // Successful login clears any lockout state.
+    // Successful login clears any lockout state and marks the session active.
     await pool.query(
-      `UPDATE members SET failed_login_attempts = 0, locked_until = NULL WHERE member_id = $1`,
+      `UPDATE members SET failed_login_attempts = 0, locked_until = NULL, last_seen_at = NOW() WHERE member_id = $1`,
       [userReg]
     );
 
@@ -428,6 +412,13 @@ export const firstLoginSetup = async (req, res) => {
         "UPDATE members SET password = $1 WHERE member_id = $2",
         [hashed, member_id]
       );
+      await logAuthEvent({
+        member_id,
+        email: existingEmail || submittedEmail,
+        action: "password_changed",
+        req,
+        details: { method: "first_login_setup" },
+      });
       return res.json({ status: "success", message: "Password updated successfully" });
     }
 
@@ -448,6 +439,13 @@ export const firstLoginSetup = async (req, res) => {
         "UPDATE members SET password = $1 WHERE member_id = $2",
         [hashed, member_id]
       );
+      await logAuthEvent({
+        member_id,
+        email: existingEmail || submittedEmail,
+        action: "password_changed",
+        req,
+        details: { method: "first_login_setup" },
+      });
       return res.json({ status: "success", message: "Password updated successfully" });
     }
 
@@ -576,6 +574,8 @@ export const logout = async (req, res) => {
     }
 
     await pool.query(`DELETE FROM refresh_tokens WHERE member_id = $1`, [memberId]);
+    await pool.query(`UPDATE members SET last_seen_at = NOW() WHERE member_id = $1`, [memberId]).catch(() => {});
+    await logAuthEvent({ member_id: memberId, action: "logout", req });
     logger.info(`Logout: revoked refresh tokens for ${memberId}`);
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {

@@ -17,6 +17,7 @@ import jumuiyaActivitiesRouter from "./jumuiyaActivitiesRouter.js";
 import { Router } from "express"
 import verifyToken from "../../middlewares/Tokens.js"
 import activityLogger from "../../middlewares/activityLogger.js"
+import lastSeen from "../../middlewares/lastSeen.js"
 import jumuiyaMembersRouter from "../jumuiyaMembersRouter.js"
 import jumuiyaDataRouter from "../jumuiyaDataRouter.js"
 import attendanceRouter from "../attendanceRouter.js"
@@ -43,6 +44,7 @@ import suggestionRouter from "./suggestionRouter.js";
 import bibleRouter from "./bibleRoutes.js";
 import assistantRoutes from "./assistantRoutes.js";
 import activityLogRouter from "./activityLogRouter.js";
+import loginAuditRouter from "./loginAuditRouter.js";
 import purchaseReceiptsRouter from "./purchaseReceipts.js";
 import whatsappLinksRouter from "./whatsappLinksRoutes.js";
 import profileRoutes from "./profileRoutes.js";
@@ -64,6 +66,7 @@ import prayerPartnersRouter from "./prayerPartnersRouter.js";
 // Mounted first so it wraps every request in this router; it only writes on
 // res 'finish' once req.user has been populated by the route's own auth.
 router.use(activityLogger);
+router.use(lastSeen);
 
 router.use("/payments", paymentRouter);
 router.use("/stkPush", stkPushRouter);
@@ -111,6 +114,7 @@ router.use("/", categoryCardsRouter);
 router.use("/settings", settingsRouter);
 
 // Admin audit log (CSA chair + jumuiya coordinator only)
+router.use("/activity-logs/sign-ins", loginAuditRouter);
 router.use("/activity-logs", activityLogRouter);
 
 // Jumuiya members endpoints (auth: member PII + management writes)

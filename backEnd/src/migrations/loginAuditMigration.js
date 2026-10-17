@@ -27,6 +27,13 @@ const loginAuditMigration = async () => {
       await pool.query(`CREATE INDEX IF NOT EXISTS ${name} ON login_audit_log (${cols});`).catch(() => {});
     }
 
+    // Last-activity heartbeat: lets the sign-ins view estimate how long a
+    // member stayed on the system even when they never press Logout.
+    await pool.query(`
+      ALTER TABLE members
+      ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ;
+    `);
+
     logger.info("login_audit_log migration complete");
   } catch (error) {
     logger.error("login_audit_log migration failed:", error.message);

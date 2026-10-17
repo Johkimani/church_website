@@ -18,8 +18,10 @@ import {
   Sparkles,
   Shield,
   Layers,
+  LogIn,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import SignInsPanel from "./SignInsPanel";
 
 interface LogTarget {
   name?: string | null;
@@ -107,6 +109,7 @@ const actionColor = (action: string) => {
 
 export default function ActivityLog() {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<"actions" | "signins">("actions");
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -244,11 +247,13 @@ export default function ActivityLog() {
             </span>
           </div>
           <p className="text-slate-500 font-medium uppercase tracking-wider text-xs">
-            Reliable audit trail recording official actions, jumuiya names, and timestamps · {total} recorded events
+            {activeTab === "actions"
+              ? `Reliable audit trail recording official actions, jumuiya names, and timestamps · ${total} recorded events`
+              : "Sign-in history — who logged in, when, for how long, and who is struggling to sign in"}
           </p>
         </div>
         <div className="flex items-center gap-3 relative z-10 flex-wrap">
-          {canClearLogs && (
+          {activeTab === "actions" && canClearLogs && (
             <button
               onClick={handleClearLogs}
               disabled={clearing || total === 0}
@@ -259,17 +264,41 @@ export default function ActivityLog() {
               {clearing ? "Clearing..." : "Clear Logs"}
             </button>
           )}
-          <button
-            onClick={fetchLogs}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm active:scale-95 disabled:opacity-50"
-          >
-            <RefreshCw size={16} className={loading ? "animate-spin text-indigo-600" : ""} />
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
+          {activeTab === "actions" && (
+            <button
+              onClick={fetchLogs}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+            >
+              <RefreshCw size={16} className={loading ? "animate-spin text-indigo-600" : ""} />
+              {loading ? "Refreshing..." : "Refresh"}
+            </button>
+          )}
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-2xl w-fit">
+        <button
+          onClick={() => setActiveTab("actions")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+            activeTab === "actions" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <Activity size={15} /> Actions
+        </button>
+        <button
+          onClick={() => setActiveTab("signins")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+            activeTab === "signins" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <LogIn size={15} /> Sign-ins
+        </button>
+      </div>
+
+      {activeTab === "actions" ? (
+        <>
       {/* Filters Bar */}
       <div className="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-4 shadow-sm">
         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -487,6 +516,10 @@ export default function ActivityLog() {
             </div>
           )}
         </>
+      )}
+        </>
+      ) : (
+        <SignInsPanel />
       )}
     </div>
   );
