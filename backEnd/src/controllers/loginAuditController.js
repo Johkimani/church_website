@@ -201,7 +201,9 @@ export const getMemberSignInRollup = async (req, res) => {
       params.push(`%${req.query.search}%`);
       const ph = `$${params.length}`;
       where.push(
-        `(m.member_id ILIKE ${ph} OR m.first_name ILIKE ${ph} OR m.last_name ILIKE ${ph} OR m.email ILIKE ${ph} OR m.phone ILIKE ${ph})`
+        `(m.member_id ILIKE ${ph} OR m.first_name ILIKE ${ph} OR m.last_name ILIKE ${ph}
+          OR COALESCE(TRIM(m.first_name || ' ' || m.last_name), '') ILIKE ${ph}
+          OR m.email ILIKE ${ph} OR m.phone ILIKE ${ph})`
       );
     }
     if (req.query.onlyIncomplete === "true") {
@@ -210,31 +212,37 @@ export const getMemberSignInRollup = async (req, res) => {
 
     // Focus tabs drive which slice of the roster is listed. Because these all
     // aggregate over the audit log they are HAVING clauses, not WHERE clauses.
+    // When a search is active we deliberately bypass the focus filter so a
+    // member can always be found by name/ID inside the chosen jumuiya — the
+    // jumuiya scope and active-roster rules still apply.
+    const hasSearch = Boolean(String(req.query.search || "").trim());
     const having = [];
-    switch (req.query.focus) {
-      case "signed_in":
-        having.push(`COUNT(l.id) FILTER (WHERE l.action = 'login_success') > 0`);
-        break;
-      case "never":
-        having.push(`COUNT(l.id) FILTER (WHERE l.action = 'login_success') = 0`);
-        break;
-      case "failed":
-        having.push(`COUNT(l.id) FILTER (WHERE l.action LIKE 'login_failed%') > 0`);
-        break;
-      case "locked":
-        having.push(
-          `(COUNT(l.id) FILTER (WHERE l.action LIKE 'login_%locked') > 0
-             OR MAX(m.locked_until) > NOW())`
-        );
-        break;
-      case "password":
-        having.push(`COUNT(l.id) FILTER (WHERE l.action = 'password_changed') > 0`);
-        break;
-      case "resolved":
-        having.push(HELP_RESOLVED_EXPR);
-        break;
-      default:
-        break;
+    if (!hasSearch) {
+      switch (req.query.focus) {
+        case "signed_in":
+          having.push(`COUNT(l.id) FILTER (WHERE l.action = 'login_success') > 0`);
+          break;
+        case "never":
+          having.push(`COUNT(l.id) FILTER (WHERE l.action = 'login_success') = 0`);
+          break;
+        case "failed":
+          having.push(`COUNT(l.id) FILTER (WHERE l.action LIKE 'login_failed%') > 0`);
+          break;
+        case "locked":
+          having.push(
+            `(COUNT(l.id) FILTER (WHERE l.action LIKE 'login_%locked') > 0
+               OR MAX(m.locked_until) > NOW())`
+          );
+          break;
+        case "password":
+          having.push(`COUNT(l.id) FILTER (WHERE l.action = 'password_changed') > 0`);
+          break;
+        case "resolved":
+          having.push(HELP_RESOLVED_EXPR);
+          break;
+        default:
+          break;
+      }
     }
 
     const whereSql = `WHERE ${where.join(" AND ")}`;

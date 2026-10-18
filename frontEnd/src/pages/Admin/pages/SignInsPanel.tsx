@@ -222,6 +222,9 @@ export default function SignInsPanel() {
   const [membersTotal, setMembersTotal] = useState(0);
   const [membersPage, setMembersPage] = useState(1);
   const [memberSearch, setMemberSearch] = useState("");
+  // Mirrors memberSearch after a short delay so each keystroke doesn't fire its
+  // own request, and a slow earlier response can't overwrite a newer one.
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [memberFocus, setMemberFocus] = useState<MemberFocus>("signed_in");
   const [membersLoading, setMembersLoading] = useState(true);
 
@@ -351,7 +354,7 @@ export default function SignInsPanel() {
     setMembersLoading(true);
     try {
       const params: any = { limit: membersLimit, offset: (membersPage - 1) * membersLimit };
-      if (memberSearch) params.search = memberSearch;
+      if (debouncedSearch) params.search = debouncedSearch;
       if (memberFocus) params.focus = memberFocus;
       if (jumuiyaFilter) params.jumuiya_id = jumuiyaFilter;
       const res = await apiClient.get("/activity-logs/sign-ins/members", { params });
@@ -364,7 +367,7 @@ export default function SignInsPanel() {
     } finally {
       setMembersLoading(false);
     }
-  }, [membersPage, memberSearch, memberFocus, jumuiyaFilter]);
+  }, [membersPage, debouncedSearch, memberFocus, jumuiyaFilter]);
 
   const fetchEvents = useCallback(async () => {
     setEventsLoading(true);
@@ -384,6 +387,16 @@ export default function SignInsPanel() {
       setEventsLoading(false);
     }
   }, [eventsPage, eventAction, eventActions, jumuiyaFilter]);
+
+  // Debounce the search box: only commit the term (and jump back to page 1)
+  // once the user pauses typing.
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      setDebouncedSearch(memberSearch);
+      setMembersPage(1);
+    }, 300);
+    return () => window.clearTimeout(t);
+  }, [memberSearch]);
 
   useEffect(() => {
     fetchSummary();
@@ -677,10 +690,7 @@ export default function SignInsPanel() {
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   value={memberSearch}
-                  onChange={(e) => {
-                    setMemberSearch(e.target.value);
-                    setMembersPage(1);
-                  }}
+                  onChange={(e) => setMemberSearch(e.target.value)}
                   placeholder="Search member..."
                   className="w-40 sm:w-44 pl-8 pr-7 py-2 bg-slate-50/70 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 />
@@ -688,6 +698,7 @@ export default function SignInsPanel() {
                   <button
                     onClick={() => {
                       setMemberSearch("");
+                      setDebouncedSearch("");
                       setMembersPage(1);
                     }}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
@@ -708,8 +719,14 @@ export default function SignInsPanel() {
             </div>
           </div>
 
-          {/* Focus chips — mirror the stat cards */}
-          <div className="flex items-center gap-1.5 px-5 pt-3 flex-wrap">
+          {/* Focus chips — mirror the stat cards. While a search is active the
+              backend searches across all statuses, so dim them to show they
+              aren't currently applied. */}
+          <div
+            className={`flex items-center gap-1.5 px-5 pt-3 flex-wrap transition-opacity ${
+              debouncedSearch ? "opacity-40 pointer-events-none" : ""
+            }`}
+          >
             {FOCUS_TABS.map((t) => (
               <button
                 key={t.key || "all"}
@@ -727,6 +744,13 @@ export default function SignInsPanel() {
               </button>
             ))}
           </div>
+
+          {debouncedSearch && (
+            <p className="px-5 pt-2 text-[11px] font-semibold text-indigo-600">
+              Searching all statuses for “{debouncedSearch}”
+              {jumuiyaFilter ? " in this jumuiya" : ""} — clear the search to use the status tabs.
+            </p>
+          )}
 
           {membersLoading ? (
             <div className="p-5 space-y-3">
