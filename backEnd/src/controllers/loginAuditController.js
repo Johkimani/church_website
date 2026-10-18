@@ -12,6 +12,20 @@ const ACTIVE_SCOPE = `(m.migrated_to_associates IS NULL OR m.migrated_to_associa
     AND (m.flagged_inactive IS NULL OR m.flagged_inactive = false)
     AND m.source IN ('jum', 'csa')`;
 
+// A member counts as "helped" only while nothing has gone wrong since a
+// coordinator ticked them off: the account is not currently locked and no
+// failure/lockout was logged after the tick. A later problem therefore
+// re-lists them (the tick timestamp itself is kept). Only valid inside a
+// query that aggregates login_audit_log as `l` and groups by the member.
+const HELP_RESOLVED_EXPR = `(
+    m.signin_help_resolved_at IS NOT NULL
+    AND (m.locked_until IS NULL OR m.locked_until <= NOW())
+    AND (MAX(l.created_at) FILTER (WHERE l.action LIKE 'login_failed%') IS NULL
+         OR MAX(l.created_at) FILTER (WHERE l.action LIKE 'login_failed%') <= m.signin_help_resolved_at)
+    AND (MAX(l.created_at) FILTER (WHERE l.action LIKE 'login_%locked') IS NULL
+         OR MAX(l.created_at) FILTER (WHERE l.action LIKE 'login_%locked') <= m.signin_help_resolved_at)
+  )`;
+
 // A session is a member's time on the system, estimated as the gap between
 // their most recent login and their most recent recorded activity. Capped at
 // the 20h refresh-token lifetime; anything outside that is reported as unknown.
@@ -66,13 +80,16 @@ export const getSignInSummary = async (req, res) => {
         m.phone,
         m.locked_until,
         m.last_seen_at,
+        m.signin_help_resolved_at,
+        m.signin_help_resolved_by,
+        ${HELP_RESOLVED_EXPR} AS help_resolved,
         ${JUMUIYA_EXPR} AS jumuiya_name
        FROM login_audit_log l
        LEFT JOIN members m ON m.member_id = l.member_id
        WHERE l.action IN ('login_failed_unknown', 'login_failed_wrong_password',
                           'login_blocked_locked', 'login_account_locked')
        ${strugglingScope ? `AND ${strugglingScope}` : ""}
-       GROUP BY l.member_id, m.first_name, m.last_name, m.member_id, m.email, m.phone, m.locked_until, m.last_seen_at, m.jumuiya_id
+       GROUP BY l.member_id, m.first_name, m.last_name, m.member_id, m.email, m.phone, m.locked_until, m.last_seen_at, m.jumuiya_id, m.signin_help_resolved_at, m.signin_help_resolved_by
        ORDER BY failed DESC, last_event_at DESC
        LIMIT 100`,
       strugglingParams
@@ -112,7 +129,7 @@ export const getSignInSummary = async (req, res) => {
     ]);
 
     const now = Date.now();
-    const struggling = strugglingRes.rows
+    const needsHelp = strugglingRes.rows
       .map((r) => {
         const locked = r.locked_until ? new Date(r.locked_until).getTime() > now : false;
         const neverSignedIn = !r.last_login;
@@ -132,10 +149,19 @@ export const getSignInSummary = async (req, res) => {
           locked,
           never_signed_in: neverSignedIn,
           needs_help: locked || neverSignedIn || failingAfterSuccess,
+          help_resolved: Boolean(r.help_resolved),
+          help_resolved_at: r.signin_help_resolved_at,
+          help_resolved_by: r.signin_help_resolved_by,
         };
       })
-      .filter((r) => r.needs_help)
-      .slice(0, 50);
+      .filter((r) => r.needs_help);
+
+    // Members a coordinator has already ticked off stay hidden unless asked
+    // for (includeResolved=true), which powers the "Show helped" toggle.
+    const unresolved = needsHelp.filter((r) => !r.help_resolved);
+    const resolved = needsHelp.filter((r) => r.help_resolved);
+    const includeResolved = req.query.includeResolved === "true";
+    const struggling = (includeResolved ? [...unresolved, ...resolved] : unresolved).slice(0, 50);
 
     const eventStats = statsRes.rows[0] || {};
     const roster = rosterRes.rows[0] || { total_members: 0, members_signed_in: 0 };
@@ -149,6 +175,7 @@ export const getSignInSummary = async (req, res) => {
     return res.json({
       stats,
       struggling,
+      resolved_count: resolved.length,
       jumuiyas: jumuiyasRes.rows,
     });
   } catch (error) {
@@ -203,13 +230,16 @@ export const getMemberSignInRollup = async (req, res) => {
       case "password":
         having.push(`COUNT(l.id) FILTER (WHERE l.action = 'password_changed') > 0`);
         break;
+      case "resolved":
+        having.push(HELP_RESOLVED_EXPR);
+        break;
       default:
         break;
     }
 
     const whereSql = `WHERE ${where.join(" AND ")}`;
     const havingSql = having.length ? `HAVING ${having.join(" AND ")}` : "";
-    const groupBy = `GROUP BY m.member_id, m.first_name, m.last_name, m.jumuiya_id, m.last_seen_at, m.email, m.phone, m.locked_until`;
+    const groupBy = `GROUP BY m.member_id, m.first_name, m.last_name, m.jumuiya_id, m.last_seen_at, m.email, m.phone, m.locked_until, m.signin_help_resolved_at, m.signin_help_resolved_by`;
 
     const listPromise = db.query(
       `SELECT
@@ -226,7 +256,10 @@ export const getMemberSignInRollup = async (req, res) => {
          m.last_seen_at,
          m.email,
          m.phone,
-         m.locked_until
+         m.locked_until,
+         m.signin_help_resolved_at,
+         m.signin_help_resolved_by,
+         ${HELP_RESOLVED_EXPR} AS help_resolved
        FROM members m
        LEFT JOIN login_audit_log l ON l.member_id = m.member_id
        ${whereSql}
@@ -344,5 +377,34 @@ export const getLoginEvents = async (req, res) => {
   } catch (error) {
     console.error("[loginAudit] events error:", error.message);
     return res.status(500).json({ success: false, message: "Failed to load sign-in events" });
+  }
+};
+
+// Tick / un-tick a member as "helped" by a coordinator. Stamps who and when;
+// un-ticking clears both. Recurrence is handled implicitly by the read queries
+// (a newer failure/lockout overrides the tick without erasing it).
+export const resolveMemberHelp = async (req, res) => {
+  try {
+    const { memberId } = req.params;
+    const resolved = req.body?.resolved !== false;
+    const by = req.user?.member_id || null;
+
+    const result = await db.query(
+      `UPDATE members
+          SET signin_help_resolved_at = CASE WHEN $1 THEN NOW() ELSE NULL END,
+              signin_help_resolved_by = CASE WHEN $1 THEN $2 ELSE NULL END
+        WHERE member_id = $3
+        RETURNING member_id, signin_help_resolved_at, signin_help_resolved_by`,
+      [resolved, by, memberId]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ success: false, message: "Member not found" });
+    }
+
+    return res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error("[loginAudit] resolve error:", error.message);
+    return res.status(500).json({ success: false, message: "Failed to update member" });
   }
 };

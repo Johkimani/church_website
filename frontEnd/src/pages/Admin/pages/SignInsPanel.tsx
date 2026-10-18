@@ -21,6 +21,9 @@ import {
   MessageCircle,
   Filter,
   Share2,
+  Check,
+  CheckCircle2,
+  Loader2,
 } from "lucide-react";
 
 interface SignInStats {
@@ -50,6 +53,9 @@ interface Struggling {
   locked: boolean;
   never_signed_in: boolean;
   needs_help: boolean;
+  help_resolved: boolean;
+  help_resolved_at: string | null;
+  help_resolved_by: string | null;
 }
 
 interface MemberRow {
@@ -69,6 +75,9 @@ interface MemberRow {
   locked: boolean;
   setup_complete: boolean;
   approx_session_seconds: number | null;
+  help_resolved: boolean;
+  help_resolved_at: string | null;
+  help_resolved_by: string | null;
 }
 
 interface JumuiyaOption {
@@ -101,7 +110,7 @@ const ACTION_META: Record<string, { label: string; cls: string; icon: any }> = {
 const actionMeta = (action: string) =>
   ACTION_META[action] || { label: action.replace(/_/g, " "), cls: "bg-slate-100 text-slate-600 border-slate-200", icon: Clock };
 
-type MemberFocus = "" | "signed_in" | "never" | "failed" | "locked" | "password";
+type MemberFocus = "" | "signed_in" | "never" | "failed" | "locked" | "password" | "resolved";
 
 const FOCUS_TABS: { key: MemberFocus; label: string }[] = [
   { key: "signed_in", label: "Signed in" },
@@ -109,6 +118,7 @@ const FOCUS_TABS: { key: MemberFocus; label: string }[] = [
   { key: "failed", label: "Failed attempts" },
   { key: "locked", label: "Locked" },
   { key: "password", label: "Password changed" },
+  { key: "resolved", label: "Helped" },
   { key: "", label: "All" },
 ];
 
@@ -132,6 +142,7 @@ const focusTitle = (focus: MemberFocus) =>
     failed: "Members with failed sign-in attempts",
     locked: "Members with locked accounts",
     password: "Members who changed their password",
+    resolved: "Members already helped",
     "": "All members",
   }[focus] ||
     "Members");
@@ -143,6 +154,7 @@ const focusFooter = (focus: MemberFocus) =>
     failed: "These members have had trouble signing in — please help them access the portal.",
     locked: "These accounts are currently locked — please help the members regain access.",
     password: "These members recently changed their password on the members portal.",
+    resolved: "These members have already been helped with signing in.",
     "": "Member sign-in summary for the members portal.",
   }[focus] ||
     "");
@@ -201,7 +213,10 @@ export default function SignInsPanel() {
 
   const [stats, setStats] = useState<SignInStats | null>(null);
   const [struggling, setStruggling] = useState<Struggling[]>([]);
+  const [resolvedCount, setResolvedCount] = useState(0);
+  const [showHelped, setShowHelped] = useState(false);
   const [summaryLoading, setSummaryLoading] = useState(true);
+  const [resolvingId, setResolvingId] = useState("");
 
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [membersTotal, setMembersTotal] = useState(0);
@@ -291,18 +306,46 @@ export default function SignInsPanel() {
     try {
       const params: any = {};
       if (jumuiyaFilter) params.jumuiya_id = jumuiyaFilter;
+      if (showHelped) params.includeResolved = "true";
       const res = await apiClient.get("/activity-logs/sign-ins/summary", { params });
       setStats(res.data.stats || null);
       setStruggling(res.data.struggling || []);
+      setResolvedCount(res.data.resolved_count || 0);
       setJumuiyas(res.data.jumuiyas || []);
     } catch (err) {
       console.error("Failed to fetch sign-in summary", err);
       setStats(null);
       setStruggling([]);
+      setResolvedCount(0);
     } finally {
       setSummaryLoading(false);
     }
-  }, [jumuiyaFilter]);
+  }, [jumuiyaFilter, showHelped]);
+
+  // Tick / un-tick a member as helped. Updates both the needs-help list and the
+  // member table optimistically, then refetches so the counts stay in sync.
+  const toggleHelp = async (memberId: string, resolved: boolean) => {
+    setResolvingId(memberId);
+    const stamp = resolved ? new Date().toISOString() : null;
+    setStruggling((prev) =>
+      prev
+        .map((s) => (s.member_id === memberId ? { ...s, help_resolved: resolved, help_resolved_at: stamp } : s))
+        .filter((s) => showHelped || !s.help_resolved)
+    );
+    setMembers((prev) =>
+      prev.map((m) => (m.member_id === memberId ? { ...m, help_resolved: resolved, help_resolved_at: stamp } : m))
+    );
+    setResolvedCount((c) => Math.max(0, c + (resolved ? 1 : -1)));
+    try {
+      await apiClient.patch(`/activity-logs/sign-ins/members/${encodeURIComponent(memberId)}/help`, { resolved });
+    } catch (err) {
+      console.error("Failed to update helped status", err);
+    } finally {
+      setResolvingId("");
+      fetchSummary();
+      fetchMembers();
+    }
+  };
 
   const fetchMembers = useCallback(async () => {
     setMembersLoading(true);
@@ -498,7 +541,7 @@ export default function SignInsPanel() {
       </div>
 
       {/* Needs help signing in */}
-      {!summaryLoading && struggling.length > 0 && (
+      {!summaryLoading && (struggling.length > 0 || resolvedCount > 0) && (
         <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
@@ -510,60 +553,108 @@ export default function SignInsPanel() {
                 Repeated failed attempts, lockouts, or accounts that never completed first sign-in.
               </p>
             </div>
-            <span className="ml-auto text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-              {struggling.length}
-            </span>
+            <div className="ml-auto flex items-center gap-2">
+              {resolvedCount > 0 && (
+                <button
+                  onClick={() => setShowHelped((v) => !v)}
+                  className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-colors ${
+                    showHelped
+                      ? "bg-emerald-600 text-white border-emerald-600"
+                      : "bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                  }`}
+                  title="Show or hide members you have already helped"
+                >
+                  <CheckCircle2 size={12} />
+                  {showHelped ? "Hide helped" : `Show helped (${resolvedCount})`}
+                </button>
+              )}
+              <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                {struggling.filter((s) => !s.help_resolved).length}
+              </span>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {struggling.map((s) => (
-              <div
-                key={s.member_id}
-                className="flex items-center gap-2 bg-white border border-amber-200 rounded-xl px-3 py-1.5 shadow-2xs"
-                title={s.email || undefined}
-              >
-                <span className="text-xs font-bold text-slate-800">{s.name}</span>
-                {s.name !== s.member_id && (
-                  <span className="text-[10px] font-mono text-slate-400">{s.member_id}</span>
-                )}
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">
-                  {s.failed} failed
-                </span>
-                {s.locked && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-red-100 text-red-700 border border-red-200">
-                    locked
+
+          {struggling.length === 0 ? (
+            <p className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+              You're all caught up — no members still waiting for help.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {struggling.map((s) => (
+                <div
+                  key={s.member_id}
+                  className={`flex items-center gap-2 rounded-xl px-3 py-1.5 shadow-2xs border ${
+                    s.help_resolved ? "bg-emerald-50 border-emerald-200" : "bg-white border-amber-200"
+                  }`}
+                  title={s.email || undefined}
+                >
+                  <span className="text-xs font-bold text-slate-800">{s.name}</span>
+                  {s.name !== s.member_id && (
+                    <span className="text-[10px] font-mono text-slate-400">{s.member_id}</span>
+                  )}
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">
+                    {s.failed} failed
                   </span>
-                )}
-                {!s.is_member && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200">
-                    no account
-                  </span>
-                )}
-                {s.is_member && s.jumuiya_name && (
-                  <span className="text-[10px] font-semibold text-slate-400">{s.jumuiya_name}</span>
-                )}
-                {s.is_member && s.phone && (
-                  <div className="flex items-center gap-1 ml-0.5">
-                    <a
-                      href={telHref(s.phone)}
-                      title={`Call ${s.name}`}
-                      className="w-6 h-6 flex items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
-                    >
-                      <Phone size={12} />
-                    </a>
-                    <a
-                      href={whatsappHref(s.phone, s.name)}
-                      target="_blank"
-                      rel="noreferrer"
-                      title={`WhatsApp ${s.name}`}
-                      className="w-6 h-6 flex items-center justify-center rounded-lg bg-[#25D366]/10 text-[#128C7E] border border-[#25D366]/30 hover:bg-[#25D366]/20 transition-colors"
-                    >
-                      <MessageCircle size={12} />
-                    </a>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+                  {s.locked && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-red-100 text-red-700 border border-red-200">
+                      locked
+                    </span>
+                  )}
+                  {!s.is_member && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200">
+                      no account
+                    </span>
+                  )}
+                  {s.is_member && s.jumuiya_name && (
+                    <span className="text-[10px] font-semibold text-slate-400">{s.jumuiya_name}</span>
+                  )}
+                  {s.is_member && s.phone && (
+                    <div className="flex items-center gap-1 ml-0.5">
+                      <a
+                        href={telHref(s.phone)}
+                        title={`Call ${s.name}`}
+                        className="w-6 h-6 flex items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                      >
+                        <Phone size={12} />
+                      </a>
+                      <a
+                        href={whatsappHref(s.phone, s.name)}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={`WhatsApp ${s.name}`}
+                        className="w-6 h-6 flex items-center justify-center rounded-lg bg-[#25D366]/10 text-[#128C7E] border border-[#25D366]/30 hover:bg-[#25D366]/20 transition-colors"
+                      >
+                        <MessageCircle size={12} />
+                      </a>
+                    </div>
+                  )}
+                  {s.is_member &&
+                    (s.help_resolved ? (
+                      <button
+                        onClick={() => toggleHelp(s.member_id, false)}
+                        title="Helped — click to move back onto the list"
+                        className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200 transition-colors"
+                      >
+                        <CheckCircle2 size={11} /> helped
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => toggleHelp(s.member_id, true)}
+                        disabled={resolvingId === s.member_id}
+                        title="Mark as helped"
+                        className="w-6 h-6 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 disabled:opacity-50 transition-colors"
+                      >
+                        {resolvingId === s.member_id ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          <Check size={12} />
+                        )}
+                      </button>
+                    ))}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -655,11 +746,17 @@ export default function SignInsPanel() {
                     <th className="text-left font-bold px-2 py-2.5">Last sign-in</th>
                     <th className="text-left font-bold px-2 py-2.5">Time on system</th>
                     <th className="text-left font-bold px-5 py-2.5">Status</th>
+                    <th className="text-center font-bold px-3 py-2.5">Helped</th>
                   </tr>
                 </thead>
                 <tbody>
                   {members.map((m) => (
-                    <tr key={m.member_id} className="border-b border-slate-50 hover:bg-slate-50/70 transition-colors">
+                    <tr
+                      key={m.member_id}
+                      className={`border-b border-slate-50 transition-colors ${
+                        m.help_resolved ? "bg-emerald-50/40" : "hover:bg-slate-50/70"
+                      }`}
+                    >
                       <td className="px-5 py-3">
                         <p className="font-bold text-slate-800 leading-tight">{m.name}</p>
                         {m.name !== m.member_id && (
@@ -718,6 +815,30 @@ export default function SignInsPanel() {
                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">Active</span>
                           )}
                         </div>
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        {m.help_resolved ? (
+                          <button
+                            onClick={() => toggleHelp(m.member_id, false)}
+                            title={`Helped${m.help_resolved_at ? ` on ${formatDate(m.help_resolved_at)}` : ""} — click to move back onto the list`}
+                            className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                          >
+                            <CheckCircle2 size={12} /> Helped
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => toggleHelp(m.member_id, true)}
+                            disabled={resolvingId === m.member_id}
+                            title="Mark as helped"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-slate-200 text-slate-400 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 disabled:opacity-50 transition-colors"
+                          >
+                            {resolvingId === m.member_id ? (
+                              <Loader2 size={13} className="animate-spin" />
+                            ) : (
+                              <Check size={13} />
+                            )}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

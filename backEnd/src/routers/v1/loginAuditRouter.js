@@ -5,6 +5,7 @@ import {
   getSignInSummary,
   getMemberSignInRollup,
   getLoginEvents,
+  resolveMemberHelp,
 } from "../../controllers/loginAuditController.js";
 
 const router = Router();
@@ -15,5 +16,6 @@ const OVERSEER_ROLES = ["csa_chair", "jumuiya_coordinator", "assistant_jumuiya_c
 router.get("/summary", verifyToken, requireRole(...OVERSEER_ROLES), getSignInSummary);
 router.get("/members", verifyToken, requireRole(...OVERSEER_ROLES), getMemberSignInRollup);
 router.get("/events", verifyToken, requireRole(...OVERSEER_ROLES), getLoginEvents);
+router.patch("/members/:memberId/help", verifyToken, requireRole(...OVERSEER_ROLES), resolveMemberHelp);
 
 export default router;

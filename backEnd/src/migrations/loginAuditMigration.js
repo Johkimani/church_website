@@ -34,6 +34,18 @@ const loginAuditMigration = async () => {
       ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ;
     `);
 
+    // Coordinator "helped" tick: marks that a coordinator has resolved a
+    // member's sign-in issue. A later failure/lockout supersedes it (see
+    // loginAuditController), so it can't hide a recurring problem.
+    await pool.query(`
+      ALTER TABLE members
+      ADD COLUMN IF NOT EXISTS signin_help_resolved_at TIMESTAMPTZ;
+    `);
+    await pool.query(`
+      ALTER TABLE members
+      ADD COLUMN IF NOT EXISTS signin_help_resolved_by VARCHAR(50);
+    `);
+
     logger.info("login_audit_log migration complete");
   } catch (error) {
     logger.error("login_audit_log migration failed:", error.message);
