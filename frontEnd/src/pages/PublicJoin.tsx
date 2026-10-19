@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { apiClient } from "../api/axiosInstance";
 import Turnstile, { isCaptchaEnabled } from "../components/Turnstile";
-import { REG_NUM_PATTERN, sanitizeRegNumber, suggestRegNumber } from "../utils/regNumber";
+import { suggestRegNumber, regNumberError } from "../utils/regNumber";
 
 const checkDuplicate = (params: { regNumber?: string; email?: string }) =>
   apiClient.get("/jumuiya/join/check-duplicate", { params }).then((r) => r.data);
@@ -205,13 +205,8 @@ export default function PublicJoin() {
       errors.name = "Please provide at least first and last name";
     }
 
-    if (!formData.regNumber.trim()) {
-      errors.regNumber = "Registration number is required";
-    } else if (!REG_NUM_PATTERN.test(sanitizeRegNumber(formData.regNumber))) {
-      errors.regNumber = suggestRegNumber(formData.regNumber)
-        ? "That registration number is in the wrong format."
-        : "Use the format PA106/G/45673/23 — include the middle /G/ segment.";
-    }
+    const regMsg = regNumberError(formData.regNumber);
+    if (regMsg) errors.regNumber = regMsg;
 
     if (!formData.gender) {
       errors.gender = "Please select your gender";
@@ -725,6 +720,10 @@ export default function PublicJoin() {
                 onBlur={(e) => {
                   setRegFocused(false);
                   setRegSuggestion(suggestRegNumber(e.currentTarget.value));
+                  setFieldErrors((prev) => ({
+                    ...prev,
+                    regNumber: regNumberError(e.currentTarget.value),
+                  }));
                 }}
                 placeholder="e.g. CT102/A/2025/01"
                 className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl text-sm font-mono uppercase text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none transition-all ${

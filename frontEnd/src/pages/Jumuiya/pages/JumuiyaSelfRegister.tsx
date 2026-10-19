@@ -16,7 +16,7 @@ import {
 import { memberService } from "../../../api/jumuiyaMemberService";
 import Turnstile, { isCaptchaEnabled } from "../../../components/Turnstile";
 import { jumuiyaList } from "../data/jumuiyaData";
-import { REG_NUM_PATTERN, sanitizeRegNumber, suggestRegNumber } from "../../../utils/regNumber";
+import { suggestRegNumber, regNumberError } from "../../../utils/regNumber";
 
 const JUMUIYA_FALLBACKS: Record<
   string,
@@ -261,17 +261,8 @@ export default function JumuiyaSelfRegister() {
       errors.name = "Please provide at least first and last name";
     }
 
-    if (!formData.regNumber.trim()) {
-      errors.regNumber = "Registration number is required";
-    } else {
-      const cleanedReg = sanitizeRegNumber(formData.regNumber);
-      if (!REG_NUM_PATTERN.test(cleanedReg)) {
-        const sug = suggestRegNumber(formData.regNumber);
-        errors.regNumber = sug
-          ? "That registration number is in the wrong format."
-          : "Use the format PA106/G/45673/23 — include the middle /G/ segment.";
-      }
-    }
+    const regMsg = regNumberError(formData.regNumber);
+    if (regMsg) errors.regNumber = regMsg;
 
     if (!formData.gender) {
       errors.gender = "Please select your gender";
@@ -599,6 +590,10 @@ export default function JumuiyaSelfRegister() {
                   onBlur={(e) => {
                     setRegFocused(false);
                     setRegSuggestion(suggestRegNumber(e.currentTarget.value));
+                    setFieldErrors((prev) => ({
+                      ...prev,
+                      regNumber: regNumberError(e.currentTarget.value),
+                    }));
                   }}
                   placeholder="e.g. PA106/G/12345/23"
                   className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl text-sm font-mono uppercase text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none transition-all ${

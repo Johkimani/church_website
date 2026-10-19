@@ -59,3 +59,41 @@ export const suggestRegNumber = (regNumber?: string | null): string | null => {
 
 export const isCanonicalRegNumber = (regNumber?: string | null): boolean =>
   REG_NUM_PATTERN.test(sanitizeRegNumber(regNumber));
+
+// Academic year rolls over in August — mirrors memberYear.ts and the server's
+// academicStartYear() so every side agrees on which intake year is current.
+const academicStartYear = (): number => {
+  const now = new Date();
+  return now.getMonth() + 1 >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+};
+
+// Everything that would make this registration number unacceptable, in the
+// same order the server checks it, so the form never accepts something the
+// API will then reject.
+export const regNumberError = (regNumber?: string | null): string => {
+  const clean = sanitizeRegNumber(regNumber);
+  if (!clean) return "Registration number is required";
+
+  // The trailing /YY is the intake year: /23 means "joined in 2023", so /27
+  // would mean 2027. Anything past the current intake is a typo.
+  const intakeMatch = clean.match(/(?:^|\/)(\d{2})$/);
+  if (intakeMatch) {
+    const admissionYear = 2000 + parseInt(intakeMatch[1], 10);
+    const current = academicStartYear();
+    if (admissionYear > current) {
+      return `Registration number "${clean}" has a future intake year (/${intakeMatch[1]}) — expected /${String(current).slice(-2)} or earlier`;
+    }
+  }
+
+  if (REG_NUM_PATTERN.test(clean)) return "";
+
+  // Code and segment are right but the year was never typed.
+  if (/^[A-Za-z]+\d+\/[A-Za-z]+\/\d+(\/\d{1,2})?$/.test(clean)) {
+    const base = clean.replace(/\/\d{1,2}$/, "");
+    return `Registration number "${clean}" is missing the intake year — it should end with /YY, e.g. ${base}/23 for someone who joined in 2023`;
+  }
+
+  return suggestRegNumber(clean)
+    ? "That registration number is in the wrong format."
+    : "Use the format PA106/G/45673/23 — include the middle /G/ segment.";
+};

@@ -110,10 +110,12 @@ export const standardizeRegNumber = (regNumber, options = {}) => {
   }
   const cleaned = sanitizeRegNumber(regNumber);
 
-  // The last two digits encode the intake year. A year after the current
-  // academic start year (e.g. "/27" while intake is "/26") is either a typo
-  // or a future student — reject it outright.
-  const intakeMatch = (cleaned || "").match(/(\d{2})$/);
+  // The last two digits encode the intake year, but only when they form their
+  // own trailing /YY segment (so "PA106/G/12345" is reported as a format
+  // problem, not as the year 2045). A year after the current academic start
+  // year (e.g. "/27" while intake is "/26") is either a typo or a future
+  // student — reject it outright.
+  const intakeMatch = (cleaned || "").match(/(?:^|\/)(\d{2})$/);
   if (intakeMatch) {
     const admissionYear = 2000 + parseInt(intakeMatch[1], 10);
     if (admissionYear > academicStartYear()) {
