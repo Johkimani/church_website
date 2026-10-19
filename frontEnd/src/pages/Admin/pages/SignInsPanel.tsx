@@ -56,6 +56,10 @@ interface Struggling {
   help_resolved: boolean;
   help_resolved_at: string | null;
   help_resolved_by: string | null;
+  match_member_id: string | null;
+  match_name: string | null;
+  match_phone: string | null;
+  match_jumuiya_name: string | null;
 }
 
 interface MemberRow {
@@ -215,6 +219,7 @@ export default function SignInsPanel() {
   const [struggling, setStruggling] = useState<Struggling[]>([]);
   const [resolvedCount, setResolvedCount] = useState(0);
   const [showHelped, setShowHelped] = useState(false);
+  const [showNoAccountOnly, setShowNoAccountOnly] = useState(false);
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [resolvingId, setResolvingId] = useState("");
 
@@ -302,6 +307,47 @@ export default function SignInsPanel() {
     } finally {
       setSharing(false);
     }
+  };
+
+  // "No account" entries are typed IDs that matched no member at all — almost
+  // always a typo of a real registration number. Show only those, and give a
+  // coordinator a one-tap way to forward the corrected details on WhatsApp.
+  const noAccountEntries = struggling.filter((s) => !s.is_member);
+  const noAccountCount = noAccountEntries.length;
+  const visibleStruggling = showNoAccountOnly ? noAccountEntries : struggling;
+
+  const shareNoAccountList = () => {
+    if (!noAccountEntries.length) return;
+    const scopeName = jumuiyaFilter
+      ? jumuiyas.find((j) => j.jumuiya_id === jumuiyaFilter)?.jumuiya_name || "Jumuiya"
+      : "All Jumuiyas";
+    const lines = noAccountEntries.slice(0, 60).map((s, i) => {
+      const guess = s.match_member_id
+        ? `  → likely ${s.match_name} (${s.match_member_id})`
+        : "";
+      return `${i + 1}. Typed "${s.member_id}" — ${s.failed} failed attempt(s)${guess}`;
+    });
+    const more = noAccountEntries.length > 60 ? `\n…and ${noAccountEntries.length - 60} more.` : "";
+    const text =
+      `*CSA Kirinyaga — sign-ins with no account*\n` +
+      `${scopeName}: ${noAccountEntries.length} attempt(s) from IDs that matched no member\n\n` +
+      `These are usually typos of the real registration number. Please help them sign in with the correct one:\n\n` +
+      `${lines.join("\n")}${more}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+  };
+
+  const messageNoAccount = (s: Struggling) => {
+    const intl = toIntlDigits(s.match_phone);
+    const correct = s.match_member_id;
+    const msg = encodeURIComponent(
+      `Hello ${s.match_name || "there"}, this is the CSA Kirinyaga office. ` +
+        `We noticed you tried to sign in to the members portal using "${s.member_id}", but no account matches that. ` +
+        (correct && correct !== s.member_id
+          ? `Your registration number is ${correct}. Please use it exactly as shown, with your password, to sign in. `
+          : "") +
+        `If you're still unable to sign in, reply here and we'll help you.`
+    );
+    return intl ? `https://wa.me/${intl}?text=${msg}` : "";
   };
 
   const fetchSummary = useCallback(async () => {
@@ -567,6 +613,30 @@ export default function SignInsPanel() {
               </p>
             </div>
             <div className="ml-auto flex items-center gap-2">
+              {noAccountCount > 0 && (
+                <>
+                  <button
+                    onClick={() => setShowNoAccountOnly((v) => !v)}
+                    className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-colors ${
+                      showNoAccountOnly
+                        ? "bg-slate-700 text-white border-slate-700"
+                        : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"
+                    }`}
+                    title="Show only sign-ins whose typed ID matched no account"
+                  >
+                    <UserX size={12} />
+                    {showNoAccountOnly ? "Show all" : `No account (${noAccountCount})`}
+                  </button>
+                  <button
+                    onClick={shareNoAccountList}
+                    className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-colors bg-white text-[#128C7E] border-[#25D366]/40 hover:bg-[#25D366]/10"
+                    title="Share the no-account list on WhatsApp"
+                  >
+                    <Share2 size={12} />
+                    Share
+                  </button>
+                </>
+              )}
               {resolvedCount > 0 && (
                 <button
                   onClick={() => setShowHelped((v) => !v)}
@@ -582,18 +652,25 @@ export default function SignInsPanel() {
                 </button>
               )}
               <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-                {struggling.filter((s) => !s.help_resolved).length}
+                {visibleStruggling.filter((s) => !s.help_resolved).length}
               </span>
             </div>
           </div>
 
-          {struggling.length === 0 ? (
+          {showNoAccountOnly && (
+            <p className="text-[11px] font-semibold text-slate-500 mb-2">
+              Showing only sign-ins whose typed ID matched no member account. Clear the filter to see everyone.
+            </p>
+          )}
+          {visibleStruggling.length === 0 ? (
             <p className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
-              You're all caught up — no members still waiting for help.
+              {showNoAccountOnly
+                ? "No sign-ins from unmatched IDs — every attempt matched a member."
+                : "You're all caught up — no members still waiting for help."}
             </p>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {struggling.map((s) => (
+              {visibleStruggling.map((s) => (
                 <div
                   key={s.member_id}
                   className={`flex items-center gap-2 rounded-xl px-3 py-1.5 shadow-2xs border ${
@@ -614,9 +691,37 @@ export default function SignInsPanel() {
                     </span>
                   )}
                   {!s.is_member && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200">
-                      no account
-                    </span>
+                    <>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200">
+                        no account
+                      </span>
+                      {s.match_member_id && (
+                        <span
+                          className="text-[10px] font-semibold text-slate-500"
+                          title={s.match_jumuiya_name ? `Likely ${s.match_jumuiya_name}` : "Closest match"}
+                        >
+                          → {s.match_name} ({s.match_member_id})
+                        </span>
+                      )}
+                      <a
+                        href={
+                          messageNoAccount(s) ||
+                          `https://wa.me/?text=${encodeURIComponent(
+                            `CSA Kirinyaga: a member tried to sign in with "${s.member_id}" (${s.failed} failed attempt(s)) but no account matches that ID.`
+                          )}`
+                        }
+                        target="_blank"
+                        rel="noreferrer"
+                        title={
+                          s.match_member_id
+                            ? `WhatsApp ${s.match_name} their correct registration number`
+                            : "Share this attempt on WhatsApp"
+                        }
+                        className="w-6 h-6 flex items-center justify-center rounded-lg bg-[#25D366]/10 text-[#128C7E] border border-[#25D366]/30 hover:bg-[#25D366]/20 transition-colors"
+                      >
+                        <MessageCircle size={12} />
+                      </a>
+                    </>
                   )}
                   {s.is_member && s.jumuiya_name && (
                     <span className="text-[10px] font-semibold text-slate-400">{s.jumuiya_name}</span>

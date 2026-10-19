@@ -152,9 +152,59 @@ export const getSignInSummary = async (req, res) => {
           help_resolved: Boolean(r.help_resolved),
           help_resolved_at: r.signin_help_resolved_at,
           help_resolved_by: r.signin_help_resolved_by,
+          match_member_id: null,
+          match_name: null,
+          match_phone: null,
+          match_jumuiya_name: null,
         };
       })
       .filter((r) => r.needs_help);
+
+    // "No account" rows are typed IDs that matched no member at all — in
+    // practice almost always a typo of a real registration number (verified:
+    // 0 of 74 were pending WhatsApp self-registrations). Resolve the nearest
+    // real member via the unique digit serial so a coordinator can see who
+    // they probably are and message them their correct number.
+    const noAcct = needsHelp.filter((r) => !r.is_member);
+    if (noAcct.length) {
+      const serials = [
+        ...new Set(noAcct.flatMap((r) => String(r.member_id || "").match(/\d{4,}/g) || [])),
+      ];
+      if (serials.length) {
+        const matchRes = await db.query(
+          `SELECT m.member_id, m.jumuiya_id::text AS jumuiya_id, m.phone,
+                  COALESCE(TRIM(m.first_name || ' ' || m.last_name), m.member_id) AS name,
+                  s.serial
+           FROM unnest($1::text[]) AS s(serial)
+           JOIN members m ON m.member_id LIKE '%' || s.serial || '%'
+           LIMIT 400`,
+          [serials]
+        );
+        const bySerial = new Map();
+        for (const row of matchRes.rows) {
+          if (!bySerial.has(row.serial)) bySerial.set(row.serial, []);
+          bySerial.get(row.serial).push(row);
+        }
+        const jName = new Map(
+          jumuiyasRes.rows.map((j) => [String(j.jumuiya_id), j.jumuiya_name])
+        );
+        for (const r of noAcct) {
+          const runs = [...new Set(String(r.member_id || "").match(/\d{4,}/g) || [])];
+          // Longest serial first — the most specific identifier.
+          for (const serial of runs.sort((a, b) => b.length - a.length)) {
+            const cands = bySerial.get(serial) || [];
+            if (cands.length === 1) {
+              const c = cands[0];
+              r.match_member_id = c.member_id;
+              r.match_name = c.name;
+              r.match_phone = c.phone;
+              r.match_jumuiya_name = jName.get(String(c.jumuiya_id)) || null;
+              break;
+            }
+          }
+        }
+      }
+    }
 
     // Members a coordinator has already ticked off stay hidden unless asked
     // for (includeResolved=true), which powers the "Show helped" toggle.
