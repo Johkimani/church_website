@@ -222,6 +222,30 @@ export const importMembers = async (req, res) => {
 
     const dupErrors = await checkExistingDuplicates(nonEmpty);
 
+    // D — a coordinator must explicitly acknowledge any registration number
+    // that is not in the canonical format before it is committed. Without
+    // this the warnings on a pending self-registration were simply skipped
+    // and a member was created that could never log in.
+    const regFormatIssues = [];
+    nonEmpty.forEach((member, i) => {
+      const v = validateMemberRow(member, targetJumuiyaName);
+      if (v.regFormat && v.regFormat.ok === false) {
+        regFormatIssues.push({
+          row: i + 1,
+          regNumber: v.raw.regNumber,
+          cleaned: v.cleaned.regNumber,
+          suggestion: v.regFormat.suggestion,
+        });
+      }
+    });
+    if (regFormatIssues.length > 0 && req.body.acknowledgeRegFormat !== true) {
+      return res.status(400).json({
+        error: `${regFormatIssues.length} registration number${regFormatIssues.length === 1 ? "" : "s"} do not match the required format. Correct each one, or confirm you have verified them.`,
+        requiresAcknowledgement: true,
+        regFormatIssues,
+      });
+    }
+
     const importResult = await pool.query(
       `INSERT INTO member_imports (jumuiya_id, coordinator_id, season_id, file_name, total_records, academic_year, status)
        VALUES ($1, $2, $3, $4, $5, $6, 'pending') RETURNING *`,
@@ -600,6 +624,8 @@ export const validateImportData = async (req, res) => {
         status,
         errors: allErrors,
         warnings: validated.warnings || [],
+        regFormatIssue: validated.regFormat?.ok === false,
+        suggestion: validated.regFormat?.suggestion || null,
       };
     });
 
@@ -608,6 +634,7 @@ export const validateImportData = async (req, res) => {
       valid: results.filter(r => r.status === "valid").length,
       warning: results.filter(r => r.status === "warning").length,
       error: results.filter(r => r.status === "error").length,
+      regFormatIssues: results.filter(r => r.regFormatIssue).length,
     };
 
     res.json({ status: "success", data: { results, summary } });

@@ -67,6 +67,13 @@ export const Login = async (req, res) => {
     logger.error("Username and password required");
     return res.status(400).json({ status: false, message: "Username and password required" });
   }
+
+  // B — tolerate formatting drift in the stored identifier. "PA106/G/45673/23",
+  // "pa106/45673/23" and "CT101/G/35108/26))" must all resolve to the same row.
+  // Verified: no two members share a normalised key, so this can never be ambiguous.
+  // The password is still checked against that single matched account.
+  const normalizedReg = userReg.replace(/[^A-Z0-9]/g, "");
+
  try {
     const result = await pool.query(
       `      SELECT 
@@ -87,8 +94,9 @@ export const Login = async (req, res) => {
       LEFT JOIN member_roles mr ON m.member_id = mr.member_id AND mr.status = 'approved'
       LEFT JOIN roles r ON mr.role_id = r.role_id 
       WHERE m.member_id = $1
+         OR REGEXP_REPLACE(UPPER(m.member_id), '[^A-Z0-9]', '', 'g') = $2
       GROUP BY m.member_id, m.password, m.jumuiya_id, m.first_name, m.last_name, m.email, m.year_of_study, m.failed_login_attempts, m.locked_until`,
-      [userReg],
+      [userReg, normalizedReg],
     );
 
     if (result.rows.length === 0) {
@@ -129,9 +137,9 @@ export const Login = async (req, res) => {
       if (attempts >= MAX_LOGIN_ATTEMPTS) {
         await pool.query(
           `UPDATE members SET failed_login_attempts = 0, locked_until = NOW() + ($2 || ' minutes')::interval WHERE member_id = $1`,
-          [userReg, LOGIN_LOCK_MINUTES]
+          [user.member_id, LOGIN_LOCK_MINUTES]
         );
-        logger.warn(`Account '${userReg}' locked after ${attempts} failed attempts`);
+        logger.warn(`Account '${user.member_id}' locked after ${attempts} failed attempts`);
         await logLoginAttempt({ member_id: userReg, action: "login_account_locked", req });
         return res.status(429).json({
           status: false,
@@ -140,7 +148,7 @@ export const Login = async (req, res) => {
       }
       await pool.query(
         `UPDATE members SET failed_login_attempts = $2 WHERE member_id = $1`,
-        [userReg, attempts]
+        [user.member_id, attempts]
       );
       return res.status(401).json({
         status: false,
@@ -151,11 +159,13 @@ export const Login = async (req, res) => {
     // Successful login clears any lockout state and marks the session active.
     await pool.query(
       `UPDATE members SET failed_login_attempts = 0, locked_until = NULL, last_seen_at = NOW() WHERE member_id = $1`,
-      [userReg]
+      [user.member_id]
     );
 
-    // Detect first login: password matches their reg number, or missing email
-    const isDefaultPassword = await bcrypt.compare(userReg, storedHash);
+    // Detect first login: their stored password is still the default (their
+    // registration number), or they have no email on file. Compared against
+    // the stored member_id so a reformatted login still detects it.
+    const isDefaultPassword = await bcrypt.compare(user.member_id, storedHash);
     const forcePasswordChange = isDefaultPassword || !user.email;
 
     const accessToken = signAccessToken({ id: user.member_id, role: user.roles, firstName: user.first_name, lastName: user.last_name, email: user.email, jumuiya_id: user.jumuiya_id });

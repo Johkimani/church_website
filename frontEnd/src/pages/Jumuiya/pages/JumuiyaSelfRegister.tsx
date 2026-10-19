@@ -16,6 +16,7 @@ import {
 import { memberService } from "../../../api/jumuiyaMemberService";
 import Turnstile, { isCaptchaEnabled } from "../../../components/Turnstile";
 import { jumuiyaList } from "../data/jumuiyaData";
+import { REG_NUM_PATTERN, sanitizeRegNumber, suggestRegNumber } from "../../../utils/regNumber";
 
 const JUMUIYA_FALLBACKS: Record<
   string,
@@ -143,6 +144,8 @@ export default function JumuiyaSelfRegister() {
     email?: { isDup: boolean; message: string };
   }>({});
   const [checkingDup, setCheckingDup] = useState(false);
+  // Live "did you mean …" for a registration number that is close but malformed
+  const [regSuggestion, setRegSuggestion] = useState<string | null>(null);
 
   // Submission State
   const [submitting, setSubmitting] = useState(false);
@@ -214,6 +217,7 @@ export default function JumuiyaSelfRegister() {
     let finalVal = value;
     if (name === "regNumber") {
       finalVal = value.toUpperCase();
+      setRegSuggestion(suggestRegNumber(finalVal));
     }
     setFormData((prev) => ({ ...prev, [name]: finalVal }));
     setFieldErrors((prev) => ({ ...prev, [name]: "" }));
@@ -239,8 +243,14 @@ export default function JumuiyaSelfRegister() {
 
     if (!formData.regNumber.trim()) {
       errors.regNumber = "Registration number is required";
-    } else if (formData.regNumber.length < 5) {
-      errors.regNumber = "Please enter a valid student registration number";
+    } else {
+      const cleanedReg = sanitizeRegNumber(formData.regNumber);
+      if (!REG_NUM_PATTERN.test(cleanedReg)) {
+        const sug = suggestRegNumber(formData.regNumber);
+        errors.regNumber = sug
+          ? "That registration number is in the wrong format."
+          : "Use the format PA106/G/45673/23 — include the middle /G/ segment.";
+      }
     }
 
     if (!formData.gender) {
@@ -324,6 +334,9 @@ export default function JumuiyaSelfRegister() {
         err?.message ||
         "Failed to complete registration. Please try again.";
       setSubmitError(errorMsg);
+      // The server may know a correction the local check did not.
+      const serverSuggestion = err?.response?.data?.suggestion;
+      if (serverSuggestion) setRegSuggestion(serverSuggestion);
       setCaptchaResetSignal((s) => s + 1);
     } finally {
       setSubmitting(false);
@@ -353,6 +366,7 @@ export default function JumuiyaSelfRegister() {
     });
     setFieldErrors({});
     setDuplicateStatus({});
+    setRegSuggestion(null);
     setSubmitError(null);
   };
 
@@ -567,6 +581,27 @@ export default function JumuiyaSelfRegister() {
                   }`}
                 />
               </div>
+              {regSuggestion && (
+                <div className="mt-1.5 flex items-center gap-2 rounded-lg bg-indigo-50 border border-indigo-200 px-3 py-2">
+                  <AlertCircle size={13} className="text-indigo-500 shrink-0" />
+                  <span className="text-[11px] text-indigo-700 font-medium min-w-0">
+                    Did you mean <span className="font-mono font-bold">{regSuggestion}</span>?
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData((prev) => ({ ...prev, regNumber: regSuggestion }));
+                      setRegSuggestion(null);
+                      setFieldErrors((prev) => ({ ...prev, regNumber: "" }));
+                      setDuplicateStatus((prev) => ({ ...prev, regNumber: undefined }));
+                    }}
+                    className="ml-auto shrink-0 text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md px-2.5 py-1 transition-colors"
+                    title="Use the corrected registration number"
+                  >
+                    Use it
+                  </button>
+                </div>
+              )}
               {fieldErrors.regNumber && <p className="text-[11px] text-red-500 mt-1">{fieldErrors.regNumber}</p>}
               {duplicateStatus.regNumber?.isDup && (
                 <p className="text-[11px] font-semibold text-amber-600 mt-1 flex items-center gap-1">

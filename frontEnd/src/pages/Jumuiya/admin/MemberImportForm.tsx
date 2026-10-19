@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
 import { Upload, Plus, Trash2, FileSpreadsheet, CheckCircle, AlertTriangle, ClipboardList } from "lucide-react";
 import CopyWhatsAppButton from "../components/CopyWhatsAppButton";
+import { isCanonicalRegNumber, suggestRegNumber } from "../../../utils/regNumber";
 import * as XLSX from "xlsx";
 
 
@@ -89,6 +90,10 @@ const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId, onSuccess }) =
   const [error, setError] = useState<string | null>(null);
   const [importYear, setImportYear] = useState(ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1] || "");
   const [pendingCount, setPendingCount] = useState(0);
+  // Rows whose registration number is not canonical — the coordinator has to
+  // acknowledge these explicitly before they can be imported.
+  const [regFormatIssues, setRegFormatIssues] = useState<any[]>([]);
+  const [ackRegFormat, setAckRegFormat] = useState(false);
   const tableScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -208,6 +213,8 @@ const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId, onSuccess }) =
     try {
       const res = await memberService.validateImportData(jumuiyaId, fillJumuiya(members));
       setValidationResults(res.data);
+      setRegFormatIssues((res.data?.results || []).filter((r: any) => r.regFormatIssue));
+      setAckRegFormat(false);
     } catch (err: any) {
       setError(err?.response?.data?.error || err?.message || "Validation failed");
     }
@@ -223,6 +230,7 @@ const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId, onSuccess }) =
         season_id: seasonId,
         file_name: mode === "upload" ? "csv-upload" : "manual-entry",
         academic_year: importYear || undefined,
+        acknowledgeRegFormat: ackRegFormat,
       });
       setImportResult(res.data);
       setValidationResults(null);
@@ -245,6 +253,8 @@ const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId, onSuccess }) =
     setImportResult(null);
     setError(null);
     setPendingCount(0);
+    setRegFormatIssues([]);
+    setAckRegFormat(false);
   };
 
   return (
@@ -343,6 +353,12 @@ const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId, onSuccess }) =
                   <td className="py-2 px-3">
                     <input value={m.regNumber} onChange={(e) => handleMemberChange(i, "regNumber", e.target.value)} placeholder="CS01/A/2024/01"
                       className="w-32 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
+                    {m.regNumber?.trim() && !isCanonicalRegNumber(m.regNumber) && (
+                      <p className="text-[10px] font-semibold text-amber-600 mt-1 leading-tight">
+                        <AlertTriangle size={10} className="inline -mt-0.5 mr-1" />
+                        {suggestRegNumber(m.regNumber) || "check format"}
+                      </p>
+                    )}
                   </td>
                   <td className="py-2 px-3">
                     <select value={m.gender} onChange={(e) => handleMemberChange(i, "gender", e.target.value)}
@@ -378,6 +394,40 @@ const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId, onSuccess }) =
         All members will be assigned to <span className="font-semibold text-slate-700">{jumuiyaName}</span>
       </div>
 
+      {/* Registration-format acknowledgement gate */}
+      {regFormatIssues.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2.5">
+          <div className="flex items-start gap-2 text-sm font-semibold text-amber-800">
+            <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+            <span>
+              {regFormatIssues.length} registration number{regFormatIssues.length === 1 ? "" : "s"} do not match the
+              expected format (e.g. PA106/G/45673/23). A member admitted with one of these cannot log in.
+            </span>
+          </div>
+          <ul className="space-y-1">
+            {regFormatIssues.slice(0, 8).map((r: any) => (
+              <li key={r.row} className="text-xs font-mono text-amber-900 bg-white/70 border border-amber-100 rounded px-2 py-1.5">
+                Row {r.row}: {r.raw?.regNumber || r.regNumber || "—"}
+                {r.suggestion ? (
+                  <span className="text-emerald-700 font-semibold"> → {r.suggestion}</span>
+                ) : (
+                  <span className="text-amber-700"> — no automatic correction, verify against the student's ID</span>
+                )}
+              </li>
+            ))}
+          </ul>
+          <label className="flex items-start gap-2 text-xs font-semibold text-amber-900 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={ackRegFormat}
+              onChange={(e) => setAckRegFormat(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-400"
+            />
+            <span>I have checked every registration number above against the member's student ID.</span>
+          </label>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex gap-2 flex-wrap">
         {mode === "manual" && (
@@ -388,9 +438,19 @@ const MemberImportForm: React.FC<Props> = ({ jumuiyaId, seasonId, onSuccess }) =
         <button onClick={handleValidate} disabled={importing} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-lg transition-colors disabled:opacity-50">
           <CheckCircle size={14} /> Validate
         </button>
-        <button onClick={handleImport} disabled={importing || !validationResults || hasValidationErrors}
+        <button
+          onClick={handleImport}
+          disabled={importing || !validationResults || hasValidationErrors || (regFormatIssues.length > 0 && !ackRegFormat)}
           className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 rounded-lg transition-colors"
-          title={!validationResults ? "Run validation first" : hasValidationErrors ? "Fix validation errors before importing" : ""}>
+          title={
+            !validationResults
+              ? "Run validation first"
+              : hasValidationErrors
+              ? "Fix validation errors before importing"
+              : regFormatIssues.length > 0 && !ackRegFormat
+              ? "Confirm you have verified the flagged registration numbers"
+              : ""
+          }>
           {importing ? "Importing..." : "Import Members"}
         </button>
         <button onClick={resetForm} className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:border-slate-300 rounded-lg transition-colors">

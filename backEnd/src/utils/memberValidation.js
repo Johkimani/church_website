@@ -37,14 +37,72 @@ export const standardizeName = (name) => {
   return { cleaned: cleaned || null, warnings };
 };
 
-export const standardizeRegNumber = (regNumber) => {
-  if (!regNumber || typeof regNumber !== "string") return { cleaned: null, errors: ["Registration number is required"], warnings: [] };
-  let cleaned = regNumber.trim().toUpperCase();
+// F — fold unicode (paste from phones can bring 𝙋𝘼6𝙂…), drop zero-width/space
+// characters and stray closing punctuation, then upper-case. Mirrors
+// frontEnd/src/utils/regNumber.ts.
+export const sanitizeRegNumber = (regNumber) => {
+  if (!regNumber || typeof regNumber !== "string") return null;
+  let s = regNumber.normalize("NFKC");
+  s = s.replace(/[\u200B-\u200D\uFEFF\u00A0\u2028\u2029]/g, "");
+  s = s.replace(/[()]/g, "/").replace(/\/{2,}/g, "/");
+  s = s.replace(/\s+/g, "").toUpperCase();
+  s = s.replace(/[^\w/]+$/, "").replace(/^\W+/, "");
+  s = s.replace(/\/$/, "");
+  return s || null;
+};
+
+// A — produce a confident canonical correction for a non-conforming number.
+// Returns null when no single obvious repair exists (we never invent a year
+// or guess at a mangled prefix), so callers only ever offer a suggestion they
+// can stand behind. Mirrors frontEnd/src/utils/regNumber.ts.
+export const suggestRegNumber = (regNumber) => {
+  const base = sanitizeRegNumber(regNumber);
+  if (!base || REG_NUM_PATTERN.test(base)) return null;
+
+  let parts = base.split("/").filter(Boolean);
+  if (parts.length < 2) return null;
+
+  // "CT/100/G/15888/22" -> "CT100/G/15888/22" (stray slash after the code)
+  if (/^[A-Z]{1,3}$/.test(parts[0]) && /^\d{1,3}$/.test(parts[1])) {
+    parts = [parts[0] + parts[1], ...parts.slice(2)];
+  }
+
+  // "ED100/G27235/25" -> "ED100/G/27235/25" (missing slash after the segment)
+  if (parts.length >= 2) {
+    const glued = parts[1].match(/^([A-Z]{1,2})(\d{4,6})$/);
+    if (glued) parts = [parts[0], glued[1], glued[2], ...parts.slice(2)];
+  }
+
+  // "BE1O9/G/22321/24" -> "BE109/G/22321/24" (letter O typed for zero)
+  if (parts[0] && !/^[A-Z]+\d+$/.test(parts[0]) && /\dO/.test(parts[0])) {
+    const fixed = parts[0].replace(/(?<=[0-9])O/g, "0").replace(/(?<=[0-9O])O/g, "0");
+    if (/^[A-Z]+\d+$/.test(fixed)) parts[0] = fixed;
+  }
+
+  // THE bug we are fixing: "PA106/45673/23" -> "PA106/G/45673/23"
+  if (parts.length === 3 && /^[A-Z]+\d+$/.test(parts[0]) && /^\d{4,6}$/.test(parts[1]) && /^\d{2}$/.test(parts[2])) {
+    parts = [parts[0], "G", parts[1], parts[2]];
+  }
+
+  const candidate = parts.join("/");
+  return REG_NUM_PATTERN.test(candidate) && candidate !== base ? candidate : null;
+};
+
+// strict: true is used by the public self-registration forms, where a
+// malformed number must never reach the coordinator's queue. Admin/CSV import
+// keeps the historical lenient behaviour so existing custom formats still pass.
+export const standardizeRegNumber = (regNumber, options = {}) => {
+  const strict = options.strict === true;
+  const formatOk = false;
+  if (!regNumber || typeof regNumber !== "string") {
+    return { cleaned: null, errors: ["Registration number is required"], warnings: [], suggestion: null, formatOk };
+  }
+  const cleaned = sanitizeRegNumber(regNumber);
 
   // The last two digits encode the intake year. A year after the current
   // academic start year (e.g. "/27" while intake is "/26") is either a typo
   // or a future student — reject it outright.
-  const intakeMatch = cleaned.match(/(\d{2})\s*$/);
+  const intakeMatch = (cleaned || "").match(/(\d{2})$/);
   if (intakeMatch) {
     const admissionYear = 2000 + parseInt(intakeMatch[1], 10);
     if (admissionYear > academicStartYear()) {
@@ -52,25 +110,42 @@ export const standardizeRegNumber = (regNumber) => {
         cleaned: null,
         errors: [`Registration number "${cleaned}" has a future intake year (/${intakeMatch[1]}) — expected /${String(academicStartYear()).slice(-2)} or earlier`],
         warnings: [],
+        suggestion: null,
+        formatOk,
       };
     }
   }
 
   // 1. Known format → clean pass
-  if (REG_NUM_PATTERN.test(cleaned)) return { cleaned, errors: [], warnings: [] };
+  if (REG_NUM_PATTERN.test(cleaned)) return { cleaned, errors: [], warnings: [], suggestion: null, formatOk: true };
+
+  const suggestion = suggestRegNumber(cleaned);
+
+  if (strict) {
+    const hint = suggestion
+      ? ` Did you mean "${suggestion}"?`
+      : ` Expected the format PA106/G/45673/23 — include the middle /G/ segment.`;
+    return {
+      cleaned: null,
+      errors: [`Registration number "${cleaned}" is not in the correct format.${hint}`],
+      warnings: [],
+      suggestion,
+      formatOk,
+    };
+  }
 
   // 2. Loose format → warn but accept (admin knows it's valid)
   if (REG_NUM_LOOSE_PATTERN.test(cleaned)) {
-    return { cleaned, errors: [], warnings: [`Unrecognised format "${cleaned}" — stored as-is. It will be auto-recognised in future.`] };
+    return { cleaned, errors: [], warnings: [`Unrecognised format "${cleaned}" — stored as-is. It will be auto-recognised in future.`], suggestion, formatOk };
   }
 
   // 3. Has at least a slash and some content → suspect but accept with warning
   if (cleaned.includes("/") && cleaned.replace(/[\/]/g, "").length >= 3) {
-    return { cleaned, errors: [], warnings: [`Unusual format "${cleaned}" — please verify it is correct. It will be auto-recognised in future.`] };
+    return { cleaned, errors: [], warnings: [`Unusual format "${cleaned}" — please verify it is correct. It will be auto-recognised in future.`], suggestion, formatOk };
   }
 
   // 4. Garbage → error
-  return { cleaned: null, errors: [`Invalid registration number: "${cleaned}"`], warnings: [] };
+  return { cleaned: null, errors: [`Invalid registration number: "${cleaned}"`], warnings: [], suggestion, formatOk };
 };
 
 export const standardizeGender = (gender) => {
@@ -116,14 +191,17 @@ export const validateEmail = (email) => {
   return { cleaned, warnings: [] };
 };
 
-export const validateMemberRow = (row, defaultJumuiya = null) => {
+export const validateMemberRow = (row, defaultJumuiya = null, options = {}) => {
   const errors = [];
   const warnings = [];
 
   const nameResult = standardizeName(row.name || row.fullName || row.full_name);
   if (nameResult.warnings) warnings.push(...nameResult.warnings);
 
-  const regResult = standardizeRegNumber(row.registrationNumber || row.regNumber || row.reg_number || row.registration_number);
+  const regResult = standardizeRegNumber(
+    row.registrationNumber || row.regNumber || row.reg_number || row.registration_number,
+    options
+  );
   errors.push(...regResult.errors);
   warnings.push(...regResult.warnings);
 
@@ -168,6 +246,10 @@ export const validateMemberRow = (row, defaultJumuiya = null) => {
     status,
     errors,
     warnings,
+    // Whether the registration number already matches the canonical shape.
+    // Drives the public form's hard rejection and the coordinator's
+    // acknowledgement gate; `suggestion` is the confident correction.
+    regFormat: { ok: regResult.formatOk === true, suggestion: regResult.suggestion || null },
   };
 };
 

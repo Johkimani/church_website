@@ -1,6 +1,6 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
-import { validateMemberRow } from "../utils/memberValidation.js";
+import { validateMemberRow, suggestRegNumber } from "../utils/memberValidation.js";
 import { syncNewImportRecords } from "../services/importSyncJob.js";
 
 /**
@@ -13,6 +13,12 @@ export const checkDuplicateJoin = async (req, res) => {
     const cleanReg = (regNumber || "").trim().toUpperCase();
     const cleanEmail = (email || "").trim().toLowerCase();
 
+    const normKey = (s) => String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const normReg = normKey(cleanReg);
+    const normSug = normKey(suggestRegNumber(cleanReg) || cleanReg);
+    const regMatch = `REGEXP_REPLACE(UPPER(m.member_id), '[^A-Z0-9]', '', 'g')`;
+    const impMatch = `REGEXP_REPLACE(UPPER(ir.cleaned_reg_number), '[^A-Z0-9]', '', 'g')`;
+
     if (!cleanReg && !cleanEmail) {
       return res.status(400).json({ success: false, message: "Registration number or email is required" });
     }
@@ -23,8 +29,11 @@ export const checkDuplicateJoin = async (req, res) => {
         `SELECT m.member_id, m.first_name, m.last_name, sg.name as jumuiya_name
          FROM members m
          LEFT JOIN sub_groups sg ON sg.group_id = m.jumuiya_id
-         WHERE m.member_id = $1 LIMIT 1`,
-        [cleanReg]
+         WHERE m.member_id = $1
+            OR ${regMatch} = $2
+            OR ${regMatch} = $3
+         LIMIT 1`,
+        [cleanReg, normReg, normSug]
       );
       if (memRes.rows.length > 0) {
         const row = memRes.rows[0];
@@ -64,9 +73,12 @@ export const checkDuplicateJoin = async (req, res) => {
         `SELECT ir.cleaned_reg_number, ir.cleaned_jumuiya, ir.status
          FROM import_records ir
          JOIN member_imports mi ON mi.id = ir.import_id
-         WHERE ir.cleaned_reg_number = $1 AND ir.status IN ('valid', 'warning', 'pending')
+         WHERE (ir.cleaned_reg_number = $1
+            OR ${impMatch} = $2
+            OR ${impMatch} = $3)
+           AND ir.status IN ('valid', 'warning', 'pending')
          LIMIT 1`,
-        [cleanReg]
+        [cleanReg, normReg, normSug]
       );
       if (impRegRes.rows.length > 0) {
         const row = impRegRes.rows[0];
@@ -161,7 +173,8 @@ export const publicJoinSubmit = async (req, res) => {
       return res.status(400).json({ success: false, error: "Course / Programme is required." });
     }
 
-    // 2. Validate member row format via existing validation utils
+    // 2. Validate member row format via existing validation utils.
+    // strict: a public self-registration must arrive in canonical shape.
     const validated = validateMemberRow(
       {
         name: rawName,
@@ -171,7 +184,8 @@ export const publicJoinSubmit = async (req, res) => {
         email: rawEmail || "N/A",
         phone: rawPhone,
       },
-      null
+      null,
+      { strict: true }
     );
 
     if (validated.errors && validated.errors.length > 0) {
@@ -179,6 +193,8 @@ export const publicJoinSubmit = async (req, res) => {
         success: false,
         error: validated.errors.join("; "),
         details: validated.errors,
+        suggestion: validated.regFormat?.suggestion || null,
+        field: validated.regFormat?.suggestion ? "regNumber" : undefined,
       });
     }
 
@@ -188,13 +204,18 @@ export const publicJoinSubmit = async (req, res) => {
     const cleanPhone = validated.cleaned.phone || rawPhone;
     const cleanEmail = validated.cleaned.email || rawEmail || null;
 
+    const normKey = (s) => String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const normReg = normKey(cleanReg);
+    const regMatch = `REGEXP_REPLACE(UPPER(m.member_id), '[^A-Z0-9]', '', 'g')`;
+    const impMatch = `REGEXP_REPLACE(UPPER(ir.cleaned_reg_number), '[^A-Z0-9]', '', 'g')`;
+
     // 3. Duplicate checks
     // Check Reg Number in members
     const dupRegMem = await pool.query(
       `SELECT m.member_id, sg.name as jumuiya_name FROM members m
        LEFT JOIN sub_groups sg ON sg.group_id = m.jumuiya_id
-       WHERE m.member_id = $1 LIMIT 1`,
-      [cleanReg]
+       WHERE m.member_id = $1 OR ${regMatch} = $2 LIMIT 1`,
+      [cleanReg, normReg]
     );
     if (dupRegMem.rows.length > 0) {
       const existingJum = dupRegMem.rows[0].jumuiya_name || "a Jumuiya";
@@ -227,9 +248,10 @@ export const publicJoinSubmit = async (req, res) => {
     const dupRegImp = await pool.query(
       `SELECT ir.cleaned_reg_number FROM import_records ir
        JOIN member_imports mi ON mi.id = ir.import_id
-       WHERE ir.cleaned_reg_number = $1 AND ir.status IN ('valid', 'warning', 'pending')
+       WHERE (ir.cleaned_reg_number = $1 OR ${impMatch} = $2)
+         AND ir.status IN ('valid', 'warning', 'pending')
        LIMIT 1`,
-      [cleanReg]
+      [cleanReg, normReg]
     );
     if (dupRegImp.rows.length > 0) {
       return res.status(409).json({
