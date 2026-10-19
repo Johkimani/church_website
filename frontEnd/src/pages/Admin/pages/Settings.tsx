@@ -825,8 +825,13 @@ function ActiveRolesPanel({ activeTab }: { activeTab: TabKey }) {
 
   const filtered = active.filter((a) => roleBelongsToTab(a.role_name, activeTab));
 
-  if (loading) return null;
-  if (filtered.length === 0) return null;
+  if (loading) {
+    return (
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 text-center text-slate-400 text-sm font-medium">
+        Loading active role assignments…
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
@@ -842,6 +847,17 @@ function ActiveRolesPanel({ activeTab }: { activeTab: TabKey }) {
           Officials with approved access. You can revoke access at any time.
         </p>
       </div>
+      {filtered.length === 0 ? (
+        <div className="p-10 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="p-5 bg-emerald-50 rounded-full">
+              <Shield className="w-8 h-8 text-emerald-500" />
+            </div>
+            <p className="text-slate-600 text-sm font-bold">No approved officials in this category yet</p>
+            <p className="text-slate-400 text-xs">Approved officials appear here — you can revoke their access at any time.</p>
+          </div>
+        </div>
+      ) : (
       <div className="overflow-x-auto">
         <table className="w-full min-w-[980px] text-left border-collapse table-fixed">
           <thead>
@@ -919,6 +935,7 @@ function ActiveRolesPanel({ activeTab }: { activeTab: TabKey }) {
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }
@@ -974,8 +991,13 @@ function RevokedRolesPanel({ activeTab }: { activeTab: TabKey }) {
 
   const filteredRevoked = revoked.filter((a) => roleBelongsToTab(a.role_name, activeTab));
 
-  if (loading) return null;
-  if (filteredRevoked.length === 0) return null;
+  if (loading) {
+    return (
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 text-center text-slate-400 text-sm font-medium">
+        Loading revoked role assignments…
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
@@ -1002,7 +1024,12 @@ function RevokedRolesPanel({ activeTab }: { activeTab: TabKey }) {
           Officials whose access was revoked. Reactivate to restore or delete permanently.
         </p>
       </button>
-      {expanded && (
+      {expanded && filteredRevoked.length === 0 && (
+        <div className="p-8 text-center text-slate-400 text-sm font-medium">
+          No revoked officials in this category.
+        </div>
+      )}
+      {expanded && filteredRevoked.length > 0 && (
         <table className="w-full text-left border-collapse table-fixed">
           <thead>
             <tr className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">

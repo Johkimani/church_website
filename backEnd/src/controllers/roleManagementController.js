@@ -21,14 +21,21 @@ const rejectIfNotAdmin = (req, res) => {
 };
 
 let _lastSyncTimestamp = 0;
+let _syncInFlight = false;
 const SYNC_COOLDOWN_MS = 60_000;
 
+/**
+ * Reconciles the officials tables into member_roles. It walks every active
+ * official with several queries each, so against a remote database a single
+ * pass can take well over a minute — it must never run inline inside a
+ * request handler. Use kickOffRoleSync() to trigger it without blocking.
+ */
 export const syncPendingOfficialsToRoles = async () => {
+  if (_syncInFlight || Date.now() - _lastSyncTimestamp < SYNC_COOLDOWN_MS) return;
+  _syncInFlight = true;
+  _lastSyncTimestamp = Date.now();
+  const startedAt = Date.now();
   try {
-    const now = Date.now();
-    if (now - _lastSyncTimestamp < SYNC_COOLDOWN_MS) return;
-    _lastSyncTimestamp = now;
-
     const officials = await pool.query(`
       SELECT jo.id, jo.name, jo.category, jo.position, jo.contact, jo.reg_number
       FROM jumuiya_officials jo
@@ -287,6 +294,37 @@ export const syncPendingOfficialsToRoles = async () => {
     }
   } catch (err) {
     logger.error("syncPendingOfficialsToRoles error: " + err.message);
+  } finally {
+    _syncInFlight = false;
+    logger.info(
+      `syncPendingOfficialsToRoles finished in ${((Date.now() - startedAt) / 1000).toFixed(1)}s`
+    );
+  }
+};
+
+/** Fire-and-forget wrapper: triggers a sync pass without ever blocking the caller. */
+export const kickOffRoleSync = () => {
+  syncPendingOfficialsToRoles().catch((err) =>
+    logger.warn(`kickOffRoleSync error: ${err?.message || err}`)
+  );
+};
+
+let _roleSyncInterval = null;
+const ROLE_SYNC_INTERVAL_MS = Number(process.env.ROLE_SYNC_INTERVAL_MS) || 10 * 60_000;
+
+/** Periodically reconciles officials into member_roles in the background. */
+export const startRoleSyncWorker = () => {
+  if (_roleSyncInterval) return;
+  logger.info(`Role sync worker started (every ${Math.round(ROLE_SYNC_INTERVAL_MS / 60_000)} min)`);
+  setTimeout(kickOffRoleSync, 20_000);
+  _roleSyncInterval = setInterval(kickOffRoleSync, ROLE_SYNC_INTERVAL_MS);
+};
+
+export const stopRoleSyncWorker = () => {
+  if (_roleSyncInterval) {
+    clearInterval(_roleSyncInterval);
+    _roleSyncInterval = null;
+    logger.info("Role sync worker stopped");
   }
 };
 
@@ -304,7 +342,9 @@ export const listRoles = async (req, res) => {
 
 export const listAssignments = async (req, res) => {
   try {
-    await syncPendingOfficialsToRoles();
+    // Heavy officials→roles reconciliation runs in the background; it must
+    // never block this response (it can take >1min against a remote DB).
+    kickOffRoleSync();
 
     const { status, jumuiya_id } = req.query;
     let query = `

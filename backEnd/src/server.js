@@ -25,6 +25,7 @@ import { importRecordsCourseMigration } from "./migrations/importRecordsCourse.j
 import { backfillSemRegMigration } from "./migrations/backfillSemReg.js";
 import { startKeepAliveWorker } from "./services/keep-alive.js";
 import { startImportSyncWorker } from "./services/importSyncJob.js";
+import { startRoleSyncWorker } from "./controllers/roleManagementController.js";
 import questionsMigration from "./migrations/questionsMigration.js";
 import publishStatsMigration from "./migrations/publishStatsMigration.js";
 import weeklyChallengeMigration from "./migrations/weeklyChallengeMigration.js";
@@ -258,6 +259,7 @@ const initServer = async () => {
     }
 
     startImportSyncWorker();
+    startRoleSyncWorker();
   } catch (error) {
     releaseLock();
     logger.error(`Failed to start server: ${error?.message || error}`);
