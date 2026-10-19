@@ -1,6 +1,6 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
-import { validateMemberRow, suggestRegNumber } from "../utils/memberValidation.js";
+import { validateMemberRow, suggestRegNumber, validateEmailFormat, emailFormatError } from "../utils/memberValidation.js";
 import { syncNewImportRecords } from "../services/importSyncJob.js";
 
 /**
@@ -172,6 +172,10 @@ export const publicJoinSubmit = async (req, res) => {
     if (!rawCourse) {
       return res.status(400).json({ success: false, error: "Course / Programme is required." });
     }
+    // Optional here, but if one is supplied it has to be a real address.
+    if (rawEmail && !validateEmailFormat(rawEmail)) {
+      return res.status(400).json({ success: false, error: emailFormatError(rawEmail), field: "email" });
+    }
 
     // 2. Validate member row format via existing validation utils.
     // strict: a public self-registration must arrive in canonical shape.
@@ -194,7 +198,7 @@ export const publicJoinSubmit = async (req, res) => {
         error: validated.errors.join("; "),
         details: validated.errors,
         suggestion: validated.regFormat?.suggestion || null,
-        field: validated.regFormat?.suggestion ? "regNumber" : undefined,
+        field: validated.regFormat && validated.regFormat.ok === false ? "regNumber" : undefined,
       });
     }
 

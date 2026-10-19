@@ -1,6 +1,6 @@
 import { db as pool } from "../Configs/dbConfig.js";
 import logger from "../logger/winston.js";
-import { validateMemberRow, suggestRegNumber } from "../utils/memberValidation.js";
+import { validateMemberRow, suggestRegNumber, validateEmailFormat, emailFormatError } from "../utils/memberValidation.js";
 import { syncNewImportRecords } from "../services/importSyncJob.js";
 
 // Canonical 7 Jumuiyas mapping
@@ -325,6 +325,9 @@ export const selfRegisterMember = async (req, res) => {
     if (!rawEmail) {
       return res.status(400).json({ success: false, error: "Email is required." });
     }
+    if (!validateEmailFormat(rawEmail)) {
+      return res.status(400).json({ success: false, error: emailFormatError(rawEmail), field: "email" });
+    }
     if (!rawPhone) {
       return res.status(400).json({ success: false, error: "Phone Number is required." });
     }
@@ -371,7 +374,7 @@ export const selfRegisterMember = async (req, res) => {
         error: validated.errors.join("; "),
         details: validated.errors,
         suggestion: validated.regFormat?.suggestion || null,
-        field: validated.regFormat?.suggestion ? "regNumber" : undefined,
+        field: validated.regFormat && validated.regFormat.ok === false ? "regNumber" : undefined,
       });
     }
 

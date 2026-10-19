@@ -103,6 +103,10 @@ const JUMUIYA_FALLBACKS: Record<
   },
 };
 
+// Requires a real top-level domain of at least 2 letters, so an unfinished
+// address like "francis@gmail" or "francis@gmail.c" is caught immediately.
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/;
+
 export default function JumuiyaSelfRegister() {
   const { jumuiya_slug } = useParams<{ jumuiya_slug: string }>();
   const slug = (jumuiya_slug || "").toLowerCase().trim();
@@ -146,6 +150,10 @@ export default function JumuiyaSelfRegister() {
   const [checkingDup, setCheckingDup] = useState(false);
   // Live "did you mean …" for a registration number that is close but malformed
   const [regSuggestion, setRegSuggestion] = useState<string | null>(null);
+  // The correction chip is revealed when the user leaves the field (or after a
+  // failed submit), so it lands at the moment they asked for it — moving on to
+  // the next field — instead of interrupting them mid-typing.
+  const [regFocused, setRegFocused] = useState(false);
 
   // Submission State
   const [submitting, setSubmitting] = useState(false);
@@ -212,6 +220,12 @@ export default function JumuiyaSelfRegister() {
     return () => clearTimeout(timer);
   }, [formData.regNumber, formData.email]);
 
+  const emailError = (value: string, required: boolean): string => {
+    const mail = value.trim();
+    if (!mail) return required ? "Email address is required" : "";
+    return EMAIL_REGEX.test(mail) ? "" : "Please enter a valid email address (e.g. name@gmail.com)";
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     let finalVal = value;
@@ -222,6 +236,12 @@ export default function JumuiyaSelfRegister() {
     setFormData((prev) => ({ ...prev, [name]: finalVal }));
     setFieldErrors((prev) => ({ ...prev, [name]: "" }));
     setSubmitError(null);
+
+    // Flag a broken address while they type instead of waiting for submit.
+    if (name === "email" && value.trim()) {
+      const emailMsg = emailError(value, true);
+      if (emailMsg) setFieldErrors((prev) => ({ ...prev, email: emailMsg }));
+    }
 
     // Clear duplicate warning for that field when user types
     if (name === "regNumber") {
@@ -257,12 +277,8 @@ export default function JumuiyaSelfRegister() {
       errors.gender = "Please select your gender";
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!formData.email.trim()) {
-      errors.email = "Email address is required";
-    } else if (!emailRegex.test(formData.email.trim())) {
-      errors.email = "Please enter a valid email format";
-    }
+    const emailMsg = emailError(formData.email, true);
+    if (emailMsg) errors.email = emailMsg;
 
     const cleanPhone = formData.phone.replace(/[\s\-\(\)]/g, "");
     if (!formData.phone.trim()) {
@@ -333,10 +349,16 @@ export default function JumuiyaSelfRegister() {
         err?.response?.data?.message ||
         err?.message ||
         "Failed to complete registration. Please try again.";
-      setSubmitError(errorMsg);
-      // The server may know a correction the local check did not.
+      // The server may know a correction the local check did not. The chip
+      // offers the fix, so don't repeat it inside the error text as well.
       const serverSuggestion = err?.response?.data?.suggestion;
+      const serverField = err?.response?.data?.field;
+      const displayMsg = serverSuggestion
+        ? errorMsg.replace(/\s*Did you mean ["“][^"”]+["”]\?/i, "").trim()
+        : errorMsg;
       if (serverSuggestion) setRegSuggestion(serverSuggestion);
+      if (serverField) setFieldErrors((prev) => ({ ...prev, [serverField]: displayMsg }));
+      else setSubmitError(displayMsg);
       setCaptchaResetSignal((s) => s + 1);
     } finally {
       setSubmitting(false);
@@ -573,6 +595,11 @@ export default function JumuiyaSelfRegister() {
                   name="regNumber"
                   value={formData.regNumber}
                   onChange={handleChange}
+                  onFocus={() => setRegFocused(true)}
+                  onBlur={(e) => {
+                    setRegFocused(false);
+                    setRegSuggestion(suggestRegNumber(e.currentTarget.value));
+                  }}
                   placeholder="e.g. PA106/G/12345/23"
                   className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl text-sm font-mono uppercase text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none transition-all ${
                     fieldErrors.regNumber || duplicateStatus.regNumber?.isDup
@@ -581,26 +608,26 @@ export default function JumuiyaSelfRegister() {
                   }`}
                 />
               </div>
-              {regSuggestion && (
-                <div className="mt-1.5 flex items-center gap-2 rounded-lg bg-indigo-50 border border-indigo-200 px-3 py-2">
+              {regSuggestion && (!regFocused || !!fieldErrors.regNumber || !!submitError) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData((prev) => ({ ...prev, regNumber: regSuggestion }));
+                    setRegSuggestion(null);
+                    setFieldErrors((prev) => ({ ...prev, regNumber: "" }));
+                    setDuplicateStatus((prev) => ({ ...prev, regNumber: undefined }));
+                  }}
+                  className="mt-1.5 w-full flex items-center gap-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 border border-indigo-200 px-3 py-2 text-left cursor-pointer transition-colors"
+                  title={`Use ${regSuggestion} instead`}
+                >
                   <AlertCircle size={13} className="text-indigo-500 shrink-0" />
                   <span className="text-[11px] text-indigo-700 font-medium min-w-0">
                     Did you mean <span className="font-mono font-bold">{regSuggestion}</span>?
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData((prev) => ({ ...prev, regNumber: regSuggestion }));
-                      setRegSuggestion(null);
-                      setFieldErrors((prev) => ({ ...prev, regNumber: "" }));
-                      setDuplicateStatus((prev) => ({ ...prev, regNumber: undefined }));
-                    }}
-                    className="ml-auto shrink-0 text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md px-2.5 py-1 transition-colors"
-                    title="Use the corrected registration number"
-                  >
+                  <span className="ml-auto shrink-0 text-[11px] font-bold text-white bg-indigo-600 rounded-md px-2.5 py-1">
                     Use it
-                  </button>
-                </div>
+                  </span>
+                </button>
               )}
               {fieldErrors.regNumber && <p className="text-[11px] text-red-500 mt-1">{fieldErrors.regNumber}</p>}
               {duplicateStatus.regNumber?.isDup && (
@@ -660,6 +687,9 @@ export default function JumuiyaSelfRegister() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
+                  onBlur={() =>
+                    setFieldErrors((prev) => ({ ...prev, email: emailError(formData.email, true) }))
+                  }
                   placeholder="e.g. francis.mutua@example.com"
                   className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none transition-all ${
                     fieldErrors.email || duplicateStatus.email?.isDup

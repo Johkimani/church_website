@@ -16,6 +16,17 @@ const REG_NUM_PATTERN = /^[A-Za-z]+\d+\/[A-Za-z]+\/\d+\/\d{2}$/;
 // Very loose — any alphanumeric with at least one slash, so admins can enter custom formats
 const REG_NUM_LOOSE_PATTERN = /^[A-Za-z0-9\/.\-_]+\/\d{2}$/;
 
+// A real address: something@domain.tld with a top-level domain of at least two
+// letters, so "francis@gmail" or an unfinished "francis@gmail.c" is rejected
+// instead of stored. Mirrors EMAIL_REGEX in the public registration forms.
+export const EMAIL_FORMAT_PATTERN = /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/;
+
+export const validateEmailFormat = (email) =>
+  EMAIL_FORMAT_PATTERN.test(String(email || "").trim());
+
+export const emailFormatError = (email) =>
+  `Email address "${String(email || "").trim()}" is not valid \u2014 expected an address like name@gmail.com.`;
+
 const JUMUIYA_ALIASES = {
   "anthony": "St. Anthony", "st anthony": "St. Anthony", "st. anthony": "St. Anthony", "st-anthony": "St. Anthony",
   "augustine": "St. Augustine", "st augustine": "St. Augustine", "st. augustine": "St. Augustine", "st-augustine": "St. Augustine",

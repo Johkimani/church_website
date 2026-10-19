@@ -66,6 +66,10 @@ const COMMUNITY_OPTIONS = [
   },
 ] as const;
 
+// Requires a real top-level domain of at least 2 letters, so an unfinished
+// address like "francis@gmail" or "francis@gmail.c" is caught immediately.
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/;
+
 export default function PublicJoin() {
   const [formData, setFormData] = useState({
     name: "",
@@ -88,6 +92,10 @@ export default function PublicJoin() {
   const [checkingDup, setCheckingDup] = useState(false);
   // Live "did you mean …" for a registration number that is close but malformed
   const [regSuggestion, setRegSuggestion] = useState<string | null>(null);
+  // The correction chip is revealed when the user leaves the field (or after a
+  // failed submit), so it lands at the moment they asked for it — moving on to
+  // the next field — instead of interrupting them mid-typing.
+  const [regFocused, setRegFocused] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -162,6 +170,12 @@ export default function PublicJoin() {
     return () => clearTimeout(timer);
   }, [formData.regNumber, formData.email]);
 
+  const emailError = (value: string, required: boolean): string => {
+    const mail = value.trim();
+    if (!mail) return required ? "Email address is required" : "";
+    return EMAIL_REGEX.test(mail) ? "" : "Please enter a valid email address (e.g. name@gmail.com)";
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -174,7 +188,12 @@ export default function PublicJoin() {
       setDuplicateStatus((prev) => ({ ...prev, regNumber: undefined }));
       setRegSuggestion(suggestRegNumber(value));
     }
-    if (name === "email") setDuplicateStatus((prev) => ({ ...prev, email: undefined }));
+    if (name === "email") {
+      setDuplicateStatus((prev) => ({ ...prev, email: undefined }));
+      // Email is optional here, but if one is being typed it has to be real.
+      const emailMsg = emailError(value, false);
+      if (emailMsg) setFieldErrors((prev) => ({ ...prev, email: emailMsg }));
+    }
   };
 
   const validateForm = (): boolean => {
@@ -199,10 +218,8 @@ export default function PublicJoin() {
     }
 
     if (formData.email.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email.trim())) {
-        errors.email = "Please enter a valid email address";
-      }
+      const emailMsg = emailError(formData.email, false);
+      if (emailMsg) errors.email = emailMsg;
     }
 
     const cleanPhone = formData.phone.replace(/[\s\-()]/g, "");
@@ -268,10 +285,16 @@ export default function PublicJoin() {
         err?.response?.data?.message ||
         err?.message ||
         "Failed to submit. Please try again.";
-      setSubmitError(errorMsg);
-      // The server may know a correction the local check did not.
+      // The server may know a correction the local check did not. The chip
+      // offers the fix, so don't repeat it inside the error text as well.
       const serverSuggestion = err?.response?.data?.suggestion;
+      const serverField = err?.response?.data?.field;
+      const displayMsg = serverSuggestion
+        ? errorMsg.replace(/\s*Did you mean ["“][^"”]+["”]\?/i, "").trim()
+        : errorMsg;
       if (serverSuggestion) setRegSuggestion(serverSuggestion);
+      if (serverField) setFieldErrors((prev) => ({ ...prev, [serverField]: displayMsg }));
+      else setSubmitError(displayMsg);
       setCaptchaResetSignal((s) => s + 1);
     } finally {
       setSubmitting(false);
@@ -698,6 +721,11 @@ export default function PublicJoin() {
                 name="regNumber"
                 value={formData.regNumber}
                 onChange={handleChange}
+                onFocus={() => setRegFocused(true)}
+                onBlur={(e) => {
+                  setRegFocused(false);
+                  setRegSuggestion(suggestRegNumber(e.currentTarget.value));
+                }}
                 placeholder="e.g. CT102/A/2025/01"
                 className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl text-sm font-mono uppercase text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none transition-all ${
                   fieldErrors.regNumber || duplicateStatus.regNumber?.isDup
@@ -706,26 +734,26 @@ export default function PublicJoin() {
                 }`}
               />
             </div>
-            {regSuggestion && (
-              <div className="mt-1.5 flex items-center gap-2 rounded-lg bg-indigo-50 border border-indigo-200 px-3 py-2">
+            {regSuggestion && (!regFocused || !!fieldErrors.regNumber || !!submitError) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData((prev) => ({ ...prev, regNumber: regSuggestion }));
+                  setRegSuggestion(null);
+                  setFieldErrors((prev) => ({ ...prev, regNumber: "" }));
+                  setDuplicateStatus((prev) => ({ ...prev, regNumber: undefined }));
+                }}
+                className="mt-1.5 w-full flex items-center gap-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 border border-indigo-200 px-3 py-2 text-left cursor-pointer transition-colors"
+                title={`Use ${regSuggestion} instead`}
+              >
                 <AlertCircle size={13} className="text-indigo-500 shrink-0" />
                 <span className="text-[11px] text-indigo-700 font-medium min-w-0">
                   Did you mean <span className="font-mono font-bold">{regSuggestion}</span>?
                 </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFormData((prev) => ({ ...prev, regNumber: regSuggestion }));
-                    setRegSuggestion(null);
-                    setFieldErrors((prev) => ({ ...prev, regNumber: "" }));
-                    setDuplicateStatus((prev) => ({ ...prev, regNumber: undefined }));
-                  }}
-                  className="ml-auto shrink-0 text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md px-2.5 py-1 transition-colors"
-                  title="Use the corrected registration number"
-                >
+                <span className="ml-auto shrink-0 text-[11px] font-bold text-white bg-indigo-600 rounded-md px-2.5 py-1">
                   Use it
-                </button>
-              </div>
+                </span>
+              </button>
             )}
             {fieldErrors.regNumber && (
               <p className="text-[11px] text-red-500 mt-1">{fieldErrors.regNumber}</p>
@@ -789,6 +817,9 @@ export default function PublicJoin() {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
+                onBlur={() =>
+                  setFieldErrors((prev) => ({ ...prev, email: emailError(formData.email, false) }))
+                }
                 placeholder="e.g. francis@example.com"
                 className={`w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none transition-all ${
                   fieldErrors.email || duplicateStatus.email?.isDup
