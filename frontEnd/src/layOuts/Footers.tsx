@@ -2,11 +2,13 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { footerSections, footerSocialMedia } from "./footerRoutes";
 import DeveloperModal from "./DeveloperModal";
+import { useAuth } from "../context/AuthContext";
 
 const Footers = () => {
   const currentYear = new Date().getFullYear();
   const [hoveredSocial, setHoveredSocial] = useState<number | null>(null);
   const [devModalOpen, setDevModalOpen] = useState(false);
+  const { user } = useAuth();
 
   return (
     <footer style={{ backgroundColor: "#111827", color: "#D1D5DB", padding: "80px 24px 40px" }}>
@@ -32,7 +34,9 @@ const Footers = () => {
               {section.title}
             </h3>
             <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16 }}>
-              {section.routes.map((route, rIdx) => (
+              {section.routes
+                .filter((route) => !route.authRequired || user)
+                .map((route, rIdx) => (
                 <li key={rIdx}>
                   <Link 
                     to={route.path} 

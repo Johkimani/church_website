@@ -10,6 +10,7 @@ export const footerSocialMedia = [
 export interface FooterRoute {
   label: string;
   path: string;
+  authRequired?: boolean; // if true, only shown when user is logged in
 }
 
 export interface FooterSection {
@@ -23,7 +24,7 @@ export const footerSections: FooterSection[] = [
     title: "Institutional",
     hoverColor: "hover:text-blue-600",
     routes: [
-      { label: "Constitution", path: "/constitution" },
+      { label: "Constitution", path: "/constitution", authRequired: true },
       { label: "Officials", path: "/officials" },
       { label: "Leadership History", path: "/officials/history" },
       { label: "Jumuiya", path: "/jumuiya" },
