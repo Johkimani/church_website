@@ -6,6 +6,7 @@ const chunkLoaders: Record<string, RouteLoader> = {
   "/community": () => import("../pages/sacramental/Community"),
   "/jumuiya": () => import("../pages/Jumuiya/JumuiyaLanding"),
   "/officials": () => import("../pages/officials/PublicView"),
+  "/constitution": () => import("../pages/Constitution/ConstitutionPage"),
   "/projects": () => import("../pages/projects/pages/Home"),
   "/devotions": () => import("../pages/Devotions/components/Layout"),
   "/activities": () => import("../pages/Landing/components/page/ActivitiesPage"),

@@ -23,6 +23,7 @@ export const footerSections: FooterSection[] = [
     title: "Institutional",
     hoverColor: "hover:text-blue-600",
     routes: [
+      { label: "Constitution", path: "/constitution" },
       { label: "Officials", path: "/officials" },
       { label: "Leadership History", path: "/officials/history" },
       { label: "Jumuiya", path: "/jumuiya" },

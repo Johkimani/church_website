@@ -79,6 +79,9 @@ const ReparationPage = lazy(() => import("./pages/Devotions/pages/ReparationPage
 const AdminPanel = lazy(() => import("./pages/officials/AdminPanel"));
 const PublicHistoryView = lazy(() => import("./pages/officials/PublicHistoryView"));
 
+// Constitution
+const ConstitutionPage = lazy(() => import("./pages/Constitution/ConstitutionPage"));
+
 // Jumuiya
 const JumuiyaLanding = lazy(() => import("./pages/Jumuiya/JumuiyaLanding"));
 const JumuiyaDetail = lazy(() => import("./pages/Jumuiya/JumuiyaDetail"));
@@ -233,6 +236,7 @@ const App: React.FC = () => {
             <Route path="officials" element={<PublicView />} />
             <Route path="officials/:id" element={<OfficialProfile />} />
             <Route path="officials/history" element={<PublicHistoryView />} />
+            <Route path="constitution" element={<ProtectedRoute><ConstitutionPage /></ProtectedRoute>} />
 
             {/* Standalone Landing Pages */}
             <Route path="gallery" element={<GalleryPage />} />

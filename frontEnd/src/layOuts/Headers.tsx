@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import { useApp } from "../context/AppContext";
 import { useMobileNav } from "../context/MobileNavContext";
-import { FaBell, FaShoppingCart } from "react-icons/fa";
+import { FaBell, FaShoppingCart, FaBook } from "react-icons/fa";
 import { publicNavLinks, authNavLinks } from "./headerRoutes";
 import { prefetchRoute } from "./routePrefetch";
 import AdminPanel from "../pages/Landing/components/AdminPanel";
@@ -152,7 +152,14 @@ const Headers = () => {
                           : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                       }`}
                     >
-                      {link.name}
+                      {link.path === "/constitution" ? (
+                        <span className="flex items-center gap-1.5" title="Constitution" aria-label="Constitution">
+                          <FaBook className="text-base" />
+                          <span className="sr-only">Constitution</span>
+                        </span>
+                      ) : (
+                        link.name
+                      )}
                       {active && (
                         <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-0.5 bg-blue-600 rounded-full" />
                       )}

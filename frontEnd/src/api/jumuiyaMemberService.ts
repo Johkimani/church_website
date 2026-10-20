@@ -46,7 +46,7 @@ export const memberService = {
   deleteSeason: (jumuiyaId: string, id: number) =>
     apiClient.delete(`${BASE(jumuiyaId)}/seasons/${id}`).then(r => r.data),
 
-  importMembers: (jumuiyaId: string, data: { members: any[]; season_id?: number; file_name?: string; academic_year?: string }) =>
+  importMembers: (jumuiyaId: string, data: { members: any[]; season_id?: number; file_name?: string; academic_year?: string; acknowledgeRegFormat?: boolean }) =>
     apiClient.post(`${BASE(jumuiyaId)}/import-members`, data).then(r => r.data),
 
   getImports: (jumuiyaId: string) =>
