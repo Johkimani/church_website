@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   FaChurch,
   FaBookOpen,
@@ -13,7 +13,6 @@ import {
   FaShareAlt,
   FaCheckCircle,
   FaExclamationTriangle,
-  FaUsers,
 } from "react-icons/fa";
 import {
   jumuiyaList,
@@ -22,10 +21,39 @@ import {
   JumuiyaPageContent,
 } from "../data/jumuiyaConstitutionData";
 import { useSwipeNavigation } from "../hooks/useSwipeNavigation";
+import { useAuth } from "../../../context/AuthContext";
 
 export const JumuiyaConstitutionView: React.FC = () => {
-  // Selected Jumuiya (Defaults to Saint Augustine as it has the uploaded booklet)
-  const [selectedJumuiyaId, setSelectedJumuiyaId] = useState<string>("st-augustine");
+  const { user } = useAuth();
+
+  // Resolve the logged-in member's Jumuiya
+  const userJumuiya = useMemo<JumuiyaMetadata | null>(() => {
+    if (!user?.jumuiya_id) return null;
+    const userJid = String(user.jumuiya_id).trim().toLowerCase();
+    // Try direct id match first (e.g. st-augustine)
+    const byId = jumuiyaList.find((j) => j.id.toLowerCase() === userJid);
+    if (byId) return byId;
+    // Fallback: match by name containing the jumuiya name
+    const byName = jumuiyaList.find((j) => {
+      const name = j.name.toLowerCase();
+      const patron = j.patron.toLowerCase();
+      return name.includes(userJid) || patron.includes(userJid) || userJid.includes(name.replace("saint ", ""));
+    });
+    return byName || null;
+  }, [user?.jumuiya_id]);
+
+  // Selected Jumuiya (locked to the member's own Jumuiya)
+  const [selectedJumuiyaId, setSelectedJumuiyaId] = useState<string>(
+    userJumuiya?.id || jumuiyaList[0]?.id || "st-augustine"
+  );
+
+  // Keep in sync if user data loads/changes
+  useEffect(() => {
+    if (userJumuiya?.id && userJumuiya.id !== selectedJumuiyaId) {
+      setSelectedJumuiyaId(userJumuiya.id);
+      setCurrentPage(1);
+    }
+  }, [userJumuiya?.id]);
 
   // Page state (1 to 15)
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -132,76 +160,30 @@ export const JumuiyaConstitutionView: React.FC = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end gap-3 shrink-0">
-            {hasPdf ? (
-              <a
-                href={activeJumuiya.pdfUrl}
-                download={`Kirinyaga_University_CSA_Jumuiya_Booklet_${activeJumuiya.name.replace(/ /g, "_")}.pdf`}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95"
-              >
-                <FaDownload className="text-xs" />
-                Download {activeJumuiya.name} Booklet PDF
-              </a>
-            ) : (
-              <span className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-700/50 text-slate-300 border border-slate-600/50 font-bold text-xs sm:text-sm cursor-not-allowed">
-                <FaFilePdf className="text-xs" />
-                PDF Not Yet Uploaded
-              </span>
-            )}
+            <span className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 text-white border border-white/20 font-bold text-xs sm:text-sm">
+              <FaChurch className="text-xs text-amber-300" />
+              Your Jumuiya: {activeJumuiya.name}
+            </span>
 
           </div>
         </div>
       </div>
 
-      {/* Jumuiya Selector Tabs */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
-          <div>
-            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <FaUsers className="text-blue-600" />
-              Select Small Christian Community
-            </h3>
-            <p className="text-xs text-slate-500">
-              Each Jumuiya operates under these shared statutes with personalized patron Saint and devotions.
-            </p>
-          </div>
-          <span className="text-[11px] font-semibold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-100 w-fit">
-            Viewing: {activeJumuiya.name}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-          {jumuiyaList.map((j) => {
-            const isSelected = j.id === selectedJumuiyaId;
-            return (
-              <button
-                key={j.id}
-                onClick={() => {
-                setSelectedJumuiyaId(j.id);
-                setCurrentPage(1); // reset to cover page on Jumuiya switch
-              }}
-                className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition-all ${
-                  isSelected
-                    ? "border-blue-600 bg-blue-50/70 text-blue-900 shadow-xs ring-2 ring-blue-500/20"
-                    : "border-slate-200/80 hover:border-slate-300 hover:bg-slate-50/80 text-slate-700"
-                }`}
-              >
-                <div
-                  className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold text-xs mb-1.5 shadow-xs"
-                  style={{ backgroundColor: j.color }}
-                >
-                  {j.name.replace("Saint ", "").charAt(0)}
-                </div>
-                <span className="text-xs font-bold truncate max-w-full">
-                  {j.name.replace("Saint ", "St. ")}
-                </span>
-                <span className="text-[10px] text-slate-400 mt-0.5">
-                  {j.feastDay}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+          {hasPdf ? (
+            <a
+              href={activeJumuiya.pdfUrl}
+              download={`Kirinyaga_University_CSA_Jumuiya_Booklet_${activeJumuiya.name.replace(/ /g, "_")}.pdf`}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95"
+            >
+              <FaDownload className="text-xs" />
+              Download {activeJumuiya.name} Booklet PDF
+            </a>
+          ) : (
+            <span className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-700/50 text-slate-300 border border-slate-600/50 font-bold text-xs sm:text-sm cursor-not-allowed">
+              <FaFilePdf className="text-xs" />
+              PDF Not Yet Uploaded
+            </span>
+          )}
 
       {/* Reader Controls Toolbar */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-3 sm:p-4 mb-4">
