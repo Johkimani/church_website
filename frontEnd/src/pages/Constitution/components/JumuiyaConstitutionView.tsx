@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { FaBookOpen } from "react-icons/fa";
 import {
-  FaChurch,
-  FaBookOpen,
   FaSearch,
   FaFilePdf,
   FaChevronLeft,
@@ -23,23 +22,44 @@ import {
 import { useSwipeNavigation } from "../hooks/useSwipeNavigation";
 import { useAuth } from "../../../context/AuthContext";
 
+// Map sub_groups UUIDs to jumuiya slugs (from backend)
+const JUMUIYA_UUID_TO_SLUG: Record<string, string> = {
+  "727990e6-6bb2-44b6-9a9d-4acee5fe3d7e": "st-anthony",
+  "7ff48c24-2213-4268-9cbe-20c450c45910": "st-augustine",
+  "5e6570d6-0793-46f6-8400-815e1490b7bc": "st-catherine",
+  "eae305b2-700d-4680-ae02-753bf0221563": "st-dominic",
+  "eac314b5-5f0e-4d9b-a9ef-25e48a1ca0e0": "st-elizabeth",
+  "193d6461-78de-465e-acf6-1683df45fce1": "st-maria-goretti",
+  "a7d71d66-094d-4ffb-aadd-e443c253d244": "st-monica",
+  "5c643e86-0e29-4faf-a395-bd0e95eb7396": "st-thomas",
+};
+
 export const JumuiyaConstitutionView: React.FC = () => {
   const { user } = useAuth();
 
   // Resolve the logged-in member's Jumuiya
   const userJumuiya = useMemo<JumuiyaMetadata | null>(() => {
-    if (!user?.jumuiya_id) return null;
-    const userJid = String(user.jumuiya_id).trim().toLowerCase();
-    // Try direct id match first (e.g. st-augustine)
-    const byId = jumuiyaList.find((j) => j.id.toLowerCase() === userJid);
+    const jumuiyaId = user?.jumuiya_id;
+    if (!jumuiyaId) return null;
+    const jid = String(jumuiyaId).trim().toLowerCase();
+    
+    // Try UUID mapping first
+    const uuidKey = Object.keys(JUMUIYA_UUID_TO_SLUG).find(k => k.toLowerCase() === jid);
+    if (uuidKey) {
+      const slug = JUMUIYA_UUID_TO_SLUG[uuidKey];
+      const bySlug = jumuiyaList.find((j) => j.id === slug);
+      if (bySlug) return bySlug;
+    }
+    
+    // Try direct id match
+    const byId = jumuiyaList.find((j) => j.id.toLowerCase() === jid);
     if (byId) return byId;
-    // Fallback: match by name containing the jumuiya name
-    const byName = jumuiyaList.find((j) => {
-      const name = j.name.toLowerCase();
-      const patron = j.patron.toLowerCase();
-      return name.includes(userJid) || patron.includes(userJid) || userJid.includes(name.replace("saint ", ""));
-    });
-    return byName || null;
+    
+    // Try slug/name match
+    const bySlug = jumuiyaList.find((j) => j.id.toLowerCase() === jid.replace(/\s+/g, '-'));
+    if (bySlug) return bySlug;
+    
+    return null;
   }, [user?.jumuiya_id]);
 
   // Selected Jumuiya (locked to the member's own Jumuiya)
@@ -160,10 +180,21 @@ export const JumuiyaConstitutionView: React.FC = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end gap-3 shrink-0">
-            <span className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 text-white border border-white/20 font-bold text-xs sm:text-sm">
-              <FaChurch className="text-xs text-amber-300" />
-              Your Jumuiya: {activeJumuiya.name}
-            </span>
+            {hasPdf ? (
+              <a
+                href={activeJumuiya.pdfUrl}
+                download={`Kirinyaga_University_CSA_Jumuiya_Booklet_${activeJumuiya.name.replace(/ /g, "_")}.pdf`}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95"
+              >
+                <FaDownload className="text-xs" />
+                Download {activeJumuiya.name} Booklet PDF
+              </a>
+            ) : (
+              <span className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-700/50 text-slate-300 border border-slate-600/50 font-bold text-xs sm:text-sm cursor-not-allowed">
+                <FaFilePdf className="text-xs" />
+                PDF Not Yet Uploaded
+              </span>
+            )}
 
           </div>
         </div>
@@ -430,7 +461,7 @@ export const JumuiyaConstitutionView: React.FC = () => {
                           className="w-full h-full rounded-full flex flex-col items-center justify-center text-white p-4"
                           style={{ backgroundColor: activeJumuiya.color }}
                         >
-                          <FaChurch className="text-4xl mb-2 text-amber-300" />
+                          <FaBookOpen className="text-4xl mb-2 text-amber-300" />
                           <span className="text-sm font-bold text-center">
                             {activeJumuiya.patron}
                           </span>
