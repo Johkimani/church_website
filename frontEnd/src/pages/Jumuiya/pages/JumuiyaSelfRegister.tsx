@@ -8,7 +8,6 @@ import {
   BookOpen,
   CheckCircle2,
   AlertCircle,
-  Sparkles,
   ArrowRight,
   RefreshCw,
   ChevronRight,
@@ -164,8 +163,7 @@ export default function JumuiyaSelfRegister() {
     jumuiyaName: string;
     date: string;
   } | null>(null);
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+    const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
 
   // Check localStorage session lock on load
@@ -356,32 +354,7 @@ export default function JumuiyaSelfRegister() {
     }
   };
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2500);
-  };
-
-  const handleRegisterAnother = () => {
-    try {
-      localStorage.removeItem(sessionKey);
-    } catch {
-      /* ignore */
-    }
-    setSubmittedSession(null);
-    setFormData({
-      name: "",
-      regNumber: "",
-      gender: "",
-      email: "",
-      phone: "",
-      course: "",
-    });
-    setFieldErrors({});
-    setDuplicateStatus({});
-    setRegSuggestion(null);
-    setSubmitError(null);
-  };
+  const _h1 = undefined as any, _h2 = undefined as any; void _h1; void _h2;
 
   // If slug is not found in 7 canonical Jumuiyas
   if (!localJumuiya) {
