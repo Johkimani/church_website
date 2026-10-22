@@ -1,83 +1,92 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { FaBook, FaChurch, FaUserTie } from "react-icons/fa";
+import { CsaConstitutionView } from "./components/CsaConstitutionView";
+import { JumuiyaConstitutionView } from "./components/JumuiyaConstitutionView";
+import { CoordinatorsConstitutionView } from "./components/CoordinatorsConstitutionView";
 import "../Jumuiya/JumuiyaLanding.css";
 
 export const ConstitutionPage: React.FC = () => {
-  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const getTabFromParam = (param: string | null): "csa" | "jumuiya" | "coordinators" => {
+    if (param === "jumuiya") return "jumuiya";
+    if (param === "coordinators") return "coordinators";
+    return "csa";
+  };
+  const [activeTab, setActiveTab] = useState<"csa" | "jumuiya" | "coordinators">(
+    getTabFromParam(searchParams.get("tab"))
+  );
 
-  const sections = [
-    {
-      id: "csa",
-      title: "CSA Constitution",
-      description: "The governing instrument establishing our vision, sacred liturgical orders, rights, and executive leadership.",
-      icon: FaBook,
-      color: "#2563eb",
-      path: "/constitution?tab=csa",
-    },
-    {
-      id: "jumuiya",
-      title: "Jumuiya Constitution",
-      description: "Constitutions and guidelines for each Small Christian Community.",
-      icon: FaChurch,
-      color: "#d97706",
-      path: "/constitution?tab=jumuiya",
-    },
-    {
-      id: "coordinators",
-      title: "Jumuiya Coordinators",
-      description: "Guidelines and procedures for Jumuiya Coordinators.",
-      icon: FaUserTie,
-      color: "#059669",
-      path: "/constitution?tab=coordinators",
-    },
-  ];
+  useEffect(() => {
+    const tabParam = getTabFromParam(searchParams.get("tab"));
+    if (tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
-  const handleCardClick = (path: string) => {
-    navigate(path);
+  const handleTabChange = (tab: "csa" | "jumuiya" | "coordinators") => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
   };
 
   return (
     <div className="landing-page">
       <div className="container">
+        {/* Hero Section */}
         <header className="hero animate-fade-in">
           <h1 className="hero-title">Constitution</h1>
-          <p className="hero-subtitle">Kirinyaga University CSA</p>
+          <p className="hero-subtitle">Kirinyaga University St. Thomas Aquinas CSA</p>
           <p className="hero-description">
-            The official governing documents of Kirinyaga University St. Thomas Aquinas Catholic Students' Association.
+            The governing instrument establishing our vision, sacred liturgical orders, rights, executive leadership, and the fraternity of the Jumuiyas.
           </p>
         </header>
 
-        <div className="jumuiya-grid">
-          {sections.map((section) => {
-            const Icon = section.icon;
-            return (
-              <button
-                key={section.id}
-                type="button"
-                aria-label={`View ${section.title}`}
-                className="jumuiya-card card card-clickable animate-fade-in"
-                style={{
-                  ['--jumuiya-color' as any]: section.color,
-                }}
-                onClick={() => handleCardClick(section.path)}
-              >
-                <div className="card-background">
-                  <div className="card-overlay"></div>
-                </div>
+        {/* Tabs */}
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+          <button
+            onClick={() => handleTabChange("csa")}
+            className={`inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-full text-sm font-semibold transition-all ${
+              activeTab === "csa"
+                ? "bg-blue-600 text-white shadow-sm"
+                : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            <FaBook className="text-xs" />
+            <span>CSA Constitution</span>
+          </button>
+          <button
+            onClick={() => handleTabChange("jumuiya")}
+            className={`inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-full text-sm font-semibold transition-all ${
+              activeTab === "jumuiya"
+                ? "bg-amber-600 text-white shadow-sm"
+                : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            <FaChurch className="text-xs" />
+            <span>Jumuiya Constitution</span>
+          </button>
+          <button
+            onClick={() => handleTabChange("coordinators")}
+            className={`inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-full text-sm font-semibold transition-all ${
+              activeTab === "coordinators"
+                ? "bg-emerald-600 text-white shadow-sm"
+                : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            <FaUserTie className="text-xs" />
+            <span>Jumuiya Coordinators</span>
+          </button>
+        </div>
 
-                <div className="card-content">
-                  <div className="card-header">
-                    <div className="flex items-center gap-2">
-                      <Icon className="text-lg" style={{ color: section.color }} />
-                      <h2 className="card-title">{section.title}</h2>
-                    </div>
-                  </div>
-                  <p className="card-description">{section.description}</p>
-                </div>
-              </button>
-            );
-          })}
+        {/* Content */}
+        <div className="mt-8">
+          {activeTab === "csa" ? (
+            <CsaConstitutionView />
+          ) : activeTab === "jumuiya" ? (
+            <JumuiyaConstitutionView />
+          ) : (
+            <CoordinatorsConstitutionView />
+          )}
         </div>
       </div>
     </div>
