@@ -1,11 +1,10 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   FaUserTie,
   FaBookOpen,
   FaSearch,
   FaChevronLeft,
   FaChevronRight,
-  FaPrint,
   FaShareAlt,
   FaCheckCircle,
   FaExclamationTriangle,
@@ -19,8 +18,12 @@ import {
   CoordinatorPageContent,
 } from "../data/coordinatorsConstitutionData";
 import { useSwipeNavigation } from "../hooks/useSwipeNavigation";
+import { BackToCoverButton } from "./BackToCoverButton";
+import { ConstitutionReaderProps } from "./types";
 
-export const CoordinatorsConstitutionView: React.FC = () => {
+export const CoordinatorsConstitutionView: React.FC<ConstitutionReaderProps> = ({
+  onReadingChange,
+}) => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [viewMode, setViewMode] = useState<"digital" | "scan">("digital");
   const [isZoomModalOpen, setIsZoomModalOpen] = useState<boolean>(false);
@@ -91,9 +94,10 @@ export const CoordinatorsConstitutionView: React.FC = () => {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  // Focus mode: page 1 is the cover letter for the booklet.
+  useEffect(() => {
+    onReadingChange?.(currentPage > 1);
+  }, [currentPage, onReadingChange]);
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-8 animate-fade-in pb-16">
@@ -125,7 +129,7 @@ export const CoordinatorsConstitutionView: React.FC = () => {
       {/* Reader Controls Toolbar */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-3 sm:p-4 mb-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          {/* Top Row: View Mode Toggle on left + Share & Print on right */}
+          {/* Top Row: View Mode Toggle on left + Share on right */}
           <div className="flex items-center justify-between gap-2 w-full">
             <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80">
               <button
@@ -152,7 +156,7 @@ export const CoordinatorsConstitutionView: React.FC = () => {
               </button>
             </div>
 
-            {/* Action Buttons: Share & Print */}
+            {/* Action Buttons: Share */}
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 onClick={handleShare}
@@ -161,14 +165,6 @@ export const CoordinatorsConstitutionView: React.FC = () => {
               >
                 <FaShareAlt className="text-xs text-emerald-600" />
                 <span>Share</span>
-              </button>
-              <button
-                onClick={handlePrint}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-xs transition-all active:scale-95"
-                title="Print Page"
-              >
-                <FaPrint className="text-xs text-slate-600" />
-                <span>Print</span>
               </button>
             </div>
           </div>
@@ -588,6 +584,17 @@ export const CoordinatorsConstitutionView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Back to Cover — shown once the reader has left the cover letter */}
+      {currentPage > 1 && (
+        <BackToCoverButton
+          tone="emerald"
+          onBack={() => {
+            setCurrentPage(1);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        />
+      )}
 
       {/* Full-Screen Zoom Modal */}
       {isZoomModalOpen && activePageData.scanImageUrl && (

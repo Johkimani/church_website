@@ -1,10 +1,9 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   FaSearch,
   FaBook,
   FaChevronLeft,
   FaChevronRight,
-  FaPrint,
   FaList,
   FaTimes,
   FaShareAlt,
@@ -22,10 +21,14 @@ import {
   ConstitutionPageContent,
 } from "../data/csaConstitutionData";
 import { CoverPageDisplay } from "./CoverPageDisplay";
+import { BackToCoverButton } from "./BackToCoverButton";
+import { ConstitutionReaderProps } from "./types";
 import toast from "react-hot-toast";
 import { useSwipeNavigation } from "../hooks/useSwipeNavigation";
 
-export const CsaConstitutionView: React.FC = () => {
+export const CsaConstitutionView: React.FC<ConstitutionReaderProps> = ({
+  onReadingChange,
+}) => {
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isTocOpen, setIsTocOpen] = useState<boolean>(false);
@@ -67,10 +70,6 @@ export const CsaConstitutionView: React.FC = () => {
     return initialCsaPages.find((p) => p.pageNumber === currentPage);
   }, [currentPage]);
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   const handleShare = () => {
     if (navigator.share) {
       navigator
@@ -87,6 +86,11 @@ export const CsaConstitutionView: React.FC = () => {
   };
 
   const fontSizeClass = "text-base leading-relaxed";
+
+  // Focus mode: tell the parent when we leave the cover letter.
+  useEffect(() => {
+    onReadingChange?.(currentPage > 0);
+  }, [currentPage, onReadingChange]);
 
   return (
     <div className="w-full">
@@ -178,15 +182,6 @@ export const CsaConstitutionView: React.FC = () => {
               )}
             </>
           )}
-
-          {/* Print button */}
-          <button
-            onClick={handlePrint}
-            className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-colors"
-            title="Print or Save as PDF"
-          >
-            <FaPrint className="text-xs" />
-          </button>
 
           {/* Share button */}
           <button
@@ -545,6 +540,17 @@ export const CsaConstitutionView: React.FC = () => {
               Next Page <FaChevronRight className="text-[10px]" />
             </button>
           </div>
+
+          {/* Back to Cover — shown once the reader has left the cover letter */}
+          {currentPage > 0 && (
+            <BackToCoverButton
+              onBack={() => {
+                setCurrentPage(0);
+                setPageViewMode("digital");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+            />
+          )}
 
           {/* Metadata Cards — only on cover page, shown after the nav bar */}
           {currentPage === 0 && (
