@@ -165,56 +165,36 @@ export const JumuiyaConstitutionView: React.FC = () => {
   return (
     <div className="w-full max-w-6xl mx-auto space-y-8 animate-fade-in pb-16">
       {/* Top Banner & Info */}
-      <div className="bg-gradient-to-br from-blue-900 via-indigo-900 to-slate-900 text-white rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-xl border border-blue-700/40">
-        <div className="absolute -right-16 -top-16 w-80 h-80 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute -left-16 -bottom-16 w-80 h-80 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-2xl">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-black tracking-tight text-white">
-              Jumuiya Constitution & Guidelines
+      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div className="px-6 sm:px-8 py-6 sm:py-7 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5 max-w-2xl">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-slate-900">
+              {activeJumuiya.name} Constitution
             </h2>
-            <p className="text-sm sm:text-base text-blue-100/90 leading-relaxed font-sans">
-              Statutory charter, governance protocols, and executive guidelines for the Small Christian Communities of Kirinyaga University Catholic Students' Association (C.S.A).
+            <p className="text-sm text-slate-600 leading-relaxed">
+              The official constitution and guidelines for {activeJumuiya.name}.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end gap-3 shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
             {hasPdf ? (
               <a
                 href={activeJumuiya.pdfUrl}
                 download={`Kirinyaga_University_CSA_Jumuiya_Booklet_${activeJumuiya.name.replace(/ /g, "_")}.pdf`}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-sm transition-all active:scale-95"
               >
                 <FaDownload className="text-xs" />
-                Download {activeJumuiya.name} Booklet PDF
+                Download PDF
               </a>
             ) : (
-              <span className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-700/50 text-slate-300 border border-slate-600/50 font-bold text-xs sm:text-sm cursor-not-allowed">
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 text-slate-400 border border-slate-200 font-semibold text-sm cursor-not-allowed">
                 <FaFilePdf className="text-xs" />
-                PDF Not Yet Uploaded
+                PDF Not Available
               </span>
             )}
-
           </div>
         </div>
       </div>
-
-          {hasPdf ? (
-            <a
-              href={activeJumuiya.pdfUrl}
-              download={`Kirinyaga_University_CSA_Jumuiya_Booklet_${activeJumuiya.name.replace(/ /g, "_")}.pdf`}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95"
-            >
-              <FaDownload className="text-xs" />
-              Download {activeJumuiya.name} Booklet PDF
-            </a>
-          ) : (
-            <span className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-700/50 text-slate-300 border border-slate-600/50 font-bold text-xs sm:text-sm cursor-not-allowed">
-              <FaFilePdf className="text-xs" />
-              PDF Not Yet Uploaded
-            </span>
-          )}
 
       {/* Reader Controls Toolbar */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-3 sm:p-4 mb-4">

@@ -98,31 +98,26 @@ export const CoordinatorsConstitutionView: React.FC = () => {
   return (
     <div className="w-full max-w-6xl mx-auto space-y-8 animate-fade-in pb-16">
       {/* Top Banner */}
-      <div className="bg-gradient-to-br from-emerald-900 via-teal-950 to-slate-900 text-white rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-xl border border-emerald-700/40">
-        <div className="absolute -right-16 -top-16 w-80 h-80 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute -left-16 -bottom-16 w-80 h-80 rounded-full bg-teal-500/10 blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-2xl">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-black tracking-tight text-white">
+      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div className="px-6 sm:px-8 py-6 sm:py-7 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5 max-w-2xl">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-slate-900">
               Jumuiya Coordinators Constitution
             </h2>
-            <p className="text-sm sm:text-base text-emerald-100/90 leading-relaxed font-sans">
-              Statutory charter, coordination protocols, oversight responsibilities, and procedural guidelines for the Jumuiya Coordinators serving Kirinyaga University Catholic Students' Association (C.S.A).
+            <p className="text-sm text-slate-600 leading-relaxed">
+              The official constitution for Jumuiya Coordinators.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end gap-3 shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
             <a
               href="/documents/jumuiya-coordinators-booklet.pdf"
               download="Kirinyaga_University_CSA_Jumuiya_Coordinators_Booklet.pdf"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-sm transition-all active:scale-95"
             >
               <FaDownload className="text-xs" />
-              Download Booklet PDF
+              Download PDF
             </a>
-
-
           </div>
         </div>
       </div>
