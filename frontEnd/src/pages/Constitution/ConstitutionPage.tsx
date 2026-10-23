@@ -1,21 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { FaBook, FaChurch, FaUserTie } from "react-icons/fa";
+import { FaBook, FaChurch, FaUserTie, FaMusic } from "react-icons/fa";
 import { CsaConstitutionView } from "./components/CsaConstitutionView";
 import { JumuiyaConstitutionView } from "./components/JumuiyaConstitutionView";
 import { CoordinatorsConstitutionView } from "./components/CoordinatorsConstitutionView";
+import { ChoirConstitutionView } from "./components/ChoirConstitutionView";
 import "../Jumuiya/JumuiyaLanding.css";
 
 export const ConstitutionPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const getTabFromParam = (param: string | null): "csa" | "jumuiya" | "coordinators" => {
+  const getTabFromParam = (
+    param: string | null
+  ): "csa" | "jumuiya" | "coordinators" | "choir" => {
     if (param === "jumuiya") return "jumuiya";
     if (param === "coordinators") return "coordinators";
+    if (param === "choir") return "choir";
     return "csa";
   };
-  const [activeTab, setActiveTab] = useState<"csa" | "jumuiya" | "coordinators">(
-    getTabFromParam(searchParams.get("tab"))
-  );
+  const [activeTab, setActiveTab] = useState<
+    "csa" | "jumuiya" | "coordinators" | "choir"
+  >(getTabFromParam(searchParams.get("tab")));
   // True once the reader has left the cover letter — hides the landing header.
   const [isReading, setIsReading] = useState(false);
 
@@ -33,7 +37,9 @@ export const ConstitutionPage: React.FC = () => {
     }
   }, [searchParams]);
 
-  const handleTabChange = (tab: "csa" | "jumuiya" | "coordinators") => {
+  const handleTabChange = (
+    tab: "csa" | "jumuiya" | "coordinators" | "choir"
+  ) => {
     setActiveTab(tab);
     setSearchParams({ tab });
     setIsReading(false);
@@ -49,7 +55,7 @@ export const ConstitutionPage: React.FC = () => {
             <h1 className="hero-title">Constitution</h1>
             <p className="hero-subtitle">Kirinyaga University St. Thomas Aquinas CSA</p>
             <p className="hero-description">
-              The governing instrument establishing our vision, sacred liturgical orders, rights, executive leadership, and the fraternity of the Jumuiyas.
+              The governing instruments establishing our vision, sacred liturgical orders, rights, executive leadership, choir ministry, and the fraternity of the Jumuiyas.
             </p>
           </header>
         )}
@@ -90,6 +96,17 @@ export const ConstitutionPage: React.FC = () => {
               <FaUserTie className="text-xs" />
               <span>Jumuiya Coordinators</span>
             </button>
+            <button
+              onClick={() => handleTabChange("choir")}
+              className={`inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-full text-sm font-semibold transition-all ${
+                activeTab === "choir"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              <FaMusic className="text-xs" />
+              <span>Choir Constitution</span>
+            </button>
           </div>
         )}
 
@@ -99,8 +116,10 @@ export const ConstitutionPage: React.FC = () => {
             <CsaConstitutionView onReadingChange={setIsReading} />
           ) : activeTab === "jumuiya" ? (
             <JumuiyaConstitutionView onReadingChange={setIsReading} />
-          ) : (
+          ) : activeTab === "coordinators" ? (
             <CoordinatorsConstitutionView onReadingChange={setIsReading} />
+          ) : (
+            <ChoirConstitutionView onReadingChange={setIsReading} />
           )}
         </div>
       </div>
