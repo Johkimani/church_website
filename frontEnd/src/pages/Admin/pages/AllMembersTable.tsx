@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { memberService } from "../../../api/jumuiyaMemberService";
-import { Search, X, Edit2, Save, Trash2, ChevronLeft, ChevronRight, RefreshCw, Church, ArrowUpDown, ArrowUp, ArrowDown, Download, GraduationCap, AlertTriangle, Eye } from "lucide-react";
+import { Search, X, Edit2, Save, Trash2, Check, ChevronLeft, ChevronRight, RefreshCw, Church, ArrowUpDown, ArrowUp, ArrowDown, Download, GraduationCap, AlertTriangle, Eye } from "lucide-react";
 import * as XLSX from "xlsx";
 import { SkeletonTable, SkeletonSummaryBar } from "../../../components/Skeleton";
 
@@ -37,7 +37,17 @@ const styles = `
   .hide-scrollbar::-webkit-scrollbar { display: none; }
 `;
 
-export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: number }) {
+interface AllMembersTableProps {
+  refreshKey?: number;
+  showSource?: boolean;
+  enableSerialEdit?: boolean;
+}
+
+export default function AllMembersTable({
+  refreshKey = 0,
+  showSource = true,
+  enableSerialEdit = false,
+}: AllMembersTableProps) {
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,13 +57,18 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>({});
   const [saving, setSaving] = useState(false);
+  const [editingSerialId, setEditingSerialId] = useState<string | null>(null);
+  const [serialDraft, setSerialDraft] = useState("");
+  const [savingSerial, setSavingSerial] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"jumuiya" | "gender">("jumuiya");
   const [sortAsc, setSortAsc] = useState(true);
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportColumns, setExportColumns] = useState<Record<string, boolean>>({
     RegNo: true, Name: true, Gender: true, Course: true,
-    Phone: true, Year: true, Jumuiya: true, Source: true,
+    Phone: true, Year: true, Jumuiya: true,
+    ...(enableSerialEdit ? { SerialNo: true } : {}),
+    ...(showSource ? { Source: true } : {}),
   });
   const [genderFilter, setGenderFilter] = useState<Record<string, boolean>>({ Gent: true, Lady: true });
   const [yearFilter, setYearFilter] = useState<Record<string, boolean>>({});
@@ -118,6 +133,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
         const out: any = {};
         selected.forEach(k => {
           if (k === "RegNo") out.RegNo = row.member_id || row.id || "";
+          else if (k === "SerialNo") out.SerialNo = row.serial_no ?? "";
           else if (k === "Name") out.Name = row.name || "";
           else if (k === "Gender") out.Gender = isMale(row.gender) ? "Gent" : isFemale(row.gender) ? "Lady" : (row.gender || "").trim() || "";
           else if (k === "Course") out.Course = row.course || "";
@@ -130,7 +146,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
       });
       const ws = XLSX.utils.json_to_sheet(mapped);
       ws["!cols"] = selected.map(k => ({
-        wch: k === "Name" || k === "Email" || k === "Jumuiya" ? 30 : k === "RegNo" || k === "Phone" ? 18 : k === "Year" ? 14 : 10,
+        wch: k === "Name" || k === "Email" || k === "Jumuiya" ? 30 : k === "RegNo" || k === "Phone" ? 18 : k === "Year" ? 14 : k === "SerialNo" ? 12 : 10,
       }));
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "All Members");
@@ -279,6 +295,41 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
     setEditForm({});
   };
 
+  const startSerialEdit = (m: any) => {
+    setEditingSerialId(m.member_id || m.id);
+    setSerialDraft(m.serial_no != null ? String(m.serial_no) : "");
+  };
+
+  const cancelSerialEdit = () => {
+    setEditingSerialId(null);
+    setSerialDraft("");
+  };
+
+  const saveSerial = async (memberId: string) => {
+    const trimmed = serialDraft.trim();
+    const value = Number(trimmed);
+    if (!trimmed || !Number.isInteger(value) || value < 1) {
+      alert("Enter a valid serial number (whole number greater than 0).");
+      return;
+    }
+
+    setSavingSerial(true);
+    try {
+      const res = await memberService.updateMemberSerial(memberId, value);
+      setMembers(prev => prev.map(m =>
+        (m.member_id === memberId || m.id === memberId)
+          ? { ...m, serial_no: res.serial_no ?? value, is_registered: true }
+          : m
+      ));
+      setEditingSerialId(null);
+      setSerialDraft("");
+    } catch (err: any) {
+      alert(err?.response?.data?.message || "Failed to update serial number");
+    } finally {
+      setSavingSerial(false);
+    }
+  };
+
   const toggleSort = (column: "jumuiya" | "gender") => {
     if (sortBy === column) {
       setSortAsc(!sortAsc);
@@ -332,7 +383,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
     return result;
   }, [members, debouncedSearch, sourceFilter, jumuiyaSel, genderSel, yearSel, sortBy, sortAsc]);
 
-  const filtersActive = !!(sourceFilter || jumuiyaSel || genderSel || yearSel);
+  const filtersActive = !!((showSource && sourceFilter) || jumuiyaSel || genderSel || yearSel);
 
   const { paginatedMembers, totalPages } = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -393,12 +444,14 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
               <option key={j.id} value={j.name}>{j.name}</option>
             ))}
           </select>
-          <select value={sourceFilter} onChange={e => { setSourceFilter(e.target.value); setCurrentPage(1); }}
-            className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
-            <option value="">All Sources</option>
-            <option value="csa">CSA</option>
-            <option value="jum">Jumuiya</option>
-          </select>
+          {showSource && (
+            <select value={sourceFilter} onChange={e => { setSourceFilter(e.target.value); setCurrentPage(1); }}
+              className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
+              <option value="">All Sources</option>
+              <option value="csa">CSA</option>
+              <option value="jum">Jumuiya</option>
+            </select>
+          )}
           <select value={genderSel} onChange={e => { setGenderSel(e.target.value); setCurrentPage(1); }}
             className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
             <option value="">All Genders</option>
@@ -522,6 +575,9 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                 <tr className="bg-slate-50 border-b border-slate-200">
                   <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider w-10">No.</th>
                   <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Reg #</th>
+                  {enableSerialEdit && (
+                    <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Serial No</th>
+                  )}
                   <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Name</th>
                   <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">
                     <button onClick={() => toggleSort("jumuiya")} className="flex items-center gap-1 hover:text-slate-700 transition-colors">
@@ -529,7 +585,9 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                       {sortBy === "jumuiya" ? (sortAsc ? <ArrowUp size={12} /> : <ArrowDown size={12} />) : <ArrowUpDown size={12} className="opacity-30" />}
                     </button>
                   </th>
-                  <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Source</th>
+                  {showSource && (
+                    <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">Source</th>
+                  )}
                   <th className="text-left py-3 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">
                     <button onClick={() => toggleSort("gender")} className="flex items-center gap-1 hover:text-slate-700 transition-colors">
                       Gender
@@ -558,6 +616,44 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                           <span className="font-medium text-slate-800 text-xs">{memberId}</span>
                         )}
                       </td>
+                      {enableSerialEdit && (
+                        <td className="py-2.5 px-3">
+                          {editingSerialId === memberId ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number"
+                                min={1}
+                                value={serialDraft}
+                                onChange={e => setSerialDraft(e.target.value)}
+                                onKeyDown={e => {
+                                  if (e.key === "Enter") saveSerial(memberId);
+                                  if (e.key === "Escape") cancelSerialEdit();
+                                }}
+                                className="text-xs border border-slate-200 rounded px-1.5 py-1 w-16"
+                                autoFocus
+                              />
+                              <button onClick={() => saveSerial(memberId)} disabled={savingSerial}
+                                className="text-xs font-semibold p-1 rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 disabled:opacity-50">
+                                <Check size={12} />
+                              </button>
+                              <button onClick={cancelSerialEdit}
+                                className="text-xs font-semibold p-1 rounded bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200">
+                                <X size={12} />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <span className={`text-xs ${m.serial_no != null ? "font-medium text-slate-800" : "text-slate-400"}`}>
+                                {m.serial_no != null ? m.serial_no : "—"}
+                              </span>
+                              <button onClick={() => startSerialEdit(m)} title="Edit serial number"
+                                className="p-0.5 text-slate-400 hover:text-indigo-600 transition-colors">
+                                <Edit2 size={11} />
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      )}
                       <td className="py-2.5 px-3">
                         {isEditing ? (
                           <div className="flex gap-1">
@@ -583,15 +679,17 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
                           <span className="text-xs text-slate-600">{m.jumuiya_name || formatJumuiyaName(m.jumuiya_id)}</span>
                         )}
                       </td>
-                      <td className="py-2.5 px-3">
-                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold ${
-                          m.source === "jum" ? "bg-indigo-50 text-indigo-700" :
-                          m.source === "csa" ? "bg-cyan-50 text-cyan-700" :
-                          "bg-slate-50 text-slate-700"
-                        }`}>
-                          {m.source === "csa" ? "CSA" : "Jum"}
-                        </span>
-                      </td>
+                      {showSource && (
+                        <td className="py-2.5 px-3">
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold ${
+                            m.source === "jum" ? "bg-indigo-50 text-indigo-700" :
+                            m.source === "csa" ? "bg-cyan-50 text-cyan-700" :
+                            "bg-slate-50 text-slate-700"
+                          }`}>
+                            {m.source === "csa" ? "CSA" : "Jum"}
+                          </span>
+                        </td>
+                      )}
                       <td className="py-2.5 px-3">
                         {isEditing ? (
                           <select value={editForm.gender} onChange={e => setEditForm((p: any) => ({ ...p, gender: e.target.value }))}

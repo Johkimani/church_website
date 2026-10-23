@@ -201,6 +201,9 @@ export const memberService = {
   changeMemberReg: (id: string, newReg: string, dryRun?: boolean) =>
     apiClient.patch(`/jumuiya-members/reg-number`, { id, newReg, dryRun }).then(r => r.data),
 
+  updateMemberSerial: (id: string, serial_no: number) =>
+    apiClient.patch(`/jumuiya-members/serial-no`, { member_id: id, serial_no }).then(r => r.data),
+
   flagMember: (id: string, flagged: boolean) =>
     apiClient.patch(`/jumuiya-members/flag`, { flagged }, { params: { member_id: id } }).then(r => r.data),
 

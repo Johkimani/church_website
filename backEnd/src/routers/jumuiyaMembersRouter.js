@@ -6,6 +6,7 @@ import {
   getAllMembersAcrossJumuiyas,
   createJumuiyaMember,
   updateJumuiyaMember,
+  updateMemberSerialNo,
   changeMemberReg,
   deleteJumuiyaMember,
   getUnregisteredMembers,
@@ -97,6 +98,8 @@ router.put('/', verifyToken, requireRole(...OFFICIAL_ROLES), updateJumuiyaMember
 // official roles. Body carries { id, newReg } — query/id is also accepted.
 // dryRun:true verifies the change and rolls it back without persisting.
 router.patch('/reg-number', verifyToken, requireRole(...CSA_ROLES), changeMemberReg);
+// CSA executives only: set the physical card serial without full registration.
+router.patch('/serial-no', verifyToken, requireRole(...CSA_ROLES), updateMemberSerialNo);
 // Note: id is sent as a query parameter (e.g. ?id=ED100/G/18019/23) so that
 // registration numbers containing slashes survive URL routing intact.
 router.delete('/', verifyToken, requireRole(...OFFICIAL_ROLES), deleteJumuiyaMember);

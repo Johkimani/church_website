@@ -516,6 +516,71 @@ export const updateJumuiyaMember = async (req, res) => {
   }
 };
 
+/**
+ * PATCH /api/jumuiya-members/serial-no
+ * Set the physical stamp-card serial number for a member without running the
+ * full registration/payment flow. `serial_no` lives on the `registered` row, so
+ * this updates it when present and otherwise creates a minimal active row.
+ */
+export const updateMemberSerialNo = async (req, res) => {
+  try {
+    const { member_id, serial_no } = req.body;
+    const memberId = typeof member_id === "string" ? member_id.trim() : "";
+    if (!memberId) {
+      return res.status(400).json({ message: "member_id is required." });
+    }
+
+    const parsedSerial = Number(serial_no);
+    if (!Number.isInteger(parsedSerial) || parsedSerial < 1) {
+      return res.status(400).json({ message: "Serial number must be a whole number greater than 0." });
+    }
+
+    const data = await withTransaction(async (client) => {
+      const memberRes = await client.query(
+        "SELECT member_id, jumuiya_id FROM members WHERE member_id = $1",
+        [memberId]
+      );
+      if (memberRes.rows.length === 0) {
+        throw new HttpError(404, "Member not found.");
+      }
+
+      const jumuiyaId = memberRes.rows[0].jumuiya_id;
+      if (!jumuiyaId) {
+        throw new HttpError(400, "Assign this member to a Jumuiya before setting a serial number.");
+      }
+
+      const updated = await client.query(
+        `UPDATE registered
+            SET serial_no = $1
+          WHERE member_id = $2 AND jumuiya_id = $3
+          RETURNING serial_no`,
+        [parsedSerial, memberId, jumuiyaId]
+      );
+
+      let savedSerial = updated.rows[0]?.serial_no;
+      if (!updated.rows[0]) {
+        const inserted = await client.query(
+          `INSERT INTO registered (member_id, jumuiya_id, registration_date, status, serial_no)
+           VALUES ($1, $2, CURRENT_TIMESTAMP, 'active', $3)
+           RETURNING serial_no`,
+          [memberId, jumuiyaId, parsedSerial]
+        );
+        savedSerial = inserted.rows[0].serial_no;
+      }
+
+      return { member_id: memberId, serial_no: savedSerial };
+    });
+
+    return res.json({ message: "Serial number updated.", ...data });
+  } catch (error) {
+    logger.error(`Error updating member serial number: ${error.message}`);
+    if (error instanceof HttpError) {
+      return res.status(error.status).json({ message: error.message });
+    }
+    return res.status(500).json({ message: "Failed to update serial number." });
+  }
+};
+
 
 /**
  * PATCH /api/jumuiya-members/reg-number

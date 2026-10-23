@@ -504,7 +504,7 @@ export default function CsaSecretaryDashboard() {
       </div>
 
       {activeTab === "all-members" ? (
-        <AllMembersTable />
+        <AllMembersTable showSource={false} enableSerialEdit />
       ) : activeTab === "analytics" ? (
         <AnalyticsDashboard />
       ) : activeTab === "history" ? (
