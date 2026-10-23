@@ -69,6 +69,8 @@ export const choirConstitutionPages: ChoirPageContent[] = [
     title: "Front Cover",
     category: "Cover",
     scanImageUrl: "/images/constitution/choir/page-1.jpg",
+    headerImageUrl: "/images/constitution/choir/toc-header.jpg",
+    headerImageAlt: "Illustration from the original St. Thomas Aquinas Choir Constitution",
     sections: [
       {
         type: "cover",
