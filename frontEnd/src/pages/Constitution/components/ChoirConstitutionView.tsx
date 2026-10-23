@@ -12,9 +12,6 @@ import {
   FaFilePdf,
   FaExpand,
   FaDownload,
-  FaClock,
-  FaCalendarAlt,
-  FaUserCheck,
 } from "react-icons/fa";
 import {
   choirConstitutionPages,
@@ -336,7 +333,7 @@ export const ChoirConstitutionView: React.FC<ConstitutionReaderProps> = ({
               </div>
 
               {/* Original Constitution Header Image */}
-              {activePageData.headerImageUrl && (
+              {activePageData.headerImageUrl && currentPage !== 1 && (
                 <figure className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3 sm:p-4">
                   <img
                     src={activePageData.headerImageUrl}
@@ -351,60 +348,66 @@ export const ChoirConstitutionView: React.FC<ConstitutionReaderProps> = ({
 
               {/* Cover Page Special Display */}
               {currentPage === 1 && (
-                <div className="space-y-6">
-                  <div className="p-8 sm:p-10 bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900 text-white rounded-3xl shadow-xl relative overflow-hidden text-center">
-                    <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-                    <div className="relative z-10 space-y-4">
-                      <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-xs text-white text-2xl shadow-inner mx-auto mb-2">
-                        <FaMusic />
-                      </div>
-                      <h1 className="text-xl sm:text-3xl font-black uppercase tracking-wide">
-                        Kirinyaga University St. Thomas Aquinas CSA Choir
-                      </h1>
-                      <div className="w-16 h-1 bg-amber-400 mx-auto rounded-full" />
-                      <h2 className="text-lg sm:text-2xl font-bold text-blue-100 tracking-wider">
-                        THE CONSTITUTION
-                      </h2>
-                      <p className="text-xs sm:text-sm text-blue-200/90 italic max-w-lg mx-auto">
-                        “Sing to the Lord a new song; sing to the Lord, all the earth.” (Psalm 96:1)
-                      </p>
+                <div className="text-center py-6 px-4 sm:px-8 border-2 border-red-200/80 rounded-3xl bg-gradient-to-b from-red-50/40 via-white to-amber-50/30 shadow-xs space-y-6">
+                  <div className="space-y-1">
+                    <p className="text-xs sm:text-sm font-black tracking-widest text-slate-700 uppercase">
+                      Kirinyaga University Catholic Students' Association
+                    </p>
+                    <p className="text-xs sm:text-sm font-bold tracking-wider text-red-800 uppercase">
+                      Liturgical Music Ministry
+                    </p>
+                  </div>
+
+                  <div className="py-2">
+                    <h1 className="text-3xl sm:text-4xl font-serif font-black tracking-widest text-slate-900 underline underline-offset-8 decoration-red-500">
+                      CONSTITUTION
+                    </h1>
+                  </div>
+
+                  {/* Choir Emblem */}
+                  <div className="flex justify-center my-4">
+                    <div className="relative w-44 h-44 sm:w-52 sm:h-52 rounded-full overflow-hidden border-4 border-red-400/80 shadow-xl bg-white p-1">
+                      {activePageData.headerImageUrl ? (
+                        <img
+                          src={activePageData.headerImageUrl}
+                          alt={
+                            activePageData.headerImageAlt ||
+                            "St. Thomas Aquinas Choir emblem"
+                          }
+                          className="w-full h-full object-cover object-center rounded-full"
+                        />
+                      ) : (
+                        <div className="w-full h-full rounded-full bg-red-700 text-white flex flex-col items-center justify-center p-4">
+                          <FaMusic className="text-4xl mb-2 text-amber-300" />
+                          <span className="text-sm font-bold text-center">
+                            St. Thomas Aquinas Choir
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Rehearsal Schedule Quick Cards */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                    <div className="bg-blue-50/70 border border-blue-200/60 rounded-2xl p-4">
-                      <div className="flex items-center gap-2 text-blue-700 font-bold text-xs mb-1">
-                        <FaClock className="text-blue-600" />
-                        <span>Tuesday Practice</span>
-                      </div>
-                      <p className="text-sm font-black text-slate-900">
-                        {choirConstitutionMeta.rehearsalSchedule.tuesday}
-                      </p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">Common songs & part rehearsals</p>
-                    </div>
+                  {/* Motto */}
+                  <div className="max-w-lg mx-auto py-2">
+                    <p className="text-base sm:text-xl font-serif font-bold italic text-slate-800 leading-snug">
+                      "Sing to the Lord a new song; sing to the Lord, all the earth."
+                    </p>
+                    <p className="text-xs font-bold text-red-800 mt-2 uppercase tracking-wider">
+                      Psalm 96:1
+                    </p>
+                  </div>
 
-                    <div className="bg-amber-50/70 border border-amber-200/60 rounded-2xl p-4">
-                      <div className="flex items-center gap-2 text-amber-700 font-bold text-xs mb-1">
-                        <FaCalendarAlt className="text-amber-600" />
-                        <span>Saturday Practice</span>
-                      </div>
-                      <p className="text-sm font-black text-slate-900">
-                        {choirConstitutionMeta.rehearsalSchedule.saturday}
-                      </p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">Mass preparation & new pieces</p>
-                    </div>
-
-                    <div className="bg-emerald-50/70 border border-emerald-200/60 rounded-2xl p-4">
-                      <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs mb-1">
-                        <FaUserCheck className="text-emerald-600" />
-                        <span>Sunday Warm-up</span>
-                      </div>
-                      <p className="text-sm font-black text-slate-900">
-                        {choirConstitutionMeta.rehearsalSchedule.sundayWarmup}
-                      </p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">Mandatory pre-Mass session</p>
-                    </div>
+                  {/* Choir Name */}
+                  <div className="pt-2">
+                    <h2 className="text-2xl sm:text-3xl font-serif font-black tracking-wider uppercase text-red-800">
+                      St. Thomas Aquinas Choir
+                    </h2>
+                    <p className="text-xs text-slate-500 font-semibold mt-1">
+                      Promulgated {choirConstitutionMeta.datePromulgated} • Tuesday & Saturday rehearsals
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Sunday warm-up {choirConstitutionMeta.rehearsalSchedule.sundayWarmup}
+                    </p>
                   </div>
                 </div>
               )}
