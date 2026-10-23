@@ -8,6 +8,7 @@ import { Users, Search, RefreshCw, Download, Church, GraduationCap, Calendar, X,
 import * as XLSX from "xlsx";
 import toast from "react-hot-toast";
 import AnalyticsDashboard from "./AnalyticsDashboard";
+import AllMembersTable from "./AllMembersTable";
 
 const JUMUIYAS = [
   { id: "st-anthony", name: "St. Anthony", color: "#8b5cf6" },
@@ -77,7 +78,7 @@ export default function CsaSecretaryDashboard() {
   const [regSerialNo, setRegSerialNo] = useState("");
   const [regAmount, setRegAmount] = useState("");
   const [regSubmitting, setRegSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<"members" | "analytics" | "pending" | "history">("members");
+  const [activeTab, setActiveTab] = useState<"members" | "all-members" | "analytics" | "pending" | "history">("members");
 
   const [histSearch, setHistSearch] = useState("");
   const [histJumuiya, setHistJumuiya] = useState("all");
@@ -441,7 +442,7 @@ export default function CsaSecretaryDashboard() {
   return (
     <div className="min-w-0 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Tab Navigation */}
-      <div className="grid w-full grid-cols-4 gap-1 bg-slate-100 rounded-xl p-1 sm:flex sm:w-fit sm:gap-2">
+      <div className="grid w-full grid-cols-5 gap-1 bg-slate-100 rounded-xl p-1 sm:flex sm:w-fit sm:gap-2">
         <button
           onClick={() => setActiveTab("members")}
           title="Members"
@@ -452,6 +453,17 @@ export default function CsaSecretaryDashboard() {
           }`}
         >
           <List size={16} className="shrink-0" /> <span className="truncate">Members</span>
+        </button>
+        <button
+          onClick={() => setActiveTab("all-members")}
+          title="All CSA Members"
+          className={`flex min-w-0 items-center justify-center gap-1 px-1 py-2 rounded-lg text-[10px] font-semibold transition-all sm:gap-2 sm:px-4 sm:text-sm ${
+            activeTab === "all-members"
+              ? "bg-white text-slate-800 shadow-sm"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <Users size={16} className="shrink-0" /> <span className="truncate"><span className="sm:hidden">All</span><span className="hidden sm:inline">All Members</span></span>
         </button>
         <button
           onClick={() => setActiveTab("history")}
@@ -491,7 +503,9 @@ export default function CsaSecretaryDashboard() {
         </button>
       </div>
 
-      {activeTab === "analytics" ? (
+      {activeTab === "all-members" ? (
+        <AllMembersTable />
+      ) : activeTab === "analytics" ? (
         <AnalyticsDashboard />
       ) : activeTab === "history" ? (
         <>
