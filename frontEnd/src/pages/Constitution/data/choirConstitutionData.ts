@@ -3,6 +3,8 @@ export interface ChoirPageContent {
   title: string;
   category?: string;
   scanImageUrl?: string;
+  headerImageUrl?: string;
+  headerImageAlt?: string;
   sections: Array<{
     heading?: string;
     subheading?: string;
@@ -85,6 +87,8 @@ export const choirConstitutionPages: ChoirPageContent[] = [
     title: "Table of Contents (Part I)",
     category: "Preliminary",
     scanImageUrl: "/images/constitution/choir/page-2.jpg",
+    headerImageUrl: "/images/constitution/choir/toc-header.jpg",
+    headerImageAlt: "Illustration from the original St. Thomas Aquinas Choir Constitution",
     sections: [
       {
         heading: "Table of Contents",

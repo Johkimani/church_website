@@ -335,6 +335,20 @@ export const ChoirConstitutionView: React.FC<ConstitutionReaderProps> = ({
                 </span>
               </div>
 
+              {/* Original Constitution Header Image */}
+              {activePageData.headerImageUrl && (
+                <figure className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3 sm:p-4">
+                  <img
+                    src={activePageData.headerImageUrl}
+                    alt={
+                      activePageData.headerImageAlt ||
+                      "Image from the original constitution"
+                    }
+                    className="mx-auto w-full max-h-72 object-contain rounded-xl bg-white"
+                  />
+                </figure>
+              )}
+
               {/* Cover Page Special Display */}
               {currentPage === 1 && (
                 <div className="space-y-6">
