@@ -23,6 +23,14 @@ function formatJumuiyaName(slugOrUuid: string): string {
   return slugOrUuid.length > 20 ? slugOrUuid.slice(0, 8) + "…" : slugOrUuid;
 }
 
+function jumuiyaKey(value: string): string {
+  return (value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function memberJumuiyaKey(m: any): string {
+  return jumuiyaKey(m.jumuiya_name || formatJumuiyaName(m.jumuiya_id));
+}
+
 import { getYearOfStudy, isGraduated, getIntakeYearLabel, genderCode, isMale, isFemale } from "../../../utils/memberYear";
 
 const styles = `
@@ -50,6 +58,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
   const [genderFilter, setGenderFilter] = useState<Record<string, boolean>>({ Gent: true, Lady: true });
   const [yearFilter, setYearFilter] = useState<Record<string, boolean>>({});
   const [sourceFilter, setSourceFilter] = useState("");
+  const [jumuiyaSel, setJumuiyaSel] = useState("");
   const [genderSel, setGenderSel] = useState("");
   const [yearSel, setYearSel] = useState("");
   const [pendingGraduates, setPendingGraduates] = useState<string[]>([]);
@@ -94,6 +103,7 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
       const activeGenders = Object.entries(genderFilter).filter(([, v]) => v).map(([k]) => k);
       const activeYears = Object.entries(yearFilter).filter(([, v]) => v).map(([k]) => k);
       const filteredByGender = members.filter((row: any) => {
+        if (jumuiyaSel && memberJumuiyaKey(row) !== jumuiyaKey(jumuiyaSel)) return false;
         const g = (row.gender || "").toLowerCase();
         const isGent = g === "male" || g === "gent";
         const isLady = g === "female" || g === "lady";
@@ -290,6 +300,10 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
     if (sourceFilter) {
       result = result.filter(m => m.source === sourceFilter);
     }
+    if (jumuiyaSel) {
+      const target = jumuiyaKey(jumuiyaSel);
+      result = result.filter(m => memberJumuiyaKey(m) === target);
+    }
     if (genderSel) {
       result = result.filter(m => (genderSel === "gent" ? isMale(m.gender) : isFemale(m.gender)));
     }
@@ -316,9 +330,9 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
       return 0;
     });
     return result;
-  }, [members, debouncedSearch, sourceFilter, genderSel, yearSel, sortBy, sortAsc]);
+  }, [members, debouncedSearch, sourceFilter, jumuiyaSel, genderSel, yearSel, sortBy, sortAsc]);
 
-  const filtersActive = !!(sourceFilter || genderSel || yearSel);
+  const filtersActive = !!(sourceFilter || jumuiyaSel || genderSel || yearSel);
 
   const { paginatedMembers, totalPages } = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -372,6 +386,13 @@ export default function AllMembersTable({ refreshKey = 0 }: { refreshKey?: numbe
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <select value={jumuiyaSel} onChange={e => { setJumuiyaSel(e.target.value); setCurrentPage(1); }}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
+            <option value="">All Jumuiyas</option>
+            {JUMUIYAS.map(j => (
+              <option key={j.id} value={j.name}>{j.name}</option>
+            ))}
+          </select>
           <select value={sourceFilter} onChange={e => { setSourceFilter(e.target.value); setCurrentPage(1); }}
             className="text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400">
             <option value="">All Sources</option>
