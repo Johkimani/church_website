@@ -289,10 +289,6 @@ export const ChoirConstitutionView: React.FC<ConstitutionReaderProps> = ({
         className="bg-white rounded-3xl border border-slate-200/80 shadow-md overflow-hidden min-h-[640px] flex flex-col justify-between"
       >
         <div className="p-6 sm:p-10 lg:p-12">
-          {currentPage > 1 && (
-            <BackToCoverButton onBack={() => setCurrentPage(1)} />
-          )}
-
           {viewMode === "scan" && activePageData.scanImageUrl ? (
             /* Physical Scan Mode */
             <div className="flex flex-col items-center">
@@ -593,6 +589,15 @@ export const ChoirConstitutionView: React.FC<ConstitutionReaderProps> = ({
           </button>
         </div>
       </div>
+
+      {currentPage > 1 && (
+        <BackToCoverButton
+          onBack={() => {
+            setCurrentPage(1);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        />
+      )}
 
       {/* Full-Screen Zoom Modal */}
       {isZoomModalOpen && activePageData.scanImageUrl && (

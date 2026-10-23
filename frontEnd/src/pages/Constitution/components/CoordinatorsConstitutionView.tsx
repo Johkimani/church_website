@@ -588,7 +588,6 @@ export const CoordinatorsConstitutionView: React.FC<ConstitutionReaderProps> = (
       {/* Back to Cover — shown once the reader has left the cover letter */}
       {currentPage > 1 && (
         <BackToCoverButton
-          tone="emerald"
           onBack={() => {
             setCurrentPage(1);
             window.scrollTo({ top: 0, behavior: "smooth" });
