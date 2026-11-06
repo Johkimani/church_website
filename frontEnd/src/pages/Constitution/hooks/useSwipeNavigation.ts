@@ -20,9 +20,12 @@ export function useSwipeNavigation({
     // Single finger only
     if (e.touches.length > 1) return;
 
-    // Don't trigger if touching buttons, links, inputs, selects, or sliders
+    // Don't trigger if touching links or form controls. Native <button>s are
+    // intentionally allowed: the Table of Contents pages render their entries
+    // as buttons, and blocking those made swiping past page 4 impossible.
+    // A tap still works — only movement beyond the swipe threshold flips pages.
     const target = e.target as HTMLElement | null;
-    if (target?.closest("button, a, input, select, textarea, [role='button']")) {
+    if (target?.closest("a, input, select, textarea, [role='button']")) {
       return;
     }
 
@@ -38,7 +41,7 @@ export function useSwipeNavigation({
     touchEndY.current = e.touches[0].clientY;
   };
 
-  const onTouchEnd = () => {
+  const onTouchEnd = (e: React.TouchEvent) => {
     if (
       touchStartX.current === null ||
       touchStartY.current === null ||
@@ -54,6 +57,9 @@ export function useSwipeNavigation({
     // Check if horizontal movement clearly exceeds vertical scrolling (ratio > 1.5)
     // and distance exceeds threshold
     if (Math.abs(deltaX) >= threshold && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+      // Swallow the synthetic click that would otherwise fire on the element
+      // under the finger (e.g. a TOC entry), so a swipe only flips one page.
+      e.preventDefault();
       if (deltaX < 0) {
         // Swiped Left -> Next page
         onSwipeLeft?.();

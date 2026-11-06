@@ -103,35 +103,41 @@ export const ChoirConstitutionView: React.FC<ConstitutionReaderProps> = ({
   }, [currentPage, onReadingChange]);
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-8 animate-fade-in pb-16">
-      {/* Top Banner */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="px-6 sm:px-8 py-6 sm:py-7 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1.5 max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/60 text-blue-700 text-xs font-bold mb-1">
-              <FaMusic className="text-[11px]" />
-              <span>Liturgical Music Ministry</span>
+    <div
+      className={`w-full max-w-6xl mx-auto animate-fade-in pb-16 ${
+        currentPage > 1 ? "space-y-4" : "space-y-8"
+      }`}
+    >
+      {/* Top Banner — cover only. Once reading, drop it so the reader focuses on the constitution itself. */}
+      {currentPage === 1 && (
+        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div className="px-6 sm:px-8 py-6 sm:py-7 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="space-y-1.5 max-w-2xl">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/60 text-blue-700 text-xs font-bold mb-1">
+                <FaMusic className="text-[11px]" />
+                <span>Liturgical Music Ministry</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-slate-900">
+                St. Thomas Aquinas Choir Constitution
+              </h2>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Official statutes governing music practices, liturgical rehearsals, code of conduct, executive roles, and member welfare.
+              </p>
             </div>
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-slate-900">
-              St. Thomas Aquinas Choir Constitution
-            </h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              Official statutes governing music practices, liturgical rehearsals, code of conduct, executive roles, and member welfare.
-            </p>
-          </div>
 
-          <div className="flex items-center gap-3 shrink-0">
-            <a
-              href={choirConstitutionMeta.pdfUrl}
-              download="Kirinyaga_University_CSA_Choir_Constitution.pdf"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-sm transition-all active:scale-95"
-            >
-              <FaDownload className="text-xs" />
-              Download PDF
-            </a>
+            <div className="flex items-center gap-3 shrink-0">
+              <a
+                href={choirConstitutionMeta.pdfUrl}
+                download="Kirinyaga_University_CSA_Choir_Constitution.pdf"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-sm transition-all active:scale-95"
+              >
+                <FaDownload className="text-xs" />
+                Download PDF
+              </a>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Reader Controls Toolbar */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-3 sm:p-4 mb-4">
