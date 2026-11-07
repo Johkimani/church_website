@@ -159,7 +159,7 @@ const MemberReview: React.FC<Props> = ({ jumuiyaId }) => {
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 flex items-center gap-3">
           <Flag size={16} className="text-amber-600 shrink-0" />
           <p className="text-xs text-amber-700">
-            <span className="font-semibold">{flaggedCount}</span> flagged member(s) excluded from active counts &mdash; they won&apos;t affect CSA distribution.
+            <span className="font-semibold">{flaggedCount}</span> flagged member(s) are excluded from active counts and cannot sign in. Unflag a member to restore their access.
           </p>
         </div>
       )}
@@ -292,7 +292,7 @@ const MemberReview: React.FC<Props> = ({ jumuiyaId }) => {
                                 ? "bg-green-50 text-green-600 hover:bg-green-100 border-green-200"
                                 : "bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
                             }`}
-                            title={m.flagged_inactive ? "Unflag member" : "Flag as inactive"}
+                            title={m.flagged_inactive ? "Unflag member (restores login access)" : "Flag as inactive (blocks login)"}
                           >
                             {m.flagged_inactive ? <Ban size={12} /> : <Flag size={12} />}
                           </button>

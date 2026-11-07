@@ -94,6 +94,7 @@ export const Login = async (req, res) => {
         m.email,
         m.year_of_study,
         m.status,
+        m.flagged_inactive,
         m.failed_login_attempts,
         m.locked_until,
         COALESCE(
@@ -105,7 +106,7 @@ export const Login = async (req, res) => {
       LEFT JOIN roles r ON mr.role_id = r.role_id 
       WHERE m.member_id = $1
          OR REGEXP_REPLACE(UPPER(m.member_id), '[^A-Z0-9]', '', 'g') = $2
-      GROUP BY m.member_id, m.password, m.jumuiya_id, m.first_name, m.last_name, m.email, m.year_of_study, m.status, m.failed_login_attempts, m.locked_until`,
+      GROUP BY m.member_id, m.password, m.jumuiya_id, m.first_name, m.last_name, m.email, m.year_of_study, m.status, m.flagged_inactive, m.failed_login_attempts, m.locked_until`,
       [userReg, normalizedReg],
     );
 
@@ -174,6 +175,18 @@ export const Login = async (req, res) => {
       return res.status(403).json({
         status: false,
         message: "This account is not active. Please contact your Jumuiya coordinator.",
+      });
+    }
+
+    // Coordinator-controlled account state: the Jumuiya admin "flag inactive"
+    // toggle (PATCH /jumuiya-members/flag) also blocks sign-in. Unflagging the
+    // member restores access — no password reset needed.
+    if (user.flagged_inactive) {
+      logger.warn(`Login blocked for '${user.member_id}': flagged inactive`);
+      await logLoginAttempt({ member_id: user.member_id, email: user.email, action: "login_blocked_flagged_inactive", req });
+      return res.status(403).json({
+        status: false,
+        message: "This account has been marked inactive. Please contact your Jumuiya coordinator to be reactivated.",
       });
     }
 
@@ -323,6 +336,7 @@ export const refreshAccessToken = async (req, res) => {
     //  Generate new access token
     const userResult = await pool.query(
       `SELECT m.member_id, m.jumuiya_id, m.first_name, m.last_name, m.email,
+              m.status, m.flagged_inactive,
               COALESCE(
                 ARRAY_AGG(r.role_name) FILTER (WHERE r.role_name IS NOT NULL),
                 ARRAY[]::text[]
@@ -331,7 +345,7 @@ export const refreshAccessToken = async (req, res) => {
        LEFT JOIN member_roles mr ON m.member_id = mr.member_id AND mr.status = 'approved'
        LEFT JOIN roles r ON mr.role_id = r.role_id
        WHERE m.member_id = $1
-       GROUP BY m.member_id, m.jumuiya_id, m.first_name, m.last_name, m.email`,
+       GROUP BY m.member_id, m.jumuiya_id, m.first_name, m.last_name, m.email, m.status, m.flagged_inactive`,
       [decoded.id]
     );
 
@@ -340,6 +354,16 @@ export const refreshAccessToken = async (req, res) => {
     }
 
     const user = userResult.rows[0];
+
+    // Re-check account state on every refresh so a member flagged inactive (or
+    // given an unusable status) loses access at the next token rotation instead
+    // of keeping a session alive for the full refresh lifetime.
+    if (!isLoginStatusAllowed(user.status) || user.flagged_inactive) {
+      return res.status(403).json({
+        error: "This account is inactive. Please contact your Jumuiya coordinator.",
+      });
+    }
+
     const accessTokenNew = generateAccesstoken(user.member_id, user.roles, user.first_name, user.last_name, user.email, user.jumuiya_id);
     const newRefreshToken = generateRefreshtoken(user.member_id, user.roles);
     // Save new hashed refresh token to database

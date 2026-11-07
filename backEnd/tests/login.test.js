@@ -268,6 +268,46 @@ test("Login: allows valid, warning and active statuses", async () => {
   }
 });
 
+test("Login: 403 when the coordinator flagged the member inactive", async () => {
+  reset({ ...defaultMember(), flagged_inactive: true });
+  const res = mockRes();
+  await Login(
+    mockReq({ body: { userReg: "PA100/G/2023/001", password: "Passw0rd!" } }),
+    res,
+  );
+  assert.equal(res._status, 403);
+  assert.match(res._json.message, /marked inactive/i);
+  assert.equal(res._json.accessToken, undefined);
+});
+
+test("Login: valid members are not blocked by the inactivity flag", async () => {
+  for (const flagged of [false, null, undefined]) {
+    reset({ ...defaultMember(), flagged_inactive: flagged });
+    const res = mockRes();
+    await Login(
+      mockReq({ body: { userReg: "PA100/G/2023/001", password: "Passw0rd!" } }),
+      res,
+    );
+    assert.equal(res._status, 200, `flagged_inactive=${String(flagged)} should be allowed`);
+  }
+});
+
+test("refreshAccessToken: 403 when the member has been flagged inactive", async () => {
+  reset({ ...defaultMember(), flagged_inactive: true });
+  memberState.activeTokens = [
+    { id: 7, member_id: "PA100/G/2023/001", token: "HASH_REFRESH_PA100/G/2023/001" },
+  ];
+  const res = mockRes();
+  await refreshAccessToken(
+    mockReq({
+      cookies: { refreshToken: "REFRESH_PA100/G/2023/001" },
+      body: { accessToken: "ACCESS_PA100/G/2023/001" },
+    }),
+    res,
+  );
+  assert.equal(res._status, 403);
+});
+
 test("refreshAccessToken: 401 when no token provided", async () => {
   reset(defaultMember());
   const res = mockRes();
