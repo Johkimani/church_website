@@ -173,7 +173,7 @@ export const Login = async (req, res) => {
       await logLoginAttempt({ member_id: user.member_id, email: user.email, action: "login_blocked_inactive", req });
       return res.status(403).json({
         status: false,
-        message: "This account is not active. Please contact the CSA secretary.",
+        message: "This account is not active. Please contact your Jumuiya coordinator.",
       });
     }
 
@@ -187,7 +187,7 @@ export const Login = async (req, res) => {
       await logLoginAttempt({ member_id: user.member_id, email: user.email, action: "login_blocked_no_jumuiya", req });
       return res.status(403).json({
         status: false,
-        message: "Your account is not linked to a Jumuiya yet. Please contact the CSA secretary to be assigned.",
+        message: "Your account is not linked to a Jumuiya yet. Please contact your Jumuiya coordinator to be assigned.",
       });
     }
 
