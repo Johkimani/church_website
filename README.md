@@ -4,6 +4,10 @@ Monorepo for the **Catholic Students Association (CSA) Kirinyaga** web platform:
 public website + member portal, the Node API that powers it, and a standalone
 offline attendance app for coordinators.
 
+> **Handing this project over?** Read [`HANDOVER.md`](HANDOVER.md) first — it covers
+> account ownership, per-platform environment variables, deploy/restore runbooks,
+> secret rotation and known gaps.
+
 ## Apps
 
 | App                 | Path               | Stack                             | Deploy target      |
@@ -65,6 +69,7 @@ frontEnd/        Main website — Vite + React 19 + TypeScript + Tailwind
 backEnd/         API server — Express 5, ESM (".js"), mounts /api/v1 (see src/routers/v1/index.js)
 attendanceApp/   Offline-capable attendance recorder for Jumuiya Coordinators
 vercel.json      Vercel config (frontEnd) — SPA rewrites + security headers
+HANDOVER.md      Account ownership, deploy/restore runbooks, secret rotation
 ```
 Each app has its own `package.json`; there is no root install.
 
@@ -74,7 +79,7 @@ Each app has its own `package.json`; there is no root install.
 ```bash
 cd backEnd
 npm install
-cp .env.example .env      # create one if missing; set values from the table below
+cp .env.example .env      # then fill in the values documented below
 npm run dev               # nodemon src/server.js → http://localhost:3001
 npm start                 # production: node src/server.js
 ```

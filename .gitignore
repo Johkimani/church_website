@@ -43,3 +43,5 @@ backEnd/verify_login_hash.mjs
 backEnd/cleanup_db.js
 .vercel
 .env*
+!.env.example
+!backEnd/.env.example
