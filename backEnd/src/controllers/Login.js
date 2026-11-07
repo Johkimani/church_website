@@ -156,6 +156,20 @@ export const Login = async (req, res) => {
       });
     }
 
+    // Hardening: every login account must belong to a Jumuiya. This is checked
+    // in the background from the member row — the user never supplies it. It
+    // stops accounts that were created outside the official admission/import
+    // flows (or left unassigned by an import) from being usable until an
+    // official assigns them.
+    if (!user.jumuiya_id) {
+      logger.warn(`Login blocked for '${user.member_id}': no Jumuiya assigned`);
+      await logLoginAttempt({ member_id: user.member_id, email: user.email, action: "login_blocked_no_jumuiya", req });
+      return res.status(403).json({
+        status: false,
+        message: "Your account is not linked to a Jumuiya yet. Please contact the CSA secretary to be assigned.",
+      });
+    }
+
     // Successful login clears any lockout state and marks the session active.
     await pool.query(
       `UPDATE members SET failed_login_attempts = 0, locked_until = NULL, last_seen_at = NOW() WHERE member_id = $1`,

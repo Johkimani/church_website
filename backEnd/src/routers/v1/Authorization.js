@@ -19,7 +19,6 @@ import {
   listAllUsersRolesPermissions,
   registerPermissions,
   registerRoles,
-  registerUser,
   updateUserRoles,
 } from "../../controllers/roles-permisions/roles_permissions.js";
 import {
@@ -47,7 +46,10 @@ const OFFICIAL_ROLES = [
 const route = Router();
 
 route.post("/login", Login);
-route.post("/register", registerUser);
+// Public self-registration was retired: it created an active `members` row
+// (login account) directly, bypassing the Jumuiya/WhatsApp admission queue.
+// New members must now come through /jumuiya/self-register, /jumuiya/join/submit
+// or an official import, then be promoted from the pending queue.
 route.get("/jumuiya-list", getPublicJumuiyaList);
 route.post("/first-login-setup", firstLoginSetup);
 route.post("/verify-email", verifyEmail);
@@ -65,8 +67,8 @@ route.post("/mpesa/callback", callback);
 route.get("/mpesa/callback", callback);
 
 // Admin-only: role, permission and member management (auth + role gates).
-// /register and /jumuiya-list stay public for the self-registration form;
-// registerUser itself is locked to the Member role (see controller).
+// /jumuiya-list stays public so the self-registration forms can populate the
+// Jumuiya dropdown.
 route.post("/roles", verifyToken, requireRole(...OFFICIAL_ROLES), registerRoleValidator, validate, registerRoles);
 route.post(
   "/permissions",
