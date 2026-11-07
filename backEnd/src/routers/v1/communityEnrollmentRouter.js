@@ -2,6 +2,7 @@ import { Router } from "express";
 import verifyToken, { optionalAuth } from "../../middlewares/Tokens.js";
 import { requireRole } from "../../middlewares/requireRole.js";
 import verifyCaptcha from "../../middlewares/captcha.js";
+import { communityEnrollmentLimiter } from "../../middlewares/publicFormLimiter.js";
 import {
   ALL_COMMUNITY_ADMIN_ROLES,
   requireCommunityModuleScope,
@@ -32,7 +33,13 @@ router.get(
 );
 
 // Public routes (optionalAuth: captures user info if logged in, but doesn't require it)
-router.post("/:moduleId", optionalAuth, verifyCaptcha, createEnrollment);
+router.post(
+  "/:moduleId",
+  communityEnrollmentLimiter,
+  optionalAuth,
+  verifyCaptcha,
+  createEnrollment
+);
 router.get("/:moduleId/check-duplicate", checkDuplicate);
 
 // Authenticated: withdraw your own rejected enrollment (for re-application)

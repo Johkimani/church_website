@@ -9,16 +9,20 @@ import {
   publicJoinSubmit,
 } from "../../controllers/publicJoinController.js";
 import verifyCaptcha from "../../middlewares/captcha.js";
+import {
+  selfRegisterLimiter,
+  publicJoinLimiter,
+} from "../../middlewares/publicFormLimiter.js";
 
 const router = Router();
 
 // Public Dynamic WhatsApp Self-Registration endpoints (no auth required)
-router.post("/self-register", verifyCaptcha, selfRegisterMember);
+router.post("/self-register", selfRegisterLimiter, verifyCaptcha, selfRegisterMember);
 router.get("/check-duplicate", checkDuplicateMember);
 router.get("/info/:slug", getPublicJumuiyaInfo);
 
 // Public /join self-registration (QR code at church, CSA admission queue)
 router.get("/join/check-duplicate", checkDuplicateJoin);
-router.post("/join/submit", verifyCaptcha, publicJoinSubmit);
+router.post("/join/submit", publicJoinLimiter, verifyCaptcha, publicJoinSubmit);
 
 export default router;

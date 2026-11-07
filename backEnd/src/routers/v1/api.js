@@ -10,6 +10,7 @@ import logger from "../../logger/winston.js";
 import verifyToken from "../../middlewares/Tokens.js";
 import optionalVerifyToken from "../../middlewares/optionalVerifyToken.js";
 import verifyCaptcha from "../../middlewares/captcha.js";
+import { publicWriteLimiter } from "../../middlewares/publicFormLimiter.js";
 import { requireRole, OFFICIAL_ROLES } from "../../middlewares/requireRole.js";
 import {
   getCallerModuleScopes,
@@ -124,11 +125,14 @@ const authorizeTableAccess = (req, res, next) => {
 
   if (method === "POST" && PUBLIC_POST_TABLES.has(table)) {
     // Public writes: for suggestions, still attach the caller identity when a
-    // (valid) token is present so user_id is trusted server-side.
-    if (table === "suggestions") {
-      return optionalVerifyToken(req, res, () => verifyCaptcha(req, res, next));
-    }
-    return verifyCaptcha(req, res, next);
+    // (valid) token is present so user_id is trusted server-side. The per-IP
+    // limiter runs first so anonymous floods are rejected before CAPTCHA work.
+    return publicWriteLimiter(req, res, () => {
+      if (table === "suggestions") {
+        return optionalVerifyToken(req, res, () => verifyCaptcha(req, res, next));
+      }
+      return verifyCaptcha(req, res, next);
+    });
   }
   return verifyToken(req, res, () => requireRole(...OFFICIAL_ROLES)(req, res, next));
 };
