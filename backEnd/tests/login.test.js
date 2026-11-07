@@ -231,6 +231,43 @@ test("Login: forcePasswordChange when password equals reg number", async () => {
   assert.equal(res._json.forcePasswordChange, true);
 });
 
+test("Login: 403 when account has no Jumuiya", async () => {
+  reset({ ...defaultMember(), jumuiya_id: null });
+  const res = mockRes();
+  await Login(
+    mockReq({ body: { userReg: "PA100/G/2023/001", password: "Passw0rd!" } }),
+    res,
+  );
+  assert.equal(res._status, 403);
+  assert.match(res._json.message, /Jumuiya/i);
+  assert.equal(res._json.accessToken, undefined);
+});
+
+test("Login: 403 for a non-usable account status", async () => {
+  for (const status of ["pending", "error", "rejected", "inactive"]) {
+    reset({ ...defaultMember(), status });
+    const res = mockRes();
+    await Login(
+      mockReq({ body: { userReg: "PA100/G/2023/001", password: "Passw0rd!" } }),
+      res,
+    );
+    assert.equal(res._status, 403, `status '${status}' should be blocked`);
+    assert.match(res._json.message, /not active/i);
+  }
+});
+
+test("Login: allows valid, warning and active statuses", async () => {
+  for (const status of ["valid", "warning", "active", "VALID"]) {
+    reset({ ...defaultMember(), status });
+    const res = mockRes();
+    await Login(
+      mockReq({ body: { userReg: "PA100/G/2023/001", password: "Passw0rd!" } }),
+      res,
+    );
+    assert.equal(res._status, 200, `status '${status}' should be allowed`);
+  }
+});
+
 test("refreshAccessToken: 401 when no token provided", async () => {
   reset(defaultMember());
   const res = mockRes();

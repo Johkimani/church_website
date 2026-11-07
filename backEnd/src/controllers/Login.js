@@ -23,6 +23,15 @@ dotenv.config();
 
 const logLoginAttempt = logAuthEvent;
 
+// Only accounts in a known-good state may sign in. `valid`/`warning` come from
+// the import validator, `active` is the schema default for programmatically
+// created accounts (setup admin / role sync). Anything else — pending, error,
+// rejected, inactive — is not a usable login account. A NULL status is treated
+// as legacy and allowed, since the column default is 'active'.
+const LOGIN_ALLOWED_STATUSES = new Set(["active", "valid", "warning"]);
+const isLoginStatusAllowed = (status) =>
+  !status || LOGIN_ALLOWED_STATUSES.has(String(status).toLowerCase());
+
 // The refresh token lives in an httpOnly cookie so injected JS (XSS) can't read
 // it. SameSite=None is required because the frontend (Vercel) and API (Render)
 // are different sites; Secure is mandatory alongside it. When running over
@@ -84,6 +93,7 @@ export const Login = async (req, res) => {
         m.last_name, 
         m.email,
         m.year_of_study,
+        m.status,
         m.failed_login_attempts,
         m.locked_until,
         COALESCE(
@@ -95,7 +105,7 @@ export const Login = async (req, res) => {
       LEFT JOIN roles r ON mr.role_id = r.role_id 
       WHERE m.member_id = $1
          OR REGEXP_REPLACE(UPPER(m.member_id), '[^A-Z0-9]', '', 'g') = $2
-      GROUP BY m.member_id, m.password, m.jumuiya_id, m.first_name, m.last_name, m.email, m.year_of_study, m.failed_login_attempts, m.locked_until`,
+      GROUP BY m.member_id, m.password, m.jumuiya_id, m.first_name, m.last_name, m.email, m.year_of_study, m.status, m.failed_login_attempts, m.locked_until`,
       [userReg, normalizedReg],
     );
 
@@ -153,6 +163,17 @@ export const Login = async (req, res) => {
       return res.status(401).json({
         status: false,
         message: "Invalid username or password"
+      });
+    }
+
+    // Account-state gate: reject accounts the import/role flows flagged as not
+    // usable (pending, error, rejected, inactive) before issuing any session.
+    if (!isLoginStatusAllowed(user.status)) {
+      logger.warn(`Login blocked for '${user.member_id}': status is '${user.status}'`);
+      await logLoginAttempt({ member_id: user.member_id, email: user.email, action: "login_blocked_inactive", req });
+      return res.status(403).json({
+        status: false,
+        message: "This account is not active. Please contact the CSA secretary.",
       });
     }
 
