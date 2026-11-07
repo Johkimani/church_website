@@ -21,6 +21,7 @@ Read it with [`README.md`](README.md), which covers local setup and the API over
 | Images / video | — | Cloudinary | Cloudinary |
 | Email | — | Resend HTTPS API | Resend |
 | AI features | — | Groq | Groq |
+| Choir-song OCR (optional) | — | Gemini (Google AI Studio) + Cloud Vision fallback | Google |
 | Payments | — | Safaricom Daraja (M-Pesa STK push) | Safaricom |
 | SMS (optional) | — | Africa's Talking | Africa's Talking |
 | Captcha (optional) | — | Cloudflare Turnstile | Cloudflare |
@@ -51,9 +52,13 @@ each dashboard and confirm before removing anyone.
 | **Vercel** | `frontEnd` and `attendanceApp` projects + `VITE_*` vars | CSA Vercel **Team** | Verify |
 | **Aiven** | PostgreSQL database, backups | CSA Aiven **Project**, members added per person | Verify |
 | **Cloudinary** | Uploaded images/videos | Shared CSA account (free plan has no sub-accounts) | Verify |
-| **Resend** | Transactional email, sender domain | Shared CSA mailbox | Verify |
-| **Groq** | AI question/assistant API key | Shared CSA mailbox | Verify |
-| **Safaricom Daraja** | M-Pesa shortcode, passkey, consumer key/secret | CSA organisation Daraja account | Verify |
+| **Resend** | Transactional email: first-login OTP, password reset, notifications. **Effectively required** — these flows fail without it | Shared CSA mailbox | Verify |
+| **Groq** | AI API key for daily questions, weekly challenge, assistant chat and hymn structuring. **Required** for those features | Shared CSA mailbox | Verify |
+| **Google AI Studio (Gemini)** | Choir sheet-music OCR and text cleanup (`GEMINI_API_KEY` / `GOOGLE_API_KEY`). Not used for questions | Shared CSA Google account | Verify |
+| **Google Cloud Vision** | OCR fallback for unreadable choir scans (`GOOGLE_VISION_API_KEY`) | CSA Google Cloud project (billing enabled) | Verify |
+| **Firebase** | Optional alternative hosting for `frontEnd` (`frontEnd/firebase.json`) | Same CSA Google account as above | Verify (likely unused) |
+| **MongoDB Atlas** | Legacy only — no code path reads `MONGODB_URI` today | Not needed; keep or delete | Verify |
+| **Safaricom Daraja** | M-Pesa shortcode, passkey, consumer key/secret | CSA organisation Daraja account (business KYC, not email-only) | Verify |
 | **Africa's Talking** | SMS sender ID + API key | Shared CSA mailbox | Verify |
 | **Cloudflare** | Turnstile widget, DNS for `csakyu.com` | Shared CSA mailbox | Verify |
 | **Domain registrar** | `csakyu.com` (and any aliases) | CSA organisation | Verify |
@@ -72,6 +77,57 @@ Rules for the migration:
 5. GitHub: transfer the repo to the org, then update `origin` (and any mirrors) to the
    new URL. Update Render/Vercel integrations to watch the org repo.
 
+### 2.1 Can one mailbox (e.g. Zoho Mail) own every account?
+
+Short answer: **one mailbox is fine; one password is not.** Pointing every service at a
+single CSA email address is a good first step, but email ownership is only the identity
+and recovery channel — it is not the login, and it does not transfer access by itself.
+
+| Expectation | Reality |
+| --- | --- |
+| "One email can own everything" | Mostly true for *identity and recovery*. Every service still needs its own password, API key and 2FA enrolment. |
+| "Just change the email to the CSA mailbox" | Only works while you can still sign in to the old account, or the platform offers an owner/admin transfer (GitHub org transfer, Vercel team, Render team, Aiven project). |
+| "It is automatically more secure" | It centralises the blast radius. A compromised inbox lets an attacker trigger password resets on every attached service. |
+| "Aliases are separate accounts" | No. Aliases (`github@`, `render@`, `resend@`…) all land in one inbox and share its password, 2FA and compromise. |
+
+Recommended setup:
+
+1. Use a **CSA-owned domain address**, e.g. `admin@csakyu.com`, not `@zoho.com`. If the
+   mail provider changes later, the address stays the same and no service has to be
+   re-registered.
+2. Give each service a **distinct alias** (`github@`, `vercel@`, `render@`, `aiven@`,
+   `cloudinary@`, `resend@`, `groq@`, `google@`, `daraja@`, `at@`, `cloudflare@`) with a
+   filter/label per alias. Recovery mail is then identifiable and offboarding is auditable.
+3. Store a **unique, long password per service** in the shared vault. Never reuse the
+   mailbox password, and never make the mailbox password the vault master password.
+4. Enable **2FA on the mailbox itself** (TOTP or hardware key), and keep recovery codes
+   offline in the CSA vault. The mailbox is now the master key — protect it at least as
+   strongly as the database.
+5. Enable 2FA on each service as well. Where TOTP is offered, store the seed in the vault
+   so access does not depend on one person's phone. Prefer org/team features (GitHub
+   Organization, Vercel/Render teams, Aiven project members) over sharing one login.
+6. Keep **at least two CSA officials** with mailbox access and with org/team admin on the
+   critical services.
+7. Check provider limits before committing. Zoho Mail's free tier has a small user and
+   storage allowance and a single domain; confirm the current limits (and alias/IMAP
+   support) first. A small paid plan is cheaper than a lockout.
+
+Things a single email cannot fix:
+
+- **Safaricom Daraja** is tied to a business shortcode, passkey and organisation
+  documents/KYC, not just an email address.
+- **Cloudflare** (DNS for `csakyu.com`) and the **domain registrar** control the domain
+  itself; losing either is worse than losing one app account. Keep them with two officials.
+- **Phone recovery** must use a CSA-controlled number/SIM, not a departing student's phone.
+- **Resend sending DNS**: if `RESEND_FROM` uses `@csakyu.com`, adding Zoho for inbound mail
+  means keeping Resend's SPF/DKIM records alongside Zoho's MX records. Prefer a sending
+  subdomain (e.g. `send.csakyu.com`) so inbound mail and transactional sending cannot
+  break each other.
+
+Practical order: create the CSA mailbox and vault → transfer GitHub to the org →
+set up Render/Vercel/Aiven teams → rotate every secret (§6) → re-point each service to its
+alias → remove personal owners last, after two officials have verified access.
+
 ---
 
 ## 3. Environment variables by platform
@@ -82,8 +138,10 @@ host dashboards.
 ### 3.1 Backend — Render
 
 Template: [`backEnd/.env.example`](backEnd/.env.example). The blueprint
-[`backEnd/render.yaml`](backEnd/render.yaml) declares every key; entries marked
-`sync: false` are prompted on first deploy and must be filled in.
+[`backEnd/render.yaml`](backEnd/render.yaml) declares the required keys; entries marked
+`sync: false` are prompted on first deploy and must be filled in. The optional Google and
+Africa's Talking keys are not in the blueprint — add them manually if those features are
+switched on.
 
 | Group | Variables |
 | --- | --- |
@@ -91,13 +149,14 @@ Template: [`backEnd/.env.example`](backEnd/.env.example). The blueprint
 | Origins | `CORS_ORIGIN` (comma-separated, no trailing slash), `FRONTEND_URL` (declared but currently unused) |
 | Database | `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_SSL=true`, `DB_SSL_ALLOW_SELF_SIGNED=true` |
 | Auth | `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` (**must be different**), `JWT_SECRET` (dev fallback only), optional legacy `ACCESS_TOKEN_SECRET` |
-| AI | `GROQ_API_KEY` |
+| AI — questions/chat | `GROQ_API_KEY` (daily questions, weekly challenge, assistant chat, hymn structuring) |
+| AI — choir OCR (optional) | `GEMINI_API_KEY` or `GOOGLE_API_KEY` (primary), `GOOGLE_VISION_API_KEY` (fallback). Not used for question generation |
 | Media | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` |
 | M-Pesa | `CONSUMER_KEY`, `CONSUMER_SECRET`, `SHORTCODE`, `PASSKEY`, `CALLBACK_URL`, optional `MPESA_ENV`, `MPESA_BASE_URL` |
 | Email | `RESEND_API_KEY`, `RESEND_FROM`, `RESEND_REPLY_TO`; legacy `MAIL_USER`, `MAIL_PASSWORD` (SMTP is blocked on Render) |
 | SMS | optional `AT_API_KEY`, `AT_USERNAME`, `AT_SENDER_ID` |
 | Captcha | optional `TURNSTILE_SECRET_KEY`, `TURNSTILE_FAIL_OPEN` |
-| Misc | optional `GEMINI_API_KEY` / `GOOGLE_API_KEY`, `GOOGLE_VISION_API_KEY`, `ROLE_SYNC_INTERVAL_MS`, `REDIS_URL` (unused), `MONGODB_URI` (legacy/unused), `SETUP_ADMIN_ENABLED` (dev only) |
+| Misc | optional `ROLE_SYNC_INTERVAL_MS`, `REDIS_URL` (unused), `MONGODB_URI` (legacy/unused), `SETUP_ADMIN_ENABLED` (dev only) |
 
 **Production boot guard:** `src/utils/jwtConfig.js` throws if
 `JWT_ACCESS_SECRET`/`JWT_REFRESH_SECRET` are missing or identical. If the backend
@@ -228,6 +287,7 @@ Work through this list, update the host dashboards, redeploy, and verify login/p
 - [ ] Cloudinary API key/secret.
 - [ ] Resend API key and sender configuration.
 - [ ] Groq API key.
+- [ ] Google AI Studio / Cloud Vision API keys (if choir OCR is used).
 - [ ] Safaricom Daraja consumer key/secret and passkey (coordinate with Safaricom).
 - [ ] Africa's Talking API key (if used).
 - [ ] Cloudflare Turnstile secret/site key (if used).
@@ -366,8 +426,11 @@ for a local Postgres.
 Copy this into the shared tracker and tick it off with the incoming team present.
 
 - [ ] Repo transferred to CSA org; `origin` updated; old mirrors documented or removed.
-- [ ] Render team, Vercel team, Aiven project, Cloudinary, Resend, Groq, Daraja,
-      Africa's Talking and Cloudflare all owned by CSA identities.
+- [ ] Render team, Vercel team, Aiven project, Cloudinary, Resend, Groq, Google
+      (AI Studio / Vision / Firebase), Daraja, Africa's Talking and Cloudflare all owned
+      by CSA identities, using aliases on the CSA mailbox.
+- [ ] CSA mailbox has its own 2FA and offline recovery codes; at least two officials can
+      sign in to it.
 - [ ] At least two CSA officials are admins on each platform.
 - [ ] Shared password manager populated; 2FA enabled; recovery codes stored.
 - [ ] All backend env vars documented and present in Render.
