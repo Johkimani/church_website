@@ -7,7 +7,6 @@ import { useMobileNav } from "../context/MobileNavContext";
 import { FaBell, FaShoppingCart, FaBook } from "react-icons/fa";
 import { publicNavLinks, authNavLinks } from "./headerRoutes";
 import { prefetchRoute } from "./routePrefetch";
-import AdminPanel from "../pages/Landing/components/AdminPanel";
 
 const isAdminRole = (role: string | string[] | undefined): boolean => {
   if (!role) return false;
@@ -21,7 +20,6 @@ const Headers = () => {
   const { cart, cartItemsCount, setIsCartOpen } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
-  const [showAdmin, setShowAdmin] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [animateBadge, setAnimateBadge] = useState(false);
   const [animateCart, setAnimateCart] = useState(false);
@@ -91,8 +89,6 @@ const Headers = () => {
 
   return (
     <>
-      {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
-
       <nav
         className={`sticky top-0 z-50 transition-all duration-300 ${
           scrolled
