@@ -60,8 +60,8 @@ each dashboard and confirm before removing anyone.
 | **MongoDB Atlas** | Legacy only — no code path reads `MONGODB_URI` today | Not needed; keep or delete | Verify |
 | **Safaricom Daraja** | M-Pesa shortcode, passkey, consumer key/secret | CSA organisation Daraja account (business KYC, not email-only) | Verify |
 | **Africa's Talking** | SMS sender ID + API key | Shared CSA mailbox | Verify |
-| **Cloudflare** | Turnstile widget, DNS for `csakyu.com` | Shared CSA mailbox | Verify |
-| **Domain registrar** | `csakyu.com` (and any aliases) | CSA organisation | Verify |
+| **Truehost** | Domain registrar **and authoritative DNS** for `csakyu.com` (MX/TXT live here) | CSA organisation account, org mailbox as the login | Truehost account — currently a **personal email**; migrate (§2.2) |
+| **Cloudflare** | Turnstile widget only (DNS is at Truehost) | Shared CSA mailbox | Verify |
 | **Password manager** | Every credential + recovery codes | CSA shared vault (Bitwarden/1Password) | To create |
 
 Rules for the migration:
@@ -116,8 +116,9 @@ Things a single email cannot fix:
 
 - **Safaricom Daraja** is tied to a business shortcode, passkey and organisation
   documents/KYC, not just an email address.
-- **Cloudflare** (DNS for `csakyu.com`) and the **domain registrar** control the domain
-  itself; losing either is worse than losing one app account. Keep them with two officials.
+- The **domain registrar / DNS** for `csakyu.com` is **Truehost**; whoever holds that
+  account controls the domain itself. Losing it is worse than losing one app account.
+  Keep it with two officials. (Cloudflare is used only for Turnstile.)
 - **Phone recovery** must use a CSA-controlled number/SIM, not a departing student's phone.
 - **Resend sending DNS**: if `RESEND_FROM` uses `@csakyu.com`, adding Zoho for inbound mail
   means keeping Resend's SPF/DKIM records alongside Zoho's MX records. Prefer a sending
@@ -127,6 +128,48 @@ Things a single email cannot fix:
 Practical order: create the CSA mailbox and vault → transfer GitHub to the org →
 set up Render/Vercel/Aiven teams → rotate every secret (§6) → re-point each service to its
 alias → remove personal owners last, after two officials have verified access.
+
+### 2.2 Migrating off the personal Truehost email (the current blocker)
+
+`csakyu.com` is registered at **Truehost**, its DNS is hosted at **Truehost**, and the
+Truehost account still logs in with a **personal email**. That personal login is the root
+of the "everything is tied to one person" problem, and it also sits in front of the mail
+setup — you cannot add Zoho MX/TXT records without it.
+
+No provider lets you create an account with *zero* person attached (they all require a
+verification phone). Aim instead for **no personal assets**: an org phone, an org mailbox,
+and two officials. The chicken-and-egg is real — the personal login is needed **one last
+time** to edit DNS and to change Truehost's own contact email.
+
+Runbook:
+
+1. **Get an org phone number.** A CSA-controlled SIM or office line. Register it to the
+   org, store the SIM/PIN in the shared vault. This is the verification/2FA anchor for
+   Zoho and the other services.
+2. **Create the org mailbox** — choose one:
+   - **Zoho Mail** (recommended): sign up with the org phone → add `csakyu.com` → Zoho
+     generates a TXT verification record. Free tier: 5 users, 1 domain, 5 GB each,
+     web/mobile only (no IMAP/SMTP).
+   - **Truehost email**: cPanel → Email Accounts → create `admin@csakyu.com`. No DNS
+     change needed, but fewer aliases and less flexible; harder to move later.
+3. **Verify the domain.** Log into Truehost DNS (personal login, **last time**) and add
+   the Zoho TXT record; click Verify in Zoho.
+4. **Point mail at Zoho.** Add `mx.zoho.com` (10), `mx2.zoho.com` (20), `mx3.zoho.com`
+   (50) and remove any existing Truehost MX records. If `RESEND_FROM` sends as
+   `@csakyu.com`, move it to a `send.csakyu.com` subdomain first so inbound mail and
+   Resend's SPF/DKIM do not collide.
+5. **Create `admin@csakyu.com` and the aliases** (`info@`, `chairperson@`, `secretary@`,
+   `dpo@`, `registrar@`, `github@`, `render@`, `resend@`, `groq@`, `cloudinary@`, `at@`,
+   `google@`, `daraja@`). The first user created is the super admin.
+6. **Hand Truehost to the org.** In the Truehost client area, change the account email
+   from the personal Gmail to `admin@csakyu.com` (or `registrar@csakyu.com`), add a second
+   CSA admin, set a new password, enable 2FA, and move domain-renewal billing to the org.
+7. **Then migrate the services** (§2 matrix): orgs/teams (GitHub, Vercel, Render, Aiven)
+   transfer; single-account services change their login email to the matching alias. Never
+   delete a personal account until the new email is confirmed and login is verified.
+8. **Retire the personal email last:** remove it as a recovery address everywhere, then
+   stop using it. Finally update the two hardcoded addresses in
+   `frontEnd/src/pages/Terms.tsx` and `Privacy.tsx` to org aliases and redeploy.
 
 ---
 
@@ -447,5 +490,5 @@ Copy this into the shared tracker and tick it off with the incoming team present
 
 ---
 
-_Last reviewed: 2026-11-07. Update this date and the account matrix whenever ownership
+_Last reviewed: 2026-11-11. Update this date and the account matrix whenever ownership
 changes._
