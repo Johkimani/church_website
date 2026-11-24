@@ -201,7 +201,7 @@ const whatsappHref = (raw: string | null, name: string) => {
   const intl = toIntlDigits(raw);
   if (!intl) return "";
   const msg = encodeURIComponent(
-    `Hello ${name}, this is the CSA Kirinyaga office. We noticed you may be having trouble signing in to the members portal and we'd like to help you get access.`
+    `Hello ${name}, this is the Jumuiya coordinator. We noticed you may be having trouble signing in to the members portal and we'd like to help you get access.`
   );
   return `https://wa.me/${intl}?text=${msg}`;
 };
@@ -340,7 +340,7 @@ export default function SignInsPanel() {
     const intl = toIntlDigits(s.match_phone);
     const correct = s.match_member_id;
     const msg = encodeURIComponent(
-      `Hello ${s.match_name || "there"}, this is the CSA Kirinyaga office. ` +
+      `Hello ${s.match_name || "there"}, this is the Jumuiya coordinator. ` +
         `We noticed you tried to sign in to the members portal using "${s.member_id}", but no account matches that. ` +
         (correct && correct !== s.member_id
           ? `Your registration number is ${correct}. Please use it exactly as shown, with your password, to sign in. `
