@@ -41,11 +41,10 @@ const JumuiyaDetail: React.FC = () => {
     const userRoles = Array.isArray(user?.role) ? user.role : user?.role ? [user.role] : [];
     const isJumuiyaOfficial = isMemberOfThisJumuiya && userRoles.some(r => ['jumuiya_os', 'jumuiya_chairperson', 'jumuiya_secretary', 'admin'].includes(r));
     const canManageActivities = isAdmin || isJumuiyaOfficial;
-    // Liturgist role (covers assistant liturgist) sees only the membership +
-    // posted prayer partners on the public page unless they also hold a
-    // management role.
+    // Liturgists (CSA or jumuiya) see only the membership + posted prayer
+    // partners on the public page unless they also hold a management role.
     const isPureLiturgist = isMemberOfThisJumuiya &&
-        userRoles.some(r => String(r).toLowerCase() === 'liturgist') &&
+        userRoles.some(r => ['liturgist', 'jumuiya_liturgist'].includes(String(r).toLowerCase())) &&
         !userRoles.some(r => ['jumuiya_os', 'jumuiya_chairperson', 'jumuiya_secretary', 'admin'].includes(String(r).toLowerCase()));
     // Every member of the jumuiya can view the posted prayer partner list.
     const isPrayerPartnersAllowed = isMemberOfThisJumuiya;

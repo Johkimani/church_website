@@ -29,12 +29,19 @@ const resolveGroupId = async (target) => {
   return rows[0]?.group_id || null;
 };
 
+// Jumuiya officials allowed to manage Prayer Partners. The CSA `liturgist`
+// role is deliberately excluded — it is scoped to Devotions & AI only.
+const JUMUIYA_PRAYER_MANAGER_ROLES = [
+  "jumuiya_chairperson",
+  "jumuiya_secretary",
+  "jumuiya_os",
+  "jumuiya_liturgist",
+];
+
 /**
- * Any authenticated user whose approved roles make them a jumuiya official may
- * manage their own jumuiya's prayer partners — that includes the jumuiya
- * liturgist and assistant jumuiya liturgist (they are not in the standard
- * jumuiya-official role list, so this guard checks member_roles directly).
- * Global/cross-jumuiya officials bypass. 404 keeps roles hidden from probes.
+ * The caller must be a member of the target jumuiya and hold one of the
+ * approved jumuiya-official roles above. Global/cross-jumuiya officials
+ * bypass. 404 keeps roles hidden from probes.
  */
 const ensureJumuiyaOfficial = async (req, res, next) => {
   try {
@@ -60,8 +67,14 @@ const ensureJumuiyaOfficial = async (req, res, next) => {
     }
 
     const hasRole = await db.query(
-      `SELECT id FROM member_roles WHERE member_id = $1 AND status = 'approved' LIMIT 1`,
-      [req.user.member_id]
+      `SELECT mr.id
+       FROM member_roles mr
+       JOIN roles r ON r.role_id = mr.role_id
+       WHERE mr.member_id = $1
+         AND mr.status = 'approved'
+         AND LOWER(TRIM(r.role_name)) = ANY($2::text[])
+       LIMIT 1`,
+      [req.user.member_id, JUMUIYA_PRAYER_MANAGER_ROLES]
     );
     if (hasRole.rows.length === 0) return res.status(404).json({ success: false, message: "Resource not found" });
     next();

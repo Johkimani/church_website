@@ -54,6 +54,7 @@ const ROLE_COLORS: Record<string, string> = {
   "jumuiya vice chairperson": "bg-sky-100 text-sky-800 border-sky-200",
   "jumuiya secretary": "bg-teal-100 text-teal-800 border-teal-200",
   "jumuiya os": "bg-cyan-100 text-cyan-800 border-cyan-200",
+  "jumuiya liturgist": "bg-rose-100 text-rose-800 border-rose-200",
   "os": "bg-amber-100 text-amber-800 border-amber-200",
   "project manager": "bg-orange-100 text-orange-800 border-orange-200",
   "treasurer": "bg-lime-100 text-lime-800 border-lime-200",

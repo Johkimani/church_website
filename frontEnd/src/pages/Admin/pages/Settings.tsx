@@ -62,6 +62,7 @@ const ROLE_PAGES_MAP: Record<string, string[]> = {
   jumuiya_vice_chairperson: ['Jumuiya T-Shirts (scoped to their Jumuiya)', 'Suggestion Box (scoped to their Jumuiya)'],
   jumuiya_os: ['Gallery (scoped to their Jumuiya)'],
   jumuiya_secretary: ['Members (scoped to their Jumuiya)'],
+  jumuiya_liturgist: ['Prayer Partners (scoped to their Jumuiya)'],
   choir_chairperson: ['Community Management (Choir)'],
   choir_vice_chair: ['Community Management (Choir)'],
   choir_vice_secretary: ['Community Management (Choir)'],
@@ -85,7 +86,7 @@ const ROLE_PAGES_MAP: Record<string, string[]> = {
 };
 
 const CSA_ROLES = ['csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator', 'assistant_jumuiya_coordinator', 'os', 'project_manager', 'instrument_manager', 'treasurer', 'liturgist'];
-const JUMUIYA_ROLES = ['jumuiya_chairperson', 'jumuiya_vice_chairperson', 'jumuiya_os', 'jumuiya_secretary'];
+const JUMUIYA_ROLES = ['jumuiya_chairperson', 'jumuiya_vice_chairperson', 'jumuiya_os', 'jumuiya_secretary', 'jumuiya_liturgist'];
 const SUBGROUP_ROLES = [
   'choir_chairperson', 'choir_vice_chair', 'choir_vice_secretary', 'choir_secretary', 'choir_treasurer',
   'choir_project_coordinator', 'choir_male_representative', 'choir_female_representative',
@@ -123,6 +124,7 @@ const ROLE_LABEL_MAP: Record<string, string> = {
   jumuiya_vice_chairperson: 'Jumuiya Vice Chairperson',
   jumuiya_os: 'Jumuiya Organizing Secretary',
   jumuiya_secretary: 'Jumuiya Secretary',
+  jumuiya_liturgist: 'Jumuiya Liturgist',
 };
 
 const getRoleDisplayName = (assignment: Assignment): string => {

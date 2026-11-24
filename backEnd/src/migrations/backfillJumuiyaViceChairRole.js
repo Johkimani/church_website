@@ -18,6 +18,7 @@ const backfillJumuiyaViceChairRole = async () => {
       { name: "jumuiya_chairperson", description: "Full admin access for their respective Jumuiya only + Jumuiya T-shirts" },
       { name: "jumuiya_os", description: "Manages Gallery and Announcements for their specific Jumuiya" },
       { name: "jumuiya_secretary", description: "Handles member Registrations for their specific Jumuiya" },
+      { name: "jumuiya_liturgist", description: "Manages Prayer Partners for their specific Jumuiya" },
       { name: "csa_vice_chair", description: "Vice Chair - manages the Suggestion Box" },
       { name: "jumuiya_coordinator", description: "Global Manager - adds/manages all officials and members across the system" },
     ];

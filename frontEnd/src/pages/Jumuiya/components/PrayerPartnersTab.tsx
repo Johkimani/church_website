@@ -79,7 +79,7 @@ export default function PrayerPartnersTab({ jumuiyaId, jumuiyaName, jumuiyaColor
                         {jumuiyaName} Prayer Partners
                     </h1>
                     <p className="page-description">
-                        The official prayer partners for {jumuiyaName}, posted by the jumuiya liturgist. Pray for each other
+                        The official prayer partners for {jumuiyaName}, posted by your jumuiya officials. Pray for each other
                         throughout the year.
                     </p>
                 </div>

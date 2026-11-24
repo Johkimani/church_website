@@ -46,7 +46,7 @@ const TAB_CONFIGS: Record<string, { id: DashboardTab; label: string; icon: any }
     { id: "announcements", label: "Announcements", icon: Megaphone },
     { id: "gallery", label: "Gallery", icon: Image },
   ],
-  liturgist: [
+  jumuiya_liturgist: [
     PRAYER_PARTNERS_TAB,
   ],
 };
@@ -102,15 +102,14 @@ export default function SecretaryDashboard() {
   const isChair = normalizedRoles.includes("JUMUIYA_CHAIRPERSON");
   const isSecretary = normalizedRoles.includes("JUMUIYA_SECRETARY");
   const isOs = normalizedRoles.includes("JUMUIYA_OS");
-  const roleKey = isChair ? "chair" : isSecretary ? "secretary" : "os";
-  // A liturgist who holds no management role gets only the Prayer Partners tab.
-  const isPureLiturgist = normalizedRoles.includes("LITURGIST") && !isChair && !isSecretary && !isOs;
-  const tabs = isPureLiturgist ? TAB_CONFIGS.liturgist : [...TAB_CONFIGS[roleKey], PRAYER_PARTNERS_TAB];
-  const roleLabel = isPureLiturgist
-    ? "Liturgist · Prayer Partners"
+  const isJumuiyaLiturgist = normalizedRoles.includes("JUMUIYA_LITURGIST");
+  const roleKey = isChair ? "chair" : isSecretary ? "secretary" : isOs ? "os" : isJumuiyaLiturgist ? "jumuiya_liturgist" : "os";
+  const tabs = [...TAB_CONFIGS[roleKey], PRAYER_PARTNERS_TAB];
+  const roleLabel = isJumuiyaLiturgist
+    ? "Jumuiya Liturgist · Prayer Partners"
     : isChair ? "Chairperson Dashboard" : isSecretary ? "Secretary Dashboard" : "Jumuiya Dashboard";
 
-  const [activeTab, setActiveTab] = useState<DashboardTab>(isPureLiturgist ? "prayerpartners" : "overview");
+  const [activeTab, setActiveTab] = useState<DashboardTab>(isJumuiyaLiturgist ? "prayerpartners" : "overview");
 
   const [stats, setStats] = useState<any>(null);
   const [csaAllocations, setCsaAllocations] = useState<any[]>([]);

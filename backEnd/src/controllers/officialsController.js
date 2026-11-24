@@ -1276,7 +1276,7 @@ const HANDOVER_REVOCABLE_ROLES = [
   'csa_chair', 'csa_vice_chair', 'csa_secretary', 'jumuiya_coordinator', 'assistant_jumuiya_coordinator',
   'project_manager', 'instrument_manager', 'os', 'treasurer', 'liturgist',
   // Jumuiya
-  'jumuiya_chairperson', 'jumuiya_vice_chairperson', 'jumuiya_os', 'jumuiya_secretary',
+  'jumuiya_chairperson', 'jumuiya_vice_chairperson', 'jumuiya_os', 'jumuiya_secretary', 'jumuiya_liturgist',
   // Groups
   'choir_chairperson', 'choir_vice_chair', 'choir_vice_secretary', 'choir_secretary', 'choir_treasurer',
   'choir_project_coordinator', 'choir_male_representative', 'choir_female_representative',

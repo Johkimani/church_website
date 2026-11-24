@@ -131,6 +131,11 @@ export const JUMUIYA_POSITION_TO_ROLE = {
   'Ass Secretary': 'jumuiya_secretary',
   'Ass. Secretary': 'jumuiya_secretary',
   'Assistant Secretary': 'jumuiya_secretary',
+  'Liturgist': 'jumuiya_liturgist',
+  'Ass Liturgist': 'jumuiya_liturgist',
+  'Ass. Liturgist': 'jumuiya_liturgist',
+  'Assistant Liturgist': 'jumuiya_liturgist',
+  'Vice Liturgist': 'jumuiya_liturgist',
 };
 
 const ROLE_IS_JUMUIYA_SCOPED = [
@@ -138,6 +143,7 @@ const ROLE_IS_JUMUIYA_SCOPED = [
   'jumuiya_vice_chairperson',
   'jumuiya_os',
   'jumuiya_secretary',
+  'jumuiya_liturgist',
 ];
 
 // Every system admin role that participates in executive exclusivity.
@@ -211,6 +217,7 @@ export const getRoleNameForPosition = (position, isJumuiya) => {
     if (lower.includes('chair')) return 'jumuiya_chairperson';
     if (lower.includes('organizing') || lower === 'os' || lower.includes(' os')) return 'jumuiya_os';
     if (lower.includes('sec')) return 'jumuiya_secretary';
+    if (lower.includes('liturg')) return 'jumuiya_liturgist';
     return null;
   }
   

@@ -38,7 +38,8 @@ Highlights by area (the single sign-in covers all of them):
 - **Jumuiya module** — per-community pages with about, officials, members,
   activities, channels, registration, t-shirts, stamp cards and settings. Role
   scoping keeps the CSA (universal) layer separate from each jumuiya (sub-community).
-- **Prayer Partners** — liturgists build pair/trio groups for their jumuiya with
+- **Prayer Partners** — jumuiya chairpersons, secretaries, OSes and jumuiya
+  liturgists build pair/trio groups for their jumuiya with
   instant local pairing (columns fill and move automatically, one bulk upload on
   Post). Contacts open straight to WhatsApp (`wa.me`). The posted list is
   **member-only**: only members of that jumuiya can view it, and your own group is

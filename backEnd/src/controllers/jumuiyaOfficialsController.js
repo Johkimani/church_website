@@ -84,7 +84,8 @@ export const VALID_ROLES = [
   'Ass Secretary',
   'Ass. Secretary',
   'Liturgist',
-  'Ass Liturgist'
+  'Ass Liturgist',
+  'Vice Liturgist'
 ];
 
 /**
@@ -111,6 +112,7 @@ ORDER BY
     WHEN o.position = 'Ass Secretary' THEN 6
     WHEN o.position = 'Liturgist' THEN 7
     WHEN o.position = 'Ass Liturgist' THEN 8
+    WHEN o.position = 'Vice Liturgist' THEN 8
     ELSE 9
   END`;
 

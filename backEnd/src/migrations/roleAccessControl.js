@@ -13,6 +13,7 @@ const ROLES = [
   { name: "jumuiya_vice_chairperson", description: "Jumuiya Vice Chair — manages the Jumuiya Suggestion Box" },
   { name: "jumuiya_os", description: "Manages Gallery and Announcements for their specific Jumuiya" },
   { name: "jumuiya_secretary", description: "Handles member Registrations for their specific Jumuiya" },
+  { name: "jumuiya_liturgist", description: "Manages Prayer Partners for their specific Jumuiya" },
   { name: "choir_chairperson", description: "Full admin access for all choir-related roles and features" },
   { name: "choir_secretary", description: "Handles choir Registrations and Announcements" },
   { name: "choir_project_coordinator", description: "Manages the Choir Gallery" },

@@ -20,6 +20,7 @@ const KNOWN_ADMIN_ROLES = new Set([
   "JUMUIYA_CHAIRPERSON",
   "JUMUIYA_VICE_CHAIRPERSON",
   "JUMUIYA_SECRETARY",
+  "JUMUIYA_LITURGIST",
   "CHOIR_CHAIRPERSON",
   "CHOIR_VICE_CHAIR",
   "CHOIR_VICE_SECRETARY",
@@ -184,6 +185,8 @@ export const getAllowedPrefixes = (roles: string[]): Set<string> => {
         break;
       case "LITURGIST":
         prefixes.add("/admin/devotions");
+        break;
+      case "JUMUIYA_LITURGIST":
         prefixes.add("/admin/secretary-dashboard");
         break;
       case "CSA_SECRETARY":

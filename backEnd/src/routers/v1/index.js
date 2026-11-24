@@ -193,7 +193,7 @@ router.use("/choir-songs", choirSongsRouter);
 router.use("/choir_songs", choirSongsRouter);
 router.get("/hero-slides", getHeroSlides);
 
-// Prayer partners (jumuiya liturgist / any jumuiya official)
+// Prayer partners (jumuiya chairperson, secretary, OS and jumuiya liturgist)
 router.use("/prayer-partners", prayerPartnersRouter);
 
 // Product reviews
