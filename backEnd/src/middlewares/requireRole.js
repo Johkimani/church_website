@@ -6,10 +6,12 @@ const GLOBAL_ROLES = ["csa_secretary", "csa_chair", "jumuiya_coordinator", "assi
 // and other admin surfaces. Shared across routers that gate admin endpoints.
 // NOTE: jumuiya_vice_chairperson is intentionally NOT here — that role manages
 // only its own jumuiya's suggestion box (see suggestionRouter) and must not get
-// global PII / order / payment reads.
+// global PII / order / payment reads. `liturgist` is also excluded: the CSA
+// liturgist is scoped to Devotions & AI only (explicit requireRole("liturgist")
+// routes). Jumuiya liturgists are scoped to Prayer Partners only.
 const OFFICIAL_ROLES = [
   "csa_chair", "csa_vice_chair", "csa_secretary", "project_manager",
-  "instrument_manager", "os", "treasurer", "liturgist", "choir_chairperson",
+  "instrument_manager", "os", "treasurer", "choir_chairperson",
   "jumuiya_coordinator", "assistant_jumuiya_coordinator", "jumuiya_chairperson", "jumuiya_os", "jumuiya_secretary",
   "choir_secretary", "choir_vice_secretary", "choir_treasurer", "choir_project_coordinator",
   "choir_male_representative", "choir_female_representative", "choir_vice_chair",

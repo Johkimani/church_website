@@ -20,7 +20,8 @@ const GLOBAL_COMMUNITY_ADMIN_ROLES = [
   "csa_secretary",
   "jumuiya_coordinator",
   "assistant_jumuiya_coordinator",
-  "liturgist",
+  // `liturgist` is intentionally absent: CSA liturgists are scoped to
+  // Devotions & AI and must not see community enrollment data.
 ];
 
 // Community module -> official roles that belong to it.

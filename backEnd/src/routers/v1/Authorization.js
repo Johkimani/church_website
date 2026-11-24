@@ -35,10 +35,11 @@ import { guestPaymentLimiter } from "../../middlewares/publicFormLimiter.js";
 // Executive leadership — only these may change users' roles.
 const EXECUTIVE_ROLES = ["csa_chair", "csa_vice_chair", "csa_secretary"];
 
-// Any approved official may manage the member/role directory.
+// Any approved official may manage the member/role directory. `liturgist` is
+// deliberately excluded — it is scoped to Devotions & AI only.
 const OFFICIAL_ROLES = [
   "csa_chair", "csa_vice_chair", "csa_secretary", "project_manager",
-  "instrument_manager", "os", "treasurer", "liturgist", "choir_chairperson",
+  "instrument_manager", "os", "treasurer", "choir_chairperson",
   "jumuiya_coordinator", "assistant_jumuiya_coordinator", "jumuiya_chairperson", "jumuiya_os", "jumuiya_secretary",
 ];
 
