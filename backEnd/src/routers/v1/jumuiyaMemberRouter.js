@@ -31,7 +31,6 @@ const JUMUIYA_OFFICIAL_ROLES = [
   "jumuiya_chairperson",
   "jumuiya_vice_chairperson",
   "jumuiya_os",
-  "jumuiya_liturgist",
 ];
 
 // Read access to the per-jumuiya dashboards is also granted to CSA-wide

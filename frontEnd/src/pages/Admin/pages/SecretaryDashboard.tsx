@@ -46,9 +46,8 @@ const TAB_CONFIGS: Record<string, { id: DashboardTab; label: string; icon: any }
     { id: "announcements", label: "Announcements", icon: Megaphone },
     { id: "gallery", label: "Gallery", icon: Image },
   ],
-  jumuiya_liturgist: [
-    PRAYER_PARTNERS_TAB,
-  ],
+  // Jumuiya liturgists get only the Prayer Partners tab, appended below.
+  jumuiya_liturgist: [],
 };
 
 const JUMUIYAS: Record<string, { name: string; color: string; initials: string }> = {
@@ -171,12 +170,14 @@ export default function SecretaryDashboard() {
   }, [fetchOverview, fetchMembers]);
 
   useEffect(() => {
+    // Jumuiya liturgists only use Prayer Partners, which loads its own data.
+    if (!jumuiyaId || isJumuiyaLiturgist) return;
     fetchOverview();
     fetchMembers();
     const handleUpdated = () => fetchMembers();
     window.addEventListener("csa_members_updated", handleUpdated);
     return () => window.removeEventListener("csa_members_updated", handleUpdated);
-  }, [jumuiyaId, fetchMembers]);
+  }, [jumuiyaId, fetchMembers, fetchOverview, isJumuiyaLiturgist]);
 
   const genderCounts = useMemo(() => {
     const bd = stats?.genderBreakdown;
@@ -230,13 +231,15 @@ export default function SecretaryDashboard() {
             </p>
           </div>
         </div>
-        <button
-          onClick={() => { fetchOverview(); fetchMembers(); }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
-        >
-          <RefreshCw size={16} className={(loadingStats || loadingMembers) ? "animate-spin" : ""} />
-          Refresh All
-        </button>
+        {!isJumuiyaLiturgist && (
+          <button
+            onClick={() => { fetchOverview(); fetchMembers(); }}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
+          >
+            <RefreshCw size={16} className={(loadingStats || loadingMembers) ? "animate-spin" : ""} />
+            Refresh All
+          </button>
+        )}
       </div>
 
       <div className="flex items-center gap-2 bg-slate-100 rounded-xl p-1 w-fit flex-wrap">
