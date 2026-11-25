@@ -203,5 +203,9 @@ if the site ever moves off Vercel.
 - The CSPs in `vercel.json` currently reference one backend origin
   (`https://church-website-q8z9.onrender.com`). If the Render service gets a new
   URL, update every `connect-src`/`img-src` entry and `VITE_SERVER_URI`.
+- The PWA service worker caches Google Fonts and Unsplash images with `fetch()`,
+  so those origins must be allowed in `connect-src` as well as in
+  `style-src`/`font-src`/`img-src`. Without this, Workbox logs blocked-fetch
+  errors even though the page itself renders.
 - Render's egress firewall blocks SMTP ports — use the Resend HTTPS API
   (`emailConfig.js`), not nodemailer.
